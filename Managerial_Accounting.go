@@ -1,0 +1,224 @@
+package anti_accountants
+
+import "log"
+
+type One_step_distribution struct {
+	Sales_or_variable_or_fixed, Distribution_method string
+	From, To                                        map[string]float64
+}
+
+type Managerial_Accounting struct {
+	Cvp                map[string]map[string]float64
+	Distribution_steps []One_step_distribution
+	Beginning_balance,
+	Increase,
+	Ending_balance,
+	Decreases_in_account_caused_by_not_sell,
+	Actual_mixed_cost,
+	Number_of_partially_completed_units,
+	Percentage_completion,
+	Units_transferred_to_the_next_department_or_to_finished_goods,
+	Equivalent_units_in_ending_work_in_process_inventory,
+	Equivalent_units_in_beginning_work_in_process_inventory,
+	Cost_of_beginning_work_in_process_inventory,
+	Cost_added_during_the_period float64
+}
+
+func (s Managerial_Accounting) Cost_volume_profit_slice() {
+	s.check_map_keys()
+	s.calculate_cvp_map()
+	for _, step := range s.Distribution_steps {
+		var total_mixed_cost, total_portions_to, total_column_to_distribute float64
+		for key_portions_from, portions := range step.From {
+			if s.Cvp[key_portions_from]["units"] < portions {
+				log.Panic(portions, " for ", key_portions_from, " in ", step.From, " is more than ", s.Cvp[key_portions_from]["units"])
+			}
+			total_mixed_cost += portions * s.Cvp[key_portions_from]["mixed_cost_per_units"]
+			s.Cvp[key_portions_from]["fixed_cost"] -= (s.Cvp[key_portions_from]["fixed_cost"] / s.Cvp[key_portions_from]["units"]) * portions
+			s.Cvp[key_portions_from]["units"] -= portions
+			if s.Cvp[key_portions_from]["units"] == 0 {
+				s.Cvp[key_portions_from]["variable_cost_per_units"] = 0
+			}
+		}
+		for key_portions_to, portions_to := range step.To {
+			total_portions_to += portions_to
+			total_column_to_distribute += s.Cvp[key_portions_to][step.Distribution_method]
+		}
+		for key_portions_to, portions_to := range step.To {
+			var total_overhead_cost_to_sum float64
+			switch step.Distribution_method {
+			case "units_gap":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["units_gap"] * s.Cvp[key_portions_to]["variable_cost_per_units"]
+				s.Cvp[key_portions_to]["units"] -= s.Cvp[key_portions_to]["units_gap"]
+				s.Cvp[key_portions_to]["units_gap"] = 0
+			case "1":
+				total_overhead_cost_to_sum = total_mixed_cost
+			case "equally":
+				total_overhead_cost_to_sum = float64(len(step.To)) * total_mixed_cost
+			case "portions":
+				total_overhead_cost_to_sum = portions_to / total_portions_to * total_mixed_cost
+			case "units":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["units"] / total_column_to_distribute * total_mixed_cost
+			case "variable_cost":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["variable_cost"] / total_column_to_distribute * total_mixed_cost
+			case "fixed_cost":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["fixed_cost"] / total_column_to_distribute * total_mixed_cost
+			case "mixed_cost":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["mixed_cost"] / total_column_to_distribute * total_mixed_cost
+			case "sales":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["sales"] / total_column_to_distribute * total_mixed_cost
+			case "profit":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["profit"] / total_column_to_distribute * total_mixed_cost
+			case "contribution_margin":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["contribution_margin"] / total_column_to_distribute * total_mixed_cost
+			case "percent_from_variable_cost":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["variable_cost"] * portions_to
+			case "percent_from_fixed_cost":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["fixed_cost"] * portions_to
+			case "percent_from_mixed_cost":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["mixed_cost"] * portions_to
+			case "percent_from_sales":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["sales"] * portions_to
+			case "percent_from_profit":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["profit"] * portions_to
+			case "percent_from_contribution_margin":
+				total_overhead_cost_to_sum = s.Cvp[key_portions_to]["contribution_margin"] * portions_to
+			default:
+				log.Panic(step.Distribution_method, " is not in [units_gap,1,equally,portions,units,variable_cost,fixed_cost,mixed_cost,sales,profit,contribution_margin,percent_from_variable_cost,percent_from_fixed_cost,percent_from_mixed_cost,percent_from_sales,percent_from_profit,percent_from_contribution_margin]")
+			}
+			switch step.Sales_or_variable_or_fixed {
+			case "sales":
+				s.Cvp[key_portions_to]["sales_per_units"] = ((s.Cvp[key_portions_to]["sales_per_units"] * s.Cvp[key_portions_to]["units"]) - total_overhead_cost_to_sum) / s.Cvp[key_portions_to]["units"]
+			case "variable_cost":
+				s.Cvp[key_portions_to]["variable_cost_per_units"] = ((s.Cvp[key_portions_to]["variable_cost_per_units"] * s.Cvp[key_portions_to]["units"]) + total_overhead_cost_to_sum) / s.Cvp[key_portions_to]["units"]
+			case "fixed_cost":
+				s.Cvp[key_portions_to]["fixed_cost"] += total_overhead_cost_to_sum
+			default:
+				log.Panic(step.Sales_or_variable_or_fixed, " is not in [sales,variable_cost,fixed_cost]")
+			}
+			for key_name, map_cvp := range s.Cvp {
+				s.Cvp[key_name] = map[string]float64{"units_gap": map_cvp["units_gap"], "units": map_cvp["units"],
+					"sales_per_units": map_cvp["sales_per_units"], "variable_cost_per_units": map_cvp["variable_cost_per_units"], "fixed_cost": map_cvp["fixed_cost"]}
+			}
+			s.calculate_cvp_map()
+		}
+	}
+	s.total_cost_volume_profit()
+	s.check_map_keys()
+}
+
+func (s Managerial_Accounting) check_map_keys() {
+	elements := []string{
+		"break_even_in_sales", "break_even_in_units", "sales_per_units",
+		"fixed_cost", "break_even_in_units", "contribution_margin_per_units",
+		"contribution_margin_per_units", "contribution_margin_ratio", "sales_per_units",
+		"contribution_margin", "degree_of_operating_leverage", "profit",
+		"variable_cost", "variable_cost_per_units", "units",
+		"fixed_cost", "fixed_cost_per_units", "units",
+		"mixed_cost", "mixed_cost_per_units", "units",
+		"sales", "sales_per_units", "units",
+		"profit", "profit_per_units", "units",
+		"contribution_margin", "contribution_margin_per_units", "units",
+		"mixed_cost", "fixed_cost", "variable_cost",
+		"sales", "profit", "mixed_cost",
+		"sales", "contribution_margin", "variable_cost",
+		"units_gap",
+	}
+	for _, a := range s.Cvp {
+		for keyb := range a {
+			if !IS_IN(keyb, elements) {
+				log.Panic(keyb, " is not in ", elements)
+			}
+		}
+	}
+}
+
+func (s Managerial_Accounting) calculate_cvp_map() {
+	for _, i := range s.Cvp {
+		cost_volume_profit(i)
+		_, ok_variable_cost_per_units := i["variable_cost_per_units"]
+		if !ok_variable_cost_per_units {
+			i["variable_cost_per_units"] = 0
+			cost_volume_profit(i)
+		}
+		_, ok_fixed_cost := i["fixed_cost"]
+		if !ok_fixed_cost {
+			i["fixed_cost"] = 0
+			cost_volume_profit(i)
+		}
+		_, ok_sales_per_units := i["sales_per_units"]
+		if !ok_sales_per_units {
+			i["sales_per_units"] = 0
+			cost_volume_profit(i)
+		}
+		_, ok_units := i["units"]
+		if !ok_units {
+			i["units"] = 0
+			cost_volume_profit(i)
+		}
+	}
+}
+
+func (s Managerial_Accounting) total_cost_volume_profit() {
+	var units, sales, variable_cost, fixed_cost float64
+	for key_name, map_name := range s.Cvp {
+		if key_name != "total" {
+			units += map_name["units"]
+			sales += map_name["sales"]
+			variable_cost += map_name["variable_cost"]
+			fixed_cost += map_name["fixed_cost"]
+		}
+	}
+	s.Cvp["total"] = map[string]float64{"units": units, "sales": sales, "variable_cost": variable_cost, "fixed_cost": fixed_cost}
+	cost_volume_profit(s.Cvp["total"])
+}
+
+func cost_volume_profit(m map[string]float64) {
+	Equations_solver(m, [][]string{
+		{"variable_cost", "variable_cost_per_units", "*", "units"},
+		{"fixed_cost", "fixed_cost_per_units", "*", "units"},
+		{"mixed_cost", "mixed_cost_per_units", "*", "units"},
+		{"sales", "sales_per_units", "*", "units"},
+		{"profit", "profit_per_units", "*", "units"},
+		{"contribution_margin", "contribution_margin_per_units", "*", "units"},
+		{"mixed_cost", "fixed_cost", "+", "variable_cost"},
+		{"sales", "profit", "+", "mixed_cost"},
+		{"contribution_margin", "sales", "-", "variable_cost"},
+		{"break_even_in_sales", "break_even_in_units", "*", "sales_per_units"},
+		{"break_even_in_units", "contribution_margin_per_units", "/", "fixed_cost"},
+		{"contribution_margin_per_units", "contribution_margin_ratio", "*", "sales_per_units"},
+		{"contribution_margin", "degree_of_operating_leverage", "*", "profit"},
+	})
+}
+
+func (s Managerial_Accounting) decrease() float64 {
+	return s.Beginning_balance + s.Increase - s.Ending_balance
+}
+
+func (s Managerial_Accounting) cost_of_goods_sold() float64 {
+	return s.decrease() - s.Decreases_in_account_caused_by_not_sell
+}
+
+func (s Managerial_Accounting) Equivalent_units() float64 {
+	return s.Number_of_partially_completed_units * s.Percentage_completion
+}
+
+func (s Managerial_Accounting) Equivalent_units_of_production_weighted_average_method() float64 {
+	return s.Units_transferred_to_the_next_department_or_to_finished_goods + s.Equivalent_units_in_ending_work_in_process_inventory
+}
+
+func (s Managerial_Accounting) Cost_per_equivalent_unit_weighted_average_method() float64 {
+	return (s.Cost_of_beginning_work_in_process_inventory + s.Cost_added_during_the_period) / s.Equivalent_units_of_production_weighted_average_method()
+}
+
+func (s Managerial_Accounting) Equivalent_units_of_production_fifo_method() float64 {
+	return s.Equivalent_units_of_production_weighted_average_method() - s.Equivalent_units_in_beginning_work_in_process_inventory
+}
+
+func (s Managerial_Accounting) Equivalent_units_to_complete_beginning_work_in_process_inventory() float64 {
+	return s.Equivalent_units_in_beginning_work_in_process_inventory * (1 - s.Percentage_completion)
+}
+
+func (s Managerial_Accounting) Cost_per_equivalent_unit_fifo_method() float64 {
+	return s.Cost_added_during_the_period / s.Equivalent_units_of_production_fifo_method()
+}
