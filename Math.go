@@ -4,43 +4,55 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strconv"
 )
 
 type MATH struct {
 	POINTS [][]float64
-	PRINT  bool
 }
 
-func (s MATH) EQUATIONS_SOLVER(m map[string]float64, equations [][]string) {
+func EQUATIONS_SOLVER(print bool, m map[string]float64, equations [][]string) {
 	for a := 0; a <= len(equations); a++ {
 		for _, equation := range equations {
-			s.equation_solver(m, equation[0], equation[1], equation[2], equation[3])
+			equation_solver(print, m, equation[0], equation[1], equation[2], equation[3])
 		}
 	}
 }
 
-func (s MATH) equation_solver(m map[string]float64, a, b, sign, c string) {
+func equation_solver(print bool, m map[string]float64, a, b, sign, c string) {
+	la, erra := strconv.ParseFloat(a, 64)
+	lb, errb := strconv.ParseFloat(b, 64)
+	lc, errc := strconv.ParseFloat(c, 64)
+	if erra == nil {
+		m[a] = la
+	}
+	if errb == nil {
+		m[b] = lb
+	}
+	if errc == nil {
+		m[c] = lc
+	}
 	switch sign {
 	case "+":
-		s.equations_generator(m, a, b, sign, c, m[b]+m[c], m[a]-m[c], m[a]-m[b])
+		equations_generator(print, m, a, b, sign, c, m[b]+m[c], m[a]-m[c], m[a]-m[b])
 	case "-":
-		s.equations_generator(m, a, b, sign, c, m[b]-m[c], m[a]+m[c], m[b]-m[a])
+		equations_generator(print, m, a, b, sign, c, m[b]-m[c], m[a]+m[c], m[b]-m[a])
 	case "*":
-		s.equations_generator(m, a, b, sign, c, m[b]*m[c], m[a]/m[c], m[a]/m[b])
+		equations_generator(print, m, a, b, sign, c, m[b]*m[c], m[a]/m[c], m[a]/m[b])
 	case "/":
-		s.equations_generator(m, a, b, sign, c, m[b]/m[c], m[a]*m[c], m[b]/m[a])
+		equations_generator(print, m, a, b, sign, c, m[b]/m[c], m[a]*m[c], m[b]/m[a])
 	case "**":
-		s.equations_generator(m, a, b, sign, c, math.Pow(m[b], m[c]), ROOT(m[a], m[c]), LOG(m[a], m[b]))
+		equations_generator(print, m, a, b, sign, c, math.Pow(m[b], m[c]), ROOT(m[a], m[c]), LOG(m[a], m[b]))
 	case "root":
-		s.equations_generator(m, a, b, sign, c, ROOT(m[b], m[c]), math.Pow(m[a], m[c]), LOG(m[b], m[a]))
+		equations_generator(print, m, a, b, sign, c, ROOT(m[b], m[c]), math.Pow(m[a], m[c]), LOG(m[b], m[a]))
 	case "log":
-		s.equations_generator(m, a, b, sign, c, LOG(m[b], m[c]), math.Pow(m[c], m[a]), ROOT(m[b], m[a]))
+		equations_generator(print, m, a, b, sign, c, LOG(m[b], m[c]), math.Pow(m[c], m[a]), ROOT(m[b], m[a]))
 	default:
 		log.Panic(sign, " is not in [+-*/**root log]")
 	}
 }
 
-func (s MATH) equations_generator(m map[string]float64, a, b, sign, c string, a_value, b_value, c_value float64) {
+func equations_generator(print bool, m map[string]float64, a, b, sign, c string, a_value, b_value, c_value float64) {
 	la, oka := m[a]
 	lb, okb := m[b]
 	lc, okc := m[c]
@@ -65,20 +77,20 @@ func (s MATH) equations_generator(m map[string]float64, a, b, sign, c string, a_
 	switch {
 	case !oka && okb && okc:
 		m[a] = a_value
-		s.print_equation(m, a, b, sign, c)
+		print_equation(print, m, a, b, sign, c)
 	case oka && !okb && okc:
 		m[b] = b_value
-		s.print_equation(m, a, b, sign, c)
+		print_equation(print, m, a, b, sign, c)
 	case oka && okb && !okc:
 		m[c] = c_value
-		s.print_equation(m, a, b, sign, c)
+		print_equation(print, m, a, b, sign, c)
 	case oka && okb && okc && math.Round(la*1000)/1000 != math.Round(a_value*1000)/1000 && !inf:
 		log.Fatal(a, m[a], " != ", b, m[b], " ", sign, " ", c, m[c])
 	}
 }
 
-func (s MATH) print_equation(m map[string]float64, a, b, sign, c string) {
-	if s.PRINT {
+func print_equation(print bool, m map[string]float64, a, b, sign, c string) {
+	if print {
 		fmt.Println(a, m[a], " = ", b, m[b], " ", sign, " ", c, m[c])
 	}
 }

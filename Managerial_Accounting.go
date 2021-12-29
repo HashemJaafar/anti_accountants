@@ -11,22 +11,9 @@ type MANAGERIAL_ACCOUNTING struct {
 	CVP                map[string]map[string]float64
 	DISTRIBUTION_STEPS []ONE_STEP_DISTRIBUTION
 	PRINT              bool
-	Beginning_balance,
-	Increase,
-	Ending_balance,
-	Decreases_in_account_caused_by_not_sell,
-	Actual_mixed_cost,
-	Number_of_partially_completed_units,
-	Percentage_completion,
-	Units_transferred_to_the_next_department_or_to_finished_goods,
-	Equivalent_units_in_ending_work_in_process_inventory,
-	Equivalent_units_in_beginning_work_in_process_inventory,
-	Cost_of_beginning_work_in_process_inventory,
-	Cost_added_during_the_period float64
 }
 
 func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE() {
-	s.check_map_keys()
 	s.calculate_cvp_map()
 	for _, step := range s.DISTRIBUTION_STEPS {
 		var total_mixed_cost, total_portions_to, total_column_to_distribute float64
@@ -105,33 +92,6 @@ func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE() {
 		}
 	}
 	s.total_cost_volume_profit()
-	s.check_map_keys()
-}
-
-func (s MANAGERIAL_ACCOUNTING) check_map_keys() {
-	elements := []string{
-		"break_even_in_sales", "break_even_in_units", "sales_per_units",
-		"fixed_cost", "break_even_in_units", "contribution_margin_per_units",
-		"contribution_margin_per_units", "contribution_margin_ratio", "sales_per_units",
-		"contribution_margin", "degree_of_operating_leverage", "profit",
-		"variable_cost", "variable_cost_per_units", "units",
-		"fixed_cost", "fixed_cost_per_units", "units",
-		"mixed_cost", "mixed_cost_per_units", "units",
-		"sales", "sales_per_units", "units",
-		"profit", "profit_per_units", "units",
-		"contribution_margin", "contribution_margin_per_units", "units",
-		"mixed_cost", "fixed_cost", "variable_cost",
-		"sales", "profit", "mixed_cost",
-		"sales", "contribution_margin", "variable_cost",
-		"units_gap",
-	}
-	for _, a := range s.CVP {
-		for keyb := range a {
-			if !IS_IN(keyb, elements) {
-				log.Panic(keyb, " is not in ", elements)
-			}
-		}
-	}
 }
 
 func (s MANAGERIAL_ACCOUNTING) calculate_cvp_map() {
@@ -175,7 +135,7 @@ func (s MANAGERIAL_ACCOUNTING) total_cost_volume_profit() {
 }
 
 func (s MANAGERIAL_ACCOUNTING) cost_volume_profit(m map[string]float64) {
-	MATH{PRINT: s.PRINT}.EQUATIONS_SOLVER(m, [][]string{
+	equations := [][]string{
 		{"variable_cost", "variable_cost_per_units", "*", "units"},
 		{"fixed_cost", "fixed_cost_per_units", "*", "units"},
 		{"mixed_cost", "mixed_cost_per_units", "*", "units"},
@@ -189,37 +149,38 @@ func (s MANAGERIAL_ACCOUNTING) cost_volume_profit(m map[string]float64) {
 		{"break_even_in_units", "contribution_margin_per_units", "/", "fixed_cost"},
 		{"contribution_margin_per_units", "contribution_margin_ratio", "*", "sales_per_units"},
 		{"contribution_margin", "degree_of_operating_leverage", "*", "profit"},
-	})
+		{"units_gap", "units", "-", "actual_units"},
+	}
+	check_map_keys_for_equations(equations, m)
+	EQUATIONS_SOLVER(s.PRINT, m, equations)
 }
 
-func (s MANAGERIAL_ACCOUNTING) decrease() float64 {
-	return s.Beginning_balance + s.Increase - s.Ending_balance
+func (s MANAGERIAL_ACCOUNTING) PROCESS_COSTING(m map[string]float64) {
+	equations := [][]string{
+		{"increase_or_decrease", "increase", "-", "decrease"},
+		{"increase_or_decrease", "ending_balance", "-", "beginning_balance"},
+		{"cost_of_goods_sold", "decrease", "-", "decreases_in_account_caused_by_not_sell"},
+		{"equivalent_units", "number_of_partially_completed_units", "*", "percentage_completion"},
+		{"equivalent_units_of_production_weighted_average_method", "units_transferred_to_the_next_department_or_to_finished_goods", "+", "equivalent_units_in_ending_work_in_process_inventory"},
+		{"cost_of_ending_work_in_process_inventory", "cost_of_beginning_work_in_process_inventory", "+", "cost_added_during_the_period"},
+		{"cost_per_equivalent_unit_weighted_average_method", "cost_of_ending_work_in_process_inventory", "/", "equivalent_units_of_production_weighted_average_method"},
+		{"equivalent_units_of_production_fifo_method", "equivalent_units_of_production_weighted_average_method", "-", "equivalent_units_in_beginning_work_in_process_inventory"},
+		{"percentage_completion_minus_one", "1", "-", "percentage_completion"},
+		{"equivalent_units_to_complete_beginning_work_in_process_inventory", "equivalent_units_in_beginning_work_in_process_inventory", "*", "percentage_completion_minus_one"},
+		{"cost_per_equivalent_unit_fifo_method", "cost_added_during_the_period", "/", "equivalent_units_of_production_fifo_method"},
+	}
+	check_map_keys_for_equations(equations, m)
+	EQUATIONS_SOLVER(s.PRINT, m, equations)
 }
 
-func (s MANAGERIAL_ACCOUNTING) cost_of_goods_sold() float64 {
-	return s.decrease() - s.Decreases_in_account_caused_by_not_sell
-}
-
-func (s MANAGERIAL_ACCOUNTING) Equivalent_units() float64 {
-	return s.Number_of_partially_completed_units * s.Percentage_completion
-}
-
-func (s MANAGERIAL_ACCOUNTING) Equivalent_units_of_production_weighted_average_method() float64 {
-	return s.Units_transferred_to_the_next_department_or_to_finished_goods + s.Equivalent_units_in_ending_work_in_process_inventory
-}
-
-func (s MANAGERIAL_ACCOUNTING) Cost_per_equivalent_unit_weighted_average_method() float64 {
-	return (s.Cost_of_beginning_work_in_process_inventory + s.Cost_added_during_the_period) / s.Equivalent_units_of_production_weighted_average_method()
-}
-
-func (s MANAGERIAL_ACCOUNTING) Equivalent_units_of_production_fifo_method() float64 {
-	return s.Equivalent_units_of_production_weighted_average_method() - s.Equivalent_units_in_beginning_work_in_process_inventory
-}
-
-func (s MANAGERIAL_ACCOUNTING) Equivalent_units_to_complete_beginning_work_in_process_inventory() float64 {
-	return s.Equivalent_units_in_beginning_work_in_process_inventory * (1 - s.Percentage_completion)
-}
-
-func (s MANAGERIAL_ACCOUNTING) Cost_per_equivalent_unit_fifo_method() float64 {
-	return s.Cost_added_during_the_period / s.Equivalent_units_of_production_fifo_method()
+func check_map_keys_for_equations(equations [][]string, m map[string]float64) {
+	var elements []string
+	for _, equation := range equations {
+		elements = append(elements, equation[0], equation[1], equation[3])
+	}
+	for keyb := range m {
+		if !IS_IN(keyb, elements) {
+			log.Panic(keyb, " is not in ", elements)
+		}
+	}
 }

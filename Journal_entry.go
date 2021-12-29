@@ -95,12 +95,12 @@ func check_the_params(entry_expair time.Time, adjusting_method string, date time
 }
 
 func group_by_account_and_barcode(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) []ACCOUNT_VALUE_QUANTITY_BARCODE {
-	type Account_barcode struct {
-		ACCOUNT, barcode string
+	type account_barcode struct {
+		account, barcode string
 	}
-	g := map[Account_barcode]*ACCOUNT_VALUE_QUANTITY_BARCODE{}
+	g := map[account_barcode]*ACCOUNT_VALUE_QUANTITY_BARCODE{}
 	for _, v := range array_of_entry {
-		key := Account_barcode{v.ACCOUNT, v.BARCODE}
+		key := account_barcode{v.ACCOUNT, v.BARCODE}
 		sums := g[key]
 		if sums == nil {
 			sums = &ACCOUNT_VALUE_QUANTITY_BARCODE{}
@@ -111,7 +111,7 @@ func group_by_account_and_barcode(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCOD
 	}
 	array_of_entry = []ACCOUNT_VALUE_QUANTITY_BARCODE{}
 	for key, v := range g {
-		array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{key.ACCOUNT, v.VALUE, v.QUANTITY, key.barcode})
+		array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{key.account, v.VALUE, v.QUANTITY, key.barcode})
 	}
 	return array_of_entry
 }
