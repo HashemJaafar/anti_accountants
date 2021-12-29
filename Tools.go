@@ -49,18 +49,19 @@ func PARSE_DATE(string_date string, date_layouts []string) time.Time {
 	return time.Time{}
 }
 
-func CHECK_IF_DUPLICATES(slice_of_elements []string) []string {
+func CHECK_IF_DUPLICATES(slice_of_elements []string) ([]string, []string) {
 	var set_of_elems, duplicated_element []string
+big_loop:
 	for _, element := range slice_of_elements {
 		for _, b := range set_of_elems {
 			if b == element {
 				duplicated_element = append(duplicated_element, element)
-				break
+				continue big_loop
 			}
 		}
 		set_of_elems = append(set_of_elems, element)
 	}
-	return duplicated_element
+	return set_of_elems, duplicated_element
 }
 
 func CONCAT(args ...interface{}) interface{} {

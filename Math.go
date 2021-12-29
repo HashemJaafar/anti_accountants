@@ -7,11 +7,23 @@ import (
 	"strconv"
 )
 
-type MATH struct {
-	POINTS [][]float64
+func check_map_keys_for_equations(equations [][]string, m map[string]float64) {
+	var elements []string
+	for _, equation := range equations {
+		elements = append(elements, equation[0], equation[1], equation[3])
+	}
+	elements, _ = CHECK_IF_DUPLICATES(elements)
+	for keyb := range m {
+		if !IS_IN(keyb, elements) {
+			log.Panic(keyb, " is not in ", elements)
+		}
+	}
 }
 
-func EQUATIONS_SOLVER(print bool, m map[string]float64, equations [][]string) {
+func EQUATIONS_SOLVER(print, check_if_keys_in_the_equations bool, m map[string]float64, equations [][]string) {
+	if check_if_keys_in_the_equations {
+		check_map_keys_for_equations(equations, m)
+	}
 	for a := 0; a <= len(equations); a++ {
 		for _, equation := range equations {
 			equation_solver(print, m, equation[0], equation[1], equation[2], equation[3])
@@ -97,6 +109,10 @@ func print_equation(print bool, m map[string]float64, a, b, sign, c string) {
 
 func LOG(a, b float64) float64  { return math.Log(a) / math.Log(b) }
 func ROOT(a, b float64) float64 { return math.Pow(a, 1/b) }
+
+type MATH struct {
+	POINTS [][]float64
+}
 
 func (s MATH) HIGH_LOW() float64 {
 	var y2, y1, x2, x1 float64

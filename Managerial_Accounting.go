@@ -14,7 +14,7 @@ type MANAGERIAL_ACCOUNTING struct {
 }
 
 func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE() {
-	s.calculate_cvp_map()
+	s.calculate_cvp_map(true)
 	for _, step := range s.DISTRIBUTION_STEPS {
 		var total_mixed_cost, total_portions_to, total_column_to_distribute float64
 		for key_portions_from, portions := range step.FROM {
@@ -88,34 +88,34 @@ func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE() {
 				s.CVP[key_name] = map[string]float64{"units_gap": map_cvp["units_gap"], "units": map_cvp["units"],
 					"sales_per_units": map_cvp["sales_per_units"], "variable_cost_per_units": map_cvp["variable_cost_per_units"], "fixed_cost": map_cvp["fixed_cost"]}
 			}
-			s.calculate_cvp_map()
+			s.calculate_cvp_map(false)
 		}
 	}
 	s.total_cost_volume_profit()
 }
 
-func (s MANAGERIAL_ACCOUNTING) calculate_cvp_map() {
+func (s MANAGERIAL_ACCOUNTING) calculate_cvp_map(check_if_keys_in_the_equations bool) {
 	for _, i := range s.CVP {
-		s.cost_volume_profit(i)
+		s.cost_volume_profit(check_if_keys_in_the_equations, i)
 		_, ok_variable_cost_per_units := i["variable_cost_per_units"]
 		if !ok_variable_cost_per_units {
 			i["variable_cost_per_units"] = 0
-			s.cost_volume_profit(i)
+			s.cost_volume_profit(false, i)
 		}
 		_, ok_fixed_cost := i["fixed_cost"]
 		if !ok_fixed_cost {
 			i["fixed_cost"] = 0
-			s.cost_volume_profit(i)
+			s.cost_volume_profit(false, i)
 		}
 		_, ok_sales_per_units := i["sales_per_units"]
 		if !ok_sales_per_units {
 			i["sales_per_units"] = 0
-			s.cost_volume_profit(i)
+			s.cost_volume_profit(false, i)
 		}
 		_, ok_units := i["units"]
 		if !ok_units {
 			i["units"] = 0
-			s.cost_volume_profit(i)
+			s.cost_volume_profit(false, i)
 		}
 	}
 }
@@ -131,10 +131,10 @@ func (s MANAGERIAL_ACCOUNTING) total_cost_volume_profit() {
 		}
 	}
 	s.CVP["total"] = map[string]float64{"units": units, "sales": sales, "variable_cost": variable_cost, "fixed_cost": fixed_cost}
-	s.cost_volume_profit(s.CVP["total"])
+	s.cost_volume_profit(false, s.CVP["total"])
 }
 
-func (s MANAGERIAL_ACCOUNTING) cost_volume_profit(m map[string]float64) {
+func (s MANAGERIAL_ACCOUNTING) cost_volume_profit(check_if_keys_in_the_equations bool, m map[string]float64) {
 	equations := [][]string{
 		{"variable_cost", "variable_cost_per_units", "*", "units"},
 		{"fixed_cost", "fixed_cost_per_units", "*", "units"},
@@ -151,11 +151,10 @@ func (s MANAGERIAL_ACCOUNTING) cost_volume_profit(m map[string]float64) {
 		{"contribution_margin", "degree_of_operating_leverage", "*", "profit"},
 		{"units_gap", "units", "-", "actual_units"},
 	}
-	check_map_keys_for_equations(equations, m)
-	EQUATIONS_SOLVER(s.PRINT, m, equations)
+	EQUATIONS_SOLVER(s.PRINT, check_if_keys_in_the_equations, m, equations)
 }
 
-func (s MANAGERIAL_ACCOUNTING) PROCESS_COSTING(m map[string]float64) {
+func (s MANAGERIAL_ACCOUNTING) PROCESS_COSTING(check_if_keys_in_the_equations bool, m map[string]float64) {
 	equations := [][]string{
 		{"increase_or_decrease", "increase", "-", "decrease"},
 		{"increase_or_decrease", "ending_balance", "-", "beginning_balance"},
@@ -169,18 +168,19 @@ func (s MANAGERIAL_ACCOUNTING) PROCESS_COSTING(m map[string]float64) {
 		{"equivalent_units_to_complete_beginning_work_in_process_inventory", "equivalent_units_in_beginning_work_in_process_inventory", "*", "percentage_completion_minus_one"},
 		{"cost_per_equivalent_unit_fifo_method", "cost_added_during_the_period", "/", "equivalent_units_of_production_fifo_method"},
 	}
-	check_map_keys_for_equations(equations, m)
-	EQUATIONS_SOLVER(s.PRINT, m, equations)
+	EQUATIONS_SOLVER(s.PRINT, check_if_keys_in_the_equations, m, equations)
 }
 
-func check_map_keys_for_equations(equations [][]string, m map[string]float64) {
-	var elements []string
-	for _, equation := range equations {
-		elements = append(elements, equation[0], equation[1], equation[3])
+func (s MANAGERIAL_ACCOUNTING) LABOR_COST(check_if_keys_in_the_equations bool, m map[string]float64) {
+	equations := [][]string{
+		{"overtime_wage_rate", "bonus_percentage", "*", "hourly_wage_rate"},
+		{"total_wage", "total_hours", "*", "hourly_wage_rate"},
+		{"overtime_wage", "overtime_hours", "*", "overtime_wage_rate"},
+		{"normal_wage", "normal_hours", "*", "hourly_wage_rate"},
+		{"holiday_wage", "holiday_hours", "*", "hourly_wage_rate"},
+		{"vacations_wage", "vacations_hours", "*", "hourly_wage_rate"},
+		{"normal_lost_time_wage", "normal_lost_time_hours", "*", "hourly_wage_rate"},
+		{"abnormal_lost_time_wage", "abnormal_lost_time_hours", "*", "hourly_wage_rate"},
 	}
-	for keyb := range m {
-		if !IS_IN(keyb, elements) {
-			log.Panic(keyb, " is not in ", elements)
-		}
-	}
+	EQUATIONS_SOLVER(s.PRINT, check_if_keys_in_the_equations, m, equations)
 }

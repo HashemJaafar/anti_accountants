@@ -261,7 +261,7 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	case !s.is_father(s.DISCOUNTS, s.INVOICE_DISCOUNT):
 		log.Panic(s.DISCOUNTS, " should be one of the fathers of ", s.INVOICE_DISCOUNT)
 	}
-	duplicated_element := CHECK_IF_DUPLICATES(all_accounts)
+	_, duplicated_element := CHECK_IF_DUPLICATES(all_accounts)
 	if len(duplicated_element) != 0 {
 		log.Panic(duplicated_element, " is duplicated values in the fields of FINANCIAL_ACCOUNTING and that make error. you should remove the duplicate")
 	}
