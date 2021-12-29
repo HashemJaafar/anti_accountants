@@ -5,51 +5,51 @@ import (
 	"time"
 )
 
-type financial_analysis struct {
-	Current_assets,
-	Current_liabilities,
-	Cash,
-	Short_term_investments,
-	Net_receivables,
-	Net_credit_sales,
-	Average_net_receivables,
-	Cost_of_goods_sold,
-	Average_inventory,
-	Net_income,
-	Net_sales,
-	Average_assets,
-	Average_equity,
-	Preferred_dividends,
-	Average_common_stockholders_equity,
-	Market_price_per_shares_outstanding,
-	Cash_dividends,
-	Total_debt,
-	Total_assets,
-	Ebitda,
-	Interest_expense,
-	Weighted_average_common_shares_outstanding float64
+type FINANCIAL_ANALYSIS struct {
+	CURRENT_ASSETS,
+	CURRENT_LIABILITIES,
+	CASH,
+	SHORT_TERM_INVESTMENTS,
+	NET_RECEIVABLES,
+	NET_CREDIT_SALES,
+	AVERAGE_NET_RECEIVABLES,
+	COST_OF_GOODS_SOLD,
+	AVERAGE_INVENTORY,
+	NET_INCOME,
+	NET_SALES,
+	AVERAGE_ASSETS,
+	AVERAGE_EQUITY,
+	PREFERRED_DIVIDENDS,
+	AVERAGE_COMMON_STOCKHOLDERS_EQUITY,
+	MARKET_PRICE_PER_SHARES_OUTSTANDING,
+	CASH_DIVIDENDS,
+	TOTAL_DEBT,
+	TOTAL_ASSETS,
+	EBITDA,
+	INTEREST_EXPENSE,
+	WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING float64
 }
 
 type financial_analysis_statement struct {
-	Current_ratio                        float64 // current_assets / current_liabilities
-	Acid_test                            float64 // (cash + short_term_investments + net_receivables) / current_liabilities
-	Receivables_turnover                 float64 // net_credit_sales / average_net_receivables
-	Inventory_turnover                   float64 // cost_of_goods_sold / average_inventory
-	Asset_turnover                       float64 // net_sales / average_assets
-	Profit_margin                        float64 // net_income / net_sales
-	Return_on_assets                     float64 // net_income / average_assets
-	Return_on_equity                     float64 // net_income / average_equity
-	Payout_ratio                         float64 // cash_dividends / net_income
-	Debt_to_total_assets_ratio           float64 // total_debt / total_assets
-	Times_interest_earned                float64 // ebitda / interest_expense
-	Return_on_common_stockholders_equity float64 // (net_income - preferred_dividends) / average_common_stockholders_equity
-	Earnings_per_share                   float64 // (net_income - preferred_dividends) / weighted_average_common_shares_outstanding
-	Price_earnings_ratio                 float64 // market_price_per_shares_outstanding / earnings_per_share
+	CURRENT_RATIO                        float64 // current_assets / current_liabilities
+	ACID_TEST                            float64 // (cash + short_term_investments + net_receivables) / current_liabilities
+	RECEIVABLES_TURNOVER                 float64 // net_credit_sales / average_net_receivables
+	INVENTORY_TURNOVER                   float64 // cost_of_goods_sold / average_inventory
+	ASSET_TURNOVER                       float64 // net_sales / average_assets
+	PROFIT_MARGIN                        float64 // net_income / net_sales
+	RETURN_ON_ASSETS                     float64 // net_income / average_assets
+	RETURN_ON_EQUITY                     float64 // net_income / average_equity
+	PAYOUT_RATIO                         float64 // cash_dividends / net_income
+	DEBT_TO_TOTAL_ASSETS_RATIO           float64 // total_debt / total_assets
+	TIMES_INTEREST_EARNED                float64 // ebitda / interest_expense
+	RETURN_ON_COMMON_STOCKHOLDERS_EQUITY float64 // (net_income - preferred_dividends) / average_common_stockholders_equity
+	EARNINGS_PER_SHARE                   float64 // (net_income - preferred_dividends) / weighted_average_common_shares_outstanding
+	PRICE_EARNINGS_RATIO                 float64 // market_price_per_shares_outstanding / earnings_per_share
 }
 
 type filtered_statement struct {
-	Key_account_flow, Key_account, Key_name, Key_vpq, Key_number string
-	Number                                                       float64
+	KEY_ACCOUNT_FLOW, KEY_ACCOUNT, KEY_NAME, KEY_VPQ, KEY_NUMBER string
+	NUMBER                                                       float64
 }
 
 func ending_balance(statement map[string]map[string]map[string]map[string]map[string]float64, key_account_flow, key_account, key_name, key_vpq string) float64 {
@@ -57,53 +57,51 @@ func ending_balance(statement map[string]map[string]map[string]map[string]map[st
 }
 
 func sum_flows(b journal_tag, x float64, map_v, map_q map[string]float64) {
-	if b.Value*x < 0 {
-		map_v["outflow"] += math.Abs(b.Value)
-		map_q["outflow"] += math.Abs(b.Quantity)
+	if b.VALUE*x < 0 {
+		map_v["outflow"] += math.Abs(b.VALUE)
+		map_q["outflow"] += math.Abs(b.QUANTITY)
 	} else {
-		map_v["inflow"] += math.Abs(b.Value)
-		map_q["inflow"] += math.Abs(b.Quantity)
+		map_v["inflow"] += math.Abs(b.VALUE)
+		map_q["inflow"] += math.Abs(b.QUANTITY)
 	}
 }
 
-func (s Financial_accounting) sum_values(date, start_date time.Time, one_simple_entry []journal_tag, nan_flow_statement map[string]map[string]map[string]map[string]float64) {
-	for _, b := range one_simple_entry {
-		map_v1 := initialize_map_3(nan_flow_statement, b.Account, b.Name, "value")
-		map_q1 := initialize_map_3(nan_flow_statement, b.Account, b.Name, "quantity")
-		map_v2 := initialize_map_3(nan_flow_statement, s.Retained_earnings, b.Name, "value")
-		map_q2 := initialize_map_3(nan_flow_statement, s.Retained_earnings, b.Name, "quantity")
-		if date.Before(start_date) {
-			switch {
-			case s.is_father(s.Retained_earnings, b.Account) && s.is_credit(b.Account):
-				map_v2["beginning_balance"] += b.Value
-				map_q2["beginning_balance"] += b.Quantity
-			case s.is_father(s.Retained_earnings, b.Account) && !s.is_credit(b.Account):
-				map_v2["beginning_balance"] -= b.Value
-				map_q2["beginning_balance"] -= b.Quantity
-			default:
-				map_v1["beginning_balance"] += b.Value
-				map_q1["beginning_balance"] += b.Quantity
-			}
+func (s FINANCIAL_ACCOUNTING) sum_values(date, start_date time.Time, entry journal_tag, nan_flow_statement map[string]map[string]map[string]map[string]float64) {
+	map_v1 := initialize_map_3(nan_flow_statement, entry.ACCOUNT, entry.NAME, "value")
+	map_q1 := initialize_map_3(nan_flow_statement, entry.ACCOUNT, entry.NAME, "quantity")
+	map_v2 := initialize_map_3(nan_flow_statement, s.RETAINED_EARNINGS, entry.NAME, "value")
+	map_q2 := initialize_map_3(nan_flow_statement, s.RETAINED_EARNINGS, entry.NAME, "quantity")
+	if date.Before(start_date) {
+		switch {
+		case s.is_father(s.RETAINED_EARNINGS, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT):
+			map_v2["beginning_balance"] += entry.VALUE
+			map_q2["beginning_balance"] += entry.QUANTITY
+		case s.is_father(s.RETAINED_EARNINGS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT):
+			map_v2["beginning_balance"] -= entry.VALUE
+			map_q2["beginning_balance"] -= entry.QUANTITY
+		default:
+			map_v1["beginning_balance"] += entry.VALUE
+			map_q1["beginning_balance"] += entry.QUANTITY
 		}
-		if date.After(start_date) {
-			if b.Value >= 0 {
-				map_v1["increase"] += math.Abs(b.Value)
-				map_q1["increase"] += math.Abs(b.Quantity)
-			} else {
-				map_v1["decrease"] += math.Abs(b.Value)
-				map_q1["decrease"] += math.Abs(b.Quantity)
-			}
+	}
+	if date.After(start_date) {
+		if entry.VALUE >= 0 {
+			map_v1["increase"] += math.Abs(entry.VALUE)
+			map_q1["increase"] += math.Abs(entry.QUANTITY)
+		} else {
+			map_v1["decrease"] += math.Abs(entry.VALUE)
+			map_q1["decrease"] += math.Abs(entry.QUANTITY)
 		}
 	}
 }
 
-func (s Financial_accounting) sum_flow(date, start_date time.Time, one_simple_entry []journal_tag, flow_statement map[string]map[string]map[string]map[string]map[string]float64) {
+func (s FINANCIAL_ACCOUNTING) sum_flow(date, start_date time.Time, one_simple_entry []journal_tag, flow_statement map[string]map[string]map[string]map[string]map[string]float64) {
 	for _, a := range one_simple_entry {
 		for _, b := range one_simple_entry {
-			map_v := initialize_map_4(flow_statement, a.Account, b.Account, b.Name, "value")
-			map_q := initialize_map_4(flow_statement, a.Account, b.Account, b.Name, "quantity")
+			map_v := initialize_map_4(flow_statement, a.ACCOUNT, b.ACCOUNT, b.NAME, "value")
+			map_q := initialize_map_4(flow_statement, a.ACCOUNT, b.ACCOUNT, b.NAME, "quantity")
 			if date.After(start_date) {
-				if b.Account == a.Account || s.is_credit(b.Account) != s.is_credit(a.Account) {
+				if b.ACCOUNT == a.ACCOUNT || s.is_credit(b.ACCOUNT) != s.is_credit(a.ACCOUNT) {
 					sum_flows(b, 1, map_v, map_q)
 				} else {
 					sum_flows(b, -1, map_v, map_q)
@@ -113,31 +111,31 @@ func (s Financial_accounting) sum_flow(date, start_date time.Time, one_simple_en
 	}
 }
 
-func (s Financial_accounting) analysis(statement map[string]map[string]map[string]map[string]map[string]float64) financial_analysis_statement {
-	return financial_analysis{
-		Current_assets:                      statement[s.Cash_and_cash_equivalents][s.Current_assets]["names"]["value"]["ending_balance"],
-		Current_liabilities:                 statement[s.Cash_and_cash_equivalents][s.Current_liabilities]["names"]["value"]["ending_balance"],
-		Cash:                                statement[s.Cash_and_cash_equivalents][s.Cash_and_cash_equivalents]["names"]["value"]["ending_balance"],
-		Short_term_investments:              statement[s.Cash_and_cash_equivalents][s.Short_term_investments]["names"]["value"]["ending_balance"],
-		Net_receivables:                     statement[s.Cash_and_cash_equivalents][s.Receivables]["names"]["value"]["ending_balance"],
-		Net_credit_sales:                    statement[s.Sales][s.Receivables]["names"]["value"]["flow"],
-		Average_net_receivables:             statement[s.Cash_and_cash_equivalents][s.Receivables]["names"]["value"]["average"],
-		Cost_of_goods_sold:                  statement[s.Cash_and_cash_equivalents][s.Cost_of_goods_sold]["names"]["value"]["ending_balance"],
-		Average_inventory:                   statement[s.Cash_and_cash_equivalents][s.Inventory]["names"]["value"]["average"],
-		Net_income:                          statement[s.Cash_and_cash_equivalents][s.Income_statement]["names"]["value"]["ending_balance"],
-		Net_sales:                           statement[s.Cash_and_cash_equivalents][s.Sales]["names"]["value"]["ending_balance"],
-		Average_assets:                      statement[s.Cash_and_cash_equivalents][s.Assets]["names"]["value"]["average"],
-		Average_equity:                      statement[s.Cash_and_cash_equivalents][s.Equity]["names"]["value"]["average"],
-		Preferred_dividends:                 0,
-		Average_common_stockholders_equity:  0,
-		Market_price_per_shares_outstanding: 0,
-		Cash_dividends:                      statement[s.Cash_and_cash_equivalents][s.Dividends]["names"]["value"]["flow"],
-		Total_debt:                          statement[s.Cash_and_cash_equivalents][s.Liabilities]["names"]["value"]["ending_balance"],
-		Total_assets:                        statement[s.Cash_and_cash_equivalents][s.Assets]["names"]["value"]["ending_balance"],
-		Ebitda:                              statement[s.Cash_and_cash_equivalents][s.Ebitda]["names"]["value"]["ending_balance"],
-		Interest_expense:                    statement[s.Cash_and_cash_equivalents][s.Interest_expense]["names"]["value"]["ending_balance"],
-		Weighted_average_common_shares_outstanding: 0,
-	}.Financial_analysis_statement()
+func (s FINANCIAL_ACCOUNTING) analysis(statement map[string]map[string]map[string]map[string]map[string]float64) financial_analysis_statement {
+	return FINANCIAL_ANALYSIS{
+		CURRENT_ASSETS:                      statement[s.CASH_AND_CASH_EQUIVALENTS][s.CURRENT_ASSETS]["names"]["value"]["ending_balance"],
+		CURRENT_LIABILITIES:                 statement[s.CASH_AND_CASH_EQUIVALENTS][s.CURRENT_LIABILITIES]["names"]["value"]["ending_balance"],
+		CASH:                                statement[s.CASH_AND_CASH_EQUIVALENTS][s.CASH_AND_CASH_EQUIVALENTS]["names"]["value"]["ending_balance"],
+		SHORT_TERM_INVESTMENTS:              statement[s.CASH_AND_CASH_EQUIVALENTS][s.SHORT_TERM_INVESTMENTS]["names"]["value"]["ending_balance"],
+		NET_RECEIVABLES:                     statement[s.CASH_AND_CASH_EQUIVALENTS][s.RECEIVABLES]["names"]["value"]["ending_balance"],
+		NET_CREDIT_SALES:                    statement[s.SALES][s.RECEIVABLES]["names"]["value"]["flow"],
+		AVERAGE_NET_RECEIVABLES:             statement[s.CASH_AND_CASH_EQUIVALENTS][s.RECEIVABLES]["names"]["value"]["average"],
+		COST_OF_GOODS_SOLD:                  statement[s.CASH_AND_CASH_EQUIVALENTS][s.COST_OF_GOODS_SOLD]["names"]["value"]["ending_balance"],
+		AVERAGE_INVENTORY:                   statement[s.CASH_AND_CASH_EQUIVALENTS][s.INVENTORY]["names"]["value"]["average"],
+		NET_INCOME:                          statement[s.CASH_AND_CASH_EQUIVALENTS][s.INCOME_STATEMENT]["names"]["value"]["ending_balance"],
+		NET_SALES:                           statement[s.CASH_AND_CASH_EQUIVALENTS][s.SALES]["names"]["value"]["ending_balance"],
+		AVERAGE_ASSETS:                      statement[s.CASH_AND_CASH_EQUIVALENTS][s.ASSETS]["names"]["value"]["average"],
+		AVERAGE_EQUITY:                      statement[s.CASH_AND_CASH_EQUIVALENTS][s.EQUITY]["names"]["value"]["average"],
+		PREFERRED_DIVIDENDS:                 0,
+		AVERAGE_COMMON_STOCKHOLDERS_EQUITY:  0,
+		MARKET_PRICE_PER_SHARES_OUTSTANDING: 0,
+		CASH_DIVIDENDS:                      statement[s.CASH_AND_CASH_EQUIVALENTS][s.DIVIDENDS]["names"]["value"]["flow"],
+		TOTAL_DEBT:                          statement[s.CASH_AND_CASH_EQUIVALENTS][s.LIABILITIES]["names"]["value"]["ending_balance"],
+		TOTAL_ASSETS:                        statement[s.CASH_AND_CASH_EQUIVALENTS][s.ASSETS]["names"]["value"]["ending_balance"],
+		EBITDA:                              statement[s.CASH_AND_CASH_EQUIVALENTS][s.EBITDA]["names"]["value"]["ending_balance"],
+		INTEREST_EXPENSE:                    statement[s.CASH_AND_CASH_EQUIVALENTS][s.INTEREST_EXPENSE]["names"]["value"]["ending_balance"],
+		WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING: 0,
+	}.FINANCIAL_ANALYSIS_STATEMENT()
 }
 
 func calculate_price(statement map[string]map[string]map[string]map[string]map[string]float64) {
@@ -157,27 +155,27 @@ func calculate_price(statement map[string]map[string]map[string]map[string]map[s
 	}
 }
 
-func (s Financial_accounting) prepare_statement(statement map[string]map[string]map[string]map[string]map[string]float64) {
+func (s FINANCIAL_ACCOUNTING) prepare_statement(statement map[string]map[string]map[string]map[string]map[string]float64) {
 	for key_account_flow, map_account_flow := range statement {
-		if key_account_flow == s.Cash_and_cash_equivalents {
+		if key_account_flow == s.CASH_AND_CASH_EQUIVALENTS {
 			for key_account, map_account := range map_account_flow {
 				for key_name, map_name := range map_account {
 					for key_vpq, map_vpq := range map_name {
 						map_vpq1 := initialize_map_4(statement, "financial_statement", key_account, key_name, key_vpq)
 						for key_number, number := range map_vpq {
 							map_vpq1[key_number] = number
-							if !s.is_father(s.Income_statement, key_account) {
-								map_vpq1["percent"] = statement[s.Income_statement][key_account][key_name][key_vpq]["percent"]
+							if !s.is_father(s.INCOME_STATEMENT, key_account) {
+								map_vpq1["percent"] = statement[s.INCOME_STATEMENT][key_account][key_name][key_vpq]["percent"]
 							} else {
-								map_vpq1["percent"] = statement[s.Assets][key_account][key_name][key_vpq]["percent"]
+								map_vpq1["percent"] = statement[s.ASSETS][key_account][key_name][key_vpq]["percent"]
 							}
 							switch {
-							case s.is_father(s.Inventory, key_account):
-								map_vpq1["turnover"] = statement[s.Cost_of_goods_sold][key_account][key_name][key_vpq]["turnover"]
-								map_vpq1["turnover_days"] = statement[s.Cost_of_goods_sold][key_account][key_name][key_vpq]["turnover_days"]
-							case s.is_father(s.Assets, key_account):
-								map_vpq1["turnover"] = statement[s.Sales][key_account][key_name][key_vpq]["turnover"]
-								map_vpq1["turnover_days"] = statement[s.Sales][key_account][key_name][key_vpq]["turnover_days"]
+							case s.is_father(s.INVENTORY, key_account):
+								map_vpq1["turnover"] = statement[s.COST_OF_GOODS_SOLD][key_account][key_name][key_vpq]["turnover"]
+								map_vpq1["turnover_days"] = statement[s.COST_OF_GOODS_SOLD][key_account][key_name][key_vpq]["turnover_days"]
+							case s.is_father(s.ASSETS, key_account):
+								map_vpq1["turnover"] = statement[s.SALES][key_account][key_name][key_vpq]["turnover"]
+								map_vpq1["turnover_days"] = statement[s.SALES][key_account][key_name][key_vpq]["turnover_days"]
 							}
 						}
 					}
@@ -248,30 +246,30 @@ func sum_3rd_column(statement map[string]map[string]map[string]map[string]map[st
 	}
 }
 
-func (s Financial_accounting) sum_2nd_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
+func (s FINANCIAL_ACCOUNTING) sum_2nd_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
 	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
 	for key_account_flow, map_account_flow := range statement {
 		for key_account, map_account := range map_account_flow {
 			var last_name string
 			key1 := key_account
 			for {
-				for _, ss := range s.Accounts {
-					if ss.Name == key_account {
-						key_account = ss.Father
+				for _, ss := range s.ACCOUNTS {
+					if ss.NAME == key_account {
+						key_account = ss.FATHER
 						for key_name, map_name := range map_account {
 							for key_vpq, map_vpq := range map_name {
-								map_vpq1 := initialize_map_4(new_statement, key_account_flow, ss.Name, key_name, key_vpq)
+								map_vpq1 := initialize_map_4(new_statement, key_account_flow, ss.NAME, key_name, key_vpq)
 								for key_number, number := range map_vpq {
 									switch {
 									case !IS_IN(key_number, []string{"inflow", "outflow"}):
-										if s.is_credit(key1) == s.is_credit(ss.Name) {
+										if s.is_credit(key1) == s.is_credit(ss.NAME) {
 											map_vpq1[key_number] += number
 										} else {
 											map_vpq1[key_number] -= number
 										}
 									case key_account_flow != key1:
 										map_vpq1[key_number] += number
-									case key_account_flow == ss.Name:
+									case key_account_flow == ss.NAME:
 										new_statement[key_account_flow][key1][key_name][key_vpq][key_number] += number
 									}
 								}
@@ -289,13 +287,13 @@ func (s Financial_accounting) sum_2nd_column(statement map[string]map[string]map
 	return new_statement
 }
 
-func (s Financial_accounting) sum_1st_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
+func (s FINANCIAL_ACCOUNTING) sum_1st_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
 	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
 	var flow_accounts []string
-	for _, a := range s.Accounts {
-		for _, b := range s.Accounts {
-			if s.is_father(a.Name, b.Name) {
-				flow_accounts = append(flow_accounts, b.Name)
+	for _, a := range s.ACCOUNTS {
+		for _, b := range s.ACCOUNTS {
+			if s.is_father(a.NAME, b.NAME) {
+				flow_accounts = append(flow_accounts, b.NAME)
 			}
 		}
 		for key_account_flow, map_account_flow := range statement {
@@ -303,11 +301,11 @@ func (s Financial_accounting) sum_1st_column(statement map[string]map[string]map
 				for key_account, map_account := range map_account_flow {
 					for key_name, map_name := range map_account {
 						for key_vpq, map_vpq := range map_name {
-							map_vpq1 := initialize_map_4(new_statement, a.Name, key_account, key_name, key_vpq)
+							map_vpq1 := initialize_map_4(new_statement, a.NAME, key_account, key_name, key_vpq)
 							for key_number, number := range map_vpq {
 								switch {
 								case IS_IN(key_number, []string{"inflow", "outflow"}):
-									if s.is_credit(a.Name) == s.is_credit(key_account_flow) {
+									if s.is_credit(a.NAME) == s.is_credit(key_account_flow) {
 										map_vpq1[key_number] += number
 									} else {
 										map_vpq1[key_number] -= number
@@ -342,71 +340,65 @@ func combine_statements(flow_statement map[string]map[string]map[string]map[stri
 	return flow_statement
 }
 
-func (s Financial_accounting) statement(journal []journal_tag, start_date, end_date time.Time) (map[string]map[string]map[string]map[string]map[string]float64, map[string]map[string]map[string]map[string]float64) {
+func (s FINANCIAL_ACCOUNTING) statement(journal []journal_tag, start_date, end_date time.Time) (map[string]map[string]map[string]map[string]map[string]float64, map[string]map[string]map[string]map[string]float64) {
 	var one_simple_entry []journal_tag
 	var previous_entry_number int
 	var date time.Time
 	flow_statement := map[string]map[string]map[string]map[string]map[string]float64{}
 	nan_flow_statement := map[string]map[string]map[string]map[string]float64{}
 	for _, entry := range journal {
-		date = Parse_date(entry.Date, s.Date_layout)
-		if previous_entry_number != entry.Entry_number {
+		date = PARSE_DATE(entry.DATE, s.DATE_LAYOUT)
+		if previous_entry_number != entry.ENTRY_NUMBER {
 			s.sum_flow(date, start_date, one_simple_entry, flow_statement)
-			s.sum_values(date, start_date, one_simple_entry, nan_flow_statement)
 			one_simple_entry = []journal_tag{}
 		}
 		if date.Before(end_date) {
+			s.sum_values(date, start_date, entry, nan_flow_statement)
 			one_simple_entry = append(one_simple_entry, entry)
 		}
-		previous_entry_number = entry.Entry_number
+		previous_entry_number = entry.ENTRY_NUMBER
 	}
 	s.sum_flow(date, start_date, one_simple_entry, flow_statement)
-	s.sum_values(date, start_date, one_simple_entry, nan_flow_statement)
 	return flow_statement, nan_flow_statement
 }
 
-func (s financial_analysis) Financial_analysis_statement() financial_analysis_statement {
-	Current_ratio := s.Current_assets / s.Current_liabilities
-	Acid_test := (s.Cash + s.Short_term_investments + s.Net_receivables) / s.Current_liabilities
-	Receivables_turnover := s.Net_credit_sales / s.Average_net_receivables
-	Inventory_turnover := s.Cost_of_goods_sold / s.Average_inventory
-	Profit_margin := s.Net_income / s.Net_sales
-	Asset_turnover := s.Net_sales / s.Average_assets
-	Return_on_assets := s.Net_income / s.Average_assets
-	Return_on_equity := s.Net_income / s.Average_equity
-	Payout_ratio := s.Cash_dividends / s.Net_income
-	Debt_to_total_assets_ratio := s.Total_debt / s.Total_assets
-	Times_interest_earned := s.Ebitda / s.Interest_expense
-	Return_on_common_stockholders_equity := (s.Net_income - s.Preferred_dividends) / s.Average_common_stockholders_equity
-	Earnings_per_share := (s.Net_income - s.Preferred_dividends) / s.Weighted_average_common_shares_outstanding
-	Price_earnings_ratio := s.Market_price_per_shares_outstanding / Earnings_per_share
+func (s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT() financial_analysis_statement {
+	CURRENT_RATIO := s.CURRENT_ASSETS / s.CURRENT_LIABILITIES
+	ACID_TEST := (s.CASH + s.SHORT_TERM_INVESTMENTS + s.NET_RECEIVABLES) / s.CURRENT_LIABILITIES
+	RECEIVABLES_TURNOVER := s.NET_CREDIT_SALES / s.AVERAGE_NET_RECEIVABLES
+	INVENTORY_TURNOVER := s.COST_OF_GOODS_SOLD / s.AVERAGE_INVENTORY
+	PROFIT_MARGIN := s.NET_INCOME / s.NET_SALES
+	ASSET_TURNOVER := s.NET_SALES / s.AVERAGE_ASSETS
+	RETURN_ON_ASSETS := s.NET_INCOME / s.AVERAGE_ASSETS
+	RETURN_ON_EQUITY := s.NET_INCOME / s.AVERAGE_EQUITY
+	PAYOUT_RATIO := s.CASH_DIVIDENDS / s.NET_INCOME
+	DEBT_TO_TOTAL_ASSETS_RATIO := s.TOTAL_DEBT / s.TOTAL_ASSETS
+	TIMES_INTEREST_EARNED := s.EBITDA / s.INTEREST_EXPENSE
+	RETURN_ON_COMMON_STOCKHOLDERS_EQUITY := (s.NET_INCOME - s.PREFERRED_DIVIDENDS) / s.AVERAGE_COMMON_STOCKHOLDERS_EQUITY
+	EARNINGS_PER_SHARE := (s.NET_INCOME - s.PREFERRED_DIVIDENDS) / s.WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING
+	PRICE_EARNINGS_RATIO := s.MARKET_PRICE_PER_SHARES_OUTSTANDING / EARNINGS_PER_SHARE
 	return financial_analysis_statement{
-		Current_ratio:                        Current_ratio,
-		Acid_test:                            Acid_test,
-		Receivables_turnover:                 Receivables_turnover,
-		Inventory_turnover:                   Inventory_turnover,
-		Asset_turnover:                       Asset_turnover,
-		Profit_margin:                        Profit_margin,
-		Return_on_assets:                     Return_on_assets,
-		Return_on_equity:                     Return_on_equity,
-		Payout_ratio:                         Payout_ratio,
-		Debt_to_total_assets_ratio:           Debt_to_total_assets_ratio,
-		Times_interest_earned:                Times_interest_earned,
-		Return_on_common_stockholders_equity: Return_on_common_stockholders_equity,
-		Earnings_per_share:                   Earnings_per_share,
-		Price_earnings_ratio:                 Price_earnings_ratio}
+		CURRENT_RATIO:                        CURRENT_RATIO,
+		ACID_TEST:                            ACID_TEST,
+		RECEIVABLES_TURNOVER:                 RECEIVABLES_TURNOVER,
+		INVENTORY_TURNOVER:                   INVENTORY_TURNOVER,
+		ASSET_TURNOVER:                       ASSET_TURNOVER,
+		PROFIT_MARGIN:                        PROFIT_MARGIN,
+		RETURN_ON_ASSETS:                     RETURN_ON_ASSETS,
+		RETURN_ON_EQUITY:                     RETURN_ON_EQUITY,
+		PAYOUT_RATIO:                         PAYOUT_RATIO,
+		DEBT_TO_TOTAL_ASSETS_RATIO:           DEBT_TO_TOTAL_ASSETS_RATIO,
+		TIMES_INTEREST_EARNED:                TIMES_INTEREST_EARNED,
+		RETURN_ON_COMMON_STOCKHOLDERS_EQUITY: RETURN_ON_COMMON_STOCKHOLDERS_EQUITY,
+		EARNINGS_PER_SHARE:                   EARNINGS_PER_SHARE,
+		PRICE_EARNINGS_RATIO:                 PRICE_EARNINGS_RATIO}
 }
 
-func (s Financial_accounting) Financial_statements(start_date, end_date time.Time, periods int, names []string, in_names bool) ([]map[string]map[string]map[string]map[string]map[string]float64, []financial_analysis_statement, []journal_tag) {
+func (s FINANCIAL_ACCOUNTING) FINANCIAL_STATEMENTS(start_date, end_date time.Time, periods int, names []string, in_names bool) ([]map[string]map[string]map[string]map[string]map[string]float64, []financial_analysis_statement, []journal_tag) {
 	check_dates(start_date, end_date)
 	days := int(end_date.Sub(start_date).Hours() / 24)
-	var journal []journal_tag
 	rows, _ := db.Query("select * from journal order by date,entry_number")
-	for rows.Next() {
-		var entry journal_tag
-		rows.Scan(&entry.Date, &entry.Entry_number, &entry.Account, &entry.Value, &entry.Price, &entry.Quantity, &entry.Barcode, &entry.Entry_expair, &entry.Description, &entry.Name, &entry.Employee_name, &entry.Entry_date, &entry.Reverse)
-		journal = append(journal, entry)
-	}
+	journal := select_from_journal(rows)
 	statements := []map[string]map[string]map[string]map[string]map[string]float64{}
 	for a := 0; a < periods; a++ {
 		flow_statement, nan_flow_statement := s.statement(journal, start_date.AddDate(0, 0, -days*a), end_date.AddDate(0, 0, -days*a))
@@ -429,7 +421,7 @@ func (s Financial_accounting) Financial_statements(start_date, end_date time.Tim
 	return statements, all_analysis, journal
 }
 
-func (s Financial_accounting) Statement_filter(all_financial_statements []map[string]map[string]map[string]map[string]map[string]float64, account_flow_slice, account_slice, name_slice, vpq_slice, number_slice []string,
+func (s FINANCIAL_ACCOUNTING) STATEMENT_FILTER(all_financial_statements []map[string]map[string]map[string]map[string]map[string]float64, account_flow_slice, account_slice, name_slice, vpq_slice, number_slice []string,
 	in_account_flow_slice, in_account_slice, in_name_slice, in_vpq_slice, in_number_slice bool) [][]filtered_statement {
 	var all_statements_struct [][]filtered_statement
 	for _, statement := range all_financial_statements {
@@ -456,9 +448,9 @@ func (s Financial_accounting) Statement_filter(all_financial_statements []map[st
 			}
 		}
 		var indexa int
-		for _, a := range s.Accounts {
+		for _, a := range s.ACCOUNTS {
 			for indexb, b := range statement_struct {
-				if a.Name == b.Key_account {
+				if a.NAME == b.KEY_ACCOUNT {
 					statement_struct[indexa], statement_struct[indexb] = statement_struct[indexb], statement_struct[indexa]
 					indexa++
 					break

@@ -1,6 +1,7 @@
 package anti_accountants
 
 import (
+	"database/sql"
 	"log"
 	"reflect"
 	"time"
@@ -38,7 +39,7 @@ func unpack_the_array(adjusted_array_to_insert [][]journal_tag) []journal_tag {
 	return array_to_insert
 }
 
-func Parse_date(string_date string, date_layouts []string) time.Time {
+func PARSE_DATE(string_date string, date_layouts []string) time.Time {
 	for _, i := range date_layouts {
 		date, err := time.Parse(i, string_date)
 		if err == nil {
@@ -48,7 +49,7 @@ func Parse_date(string_date string, date_layouts []string) time.Time {
 	return time.Time{}
 }
 
-func Check_if_duplicates(slice_of_elements []string) {
+func CHECK_IF_DUPLICATES(slice_of_elements []string) []string {
 	var set_of_elems, duplicated_element []string
 	for _, element := range slice_of_elements {
 		for _, b := range set_of_elems {
@@ -59,12 +60,10 @@ func Check_if_duplicates(slice_of_elements []string) {
 		}
 		set_of_elems = append(set_of_elems, element)
 	}
-	if len(duplicated_element) != 0 {
-		log.Panic(duplicated_element, " is duplicated values in the fields of Financial_accounting and that make error. you should remove the duplicate")
-	}
+	return duplicated_element
 }
 
-func Concat(args ...interface{}) interface{} {
+func CONCAT(args ...interface{}) interface{} {
 	n := 0
 	for _, arg := range args {
 		n += reflect.ValueOf(arg).Len()
@@ -112,7 +111,17 @@ func error_fatal(err error) {
 }
 
 func check_dates(start_date, end_date time.Time) {
-	if start_date.After(end_date) {
+	if !start_date.Before(end_date) {
 		log.Panic("please enter the start_date<=end_date")
 	}
+}
+
+func select_from_journal(rows *sql.Rows) []journal_tag {
+	var journal []journal_tag
+	for rows.Next() {
+		var tag journal_tag
+		rows.Scan(&tag.DATE, &tag.ENTRY_NUMBER, &tag.ACCOUNT, &tag.VALUE, &tag.PRICE, &tag.QUANTITY, &tag.BARCODE, &tag.ENTRY_EXPAIR, &tag.DESCRIPTION, &tag.NAME, &tag.EMPLOYEE_NAME, &tag.ENTRY_DATE, &tag.REVERSE)
+		journal = append(journal, tag)
+	}
+	return journal
 }

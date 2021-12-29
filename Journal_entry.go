@@ -10,24 +10,24 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type Account_value_quantity_barcode struct {
-	Account  string
-	Value    float64
-	Quantity float64
-	Barcode  string
+type ACCOUNT_VALUE_QUANTITY_BARCODE struct {
+	ACCOUNT  string
+	VALUE    float64
+	QUANTITY float64
+	BARCODE  string
 }
 
-type Day_start_end struct {
-	Day          string
-	Start_hour   int
-	Start_minute int
-	End_hour     int
-	End_minute   int
+type DAY_START_END struct {
+	DAY          string
+	START_HOUR   int
+	START_MINUTE int
+	END_HOUR     int
+	END_MINUTE   int
 }
 
-type Account_method_value_price struct {
-	Account, Method         string
-	Value_or_percent, Price float64
+type ACCOUNT_METHOD_VALUE_PRICE struct {
+	ACCOUNT, METHOD         string
+	VALUE_OR_PERCENT, PRICE float64
 }
 
 type day_start_end_date_minutes struct {
@@ -41,10 +41,10 @@ var (
 	standard_days        = [7]string{"Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"}
 	adjusting_methods    = [4]string{"linear", "exponential", "logarithmic", "expire"}
 	depreciation_methods = [3]string{"linear", "exponential", "logarithmic"}
-	Now                  = time.Now()
+	NOW                  = time.Now()
 )
 
-func check_the_params(entry_expair time.Time, adjusting_method string, date time.Time, array_of_entry []Account_value_quantity_barcode, array_day_start_end []Day_start_end) []Day_start_end {
+func check_the_params(entry_expair time.Time, adjusting_method string, date time.Time, array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, array_day_start_end []DAY_START_END) []DAY_START_END {
 	if entry_expair.IsZero() == IS_IN(adjusting_method, adjusting_methods[:]) {
 		log.Panic("check entry_expair => ", entry_expair, " and adjusting_method => ", adjusting_method, " should be in ", adjusting_methods)
 	}
@@ -52,13 +52,13 @@ func check_the_params(entry_expair time.Time, adjusting_method string, date time
 		check_dates(date, entry_expair)
 	}
 	for _, entry := range array_of_entry {
-		if IS_IN(entry.Account, inventory) && !IS_IN(adjusting_method, []string{"expire", ""}) {
-			log.Panic(entry.Account + " is in inventory you just can use expire or make it empty")
+		if IS_IN(entry.ACCOUNT, inventory) && !IS_IN(adjusting_method, []string{"expire", ""}) {
+			log.Panic(entry.ACCOUNT + " is in inventory you just can use expire or make it empty")
 		}
 	}
 	if IS_IN(adjusting_method, depreciation_methods[:]) {
 		if len(array_day_start_end) == 0 {
-			array_day_start_end = []Day_start_end{
+			array_day_start_end = []DAY_START_END{
 				{"saturday", 0, 0, 23, 59},
 				{"sunday", 0, 0, 23, 59},
 				{"monday", 0, 0, 23, 59},
@@ -68,58 +68,58 @@ func check_the_params(entry_expair time.Time, adjusting_method string, date time
 				{"friday", 0, 0, 23, 59}}
 		}
 		for index, element := range array_day_start_end {
-			array_day_start_end[index].Day = strings.Title(element.Day)
+			array_day_start_end[index].DAY = strings.Title(element.DAY)
 			switch {
-			case !IS_IN(array_day_start_end[index].Day, standard_days[:]):
-				log.Panic("error ", element.Day, " for ", element, " is not in ", standard_days)
-			case element.Start_hour < 0:
-				log.Panic("error ", element.Start_hour, " for ", element, " is < 0")
-			case element.Start_hour > 23:
-				log.Panic("error ", element.Start_hour, " for ", element, " is > 23")
-			case element.Start_minute < 0:
-				log.Panic("error ", element.Start_minute, " for ", element, " is < 0")
-			case element.Start_minute > 59:
-				log.Panic("error ", element.Start_minute, " for ", element, " is > 59")
-			case element.End_hour < 0:
-				log.Panic("error ", element.End_hour, " for ", element, " is < 0")
-			case element.End_hour > 23:
-				log.Panic("error ", element.End_hour, " for ", element, " is > 23")
-			case element.End_minute < 0:
-				log.Panic("error ", element.End_minute, " for ", element, " is < 0")
-			case element.End_minute > 59:
-				log.Panic("error ", element.End_minute, " for ", element, " is > 59")
+			case !IS_IN(array_day_start_end[index].DAY, standard_days[:]):
+				log.Panic("error ", element.DAY, " for ", element, " is not in ", standard_days)
+			case element.START_HOUR < 0:
+				log.Panic("error ", element.START_HOUR, " for ", element, " is < 0")
+			case element.START_HOUR > 23:
+				log.Panic("error ", element.START_HOUR, " for ", element, " is > 23")
+			case element.START_MINUTE < 0:
+				log.Panic("error ", element.START_MINUTE, " for ", element, " is < 0")
+			case element.START_MINUTE > 59:
+				log.Panic("error ", element.START_MINUTE, " for ", element, " is > 59")
+			case element.END_HOUR < 0:
+				log.Panic("error ", element.END_HOUR, " for ", element, " is < 0")
+			case element.END_HOUR > 23:
+				log.Panic("error ", element.END_HOUR, " for ", element, " is > 23")
+			case element.END_MINUTE < 0:
+				log.Panic("error ", element.END_MINUTE, " for ", element, " is < 0")
+			case element.END_MINUTE > 59:
+				log.Panic("error ", element.END_MINUTE, " for ", element, " is > 59")
 			}
 		}
 	}
 	return array_day_start_end
 }
 
-func group_by_account_and_barcode(array_of_entry []Account_value_quantity_barcode) []Account_value_quantity_barcode {
+func group_by_account_and_barcode(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) []ACCOUNT_VALUE_QUANTITY_BARCODE {
 	type Account_barcode struct {
-		Account, barcode string
+		ACCOUNT, barcode string
 	}
-	g := map[Account_barcode]*Account_value_quantity_barcode{}
+	g := map[Account_barcode]*ACCOUNT_VALUE_QUANTITY_BARCODE{}
 	for _, v := range array_of_entry {
-		key := Account_barcode{v.Account, v.Barcode}
+		key := Account_barcode{v.ACCOUNT, v.BARCODE}
 		sums := g[key]
 		if sums == nil {
-			sums = &Account_value_quantity_barcode{}
+			sums = &ACCOUNT_VALUE_QUANTITY_BARCODE{}
 			g[key] = sums
 		}
-		sums.Value += v.Value
-		sums.Quantity += v.Quantity
+		sums.VALUE += v.VALUE
+		sums.QUANTITY += v.QUANTITY
 	}
-	array_of_entry = []Account_value_quantity_barcode{}
+	array_of_entry = []ACCOUNT_VALUE_QUANTITY_BARCODE{}
 	for key, v := range g {
-		array_of_entry = append(array_of_entry, Account_value_quantity_barcode{key.Account, v.Value, v.Quantity, key.barcode})
+		array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{key.ACCOUNT, v.VALUE, v.QUANTITY, key.barcode})
 	}
 	return array_of_entry
 }
 
-func remove_zero_values(array_of_entry []Account_value_quantity_barcode) []Account_value_quantity_barcode {
+func remove_zero_values(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) []ACCOUNT_VALUE_QUANTITY_BARCODE {
 	var index int
 	for index < len(array_of_entry) {
-		if array_of_entry[index].Value == 0 || array_of_entry[index].Quantity == 0 {
+		if array_of_entry[index].VALUE == 0 || array_of_entry[index].QUANTITY == 0 {
 			// fmt.Println(array_of_entry[index], " is removed because one of the values is 0")
 			array_of_entry = append(array_of_entry[:index], array_of_entry[index+1:]...)
 		} else {
@@ -129,46 +129,44 @@ func remove_zero_values(array_of_entry []Account_value_quantity_barcode) []Accou
 	return array_of_entry
 }
 
-func find_barcode(array_of_entry []Account_value_quantity_barcode) {
+func find_account_from_barcode(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) {
 	for index, entry := range array_of_entry {
-		if entry.Account == "" && entry.Barcode == "" {
+		if entry.ACCOUNT == "" && entry.BARCODE == "" {
 			log.Panic("can't find the account name if the barcode is empty in ", entry)
 		}
-		var tag string
-		if entry.Account == "" {
-			err := db.QueryRow("select account from journal where barcode=? limit 1", entry.Barcode).Scan(&tag)
+		if entry.ACCOUNT == "" {
+			err := db.QueryRow("select account from journal where barcode=? limit 1", entry.BARCODE).Scan(&array_of_entry[index].ACCOUNT)
 			if err != nil {
 				log.Panic("the barcode is wrong for ", entry)
 			}
-			array_of_entry[index].Account = tag
 		}
 	}
 }
 
-func (s Financial_accounting) auto_completion_the_entry(array_of_entry []Account_value_quantity_barcode, auto_completion bool) []Account_value_quantity_barcode {
+func (s FINANCIAL_ACCOUNTING) auto_completion_the_entry(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, auto_completion bool) []ACCOUNT_VALUE_QUANTITY_BARCODE {
 	for index, entry := range array_of_entry {
-		costs := s.cost_flow(entry.Account, entry.Quantity, entry.Barcode, false)
+		costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, false)
 		if costs != 0 {
-			array_of_entry[index] = Account_value_quantity_barcode{entry.Account, -costs, entry.Quantity, entry.Barcode}
+			array_of_entry[index] = ACCOUNT_VALUE_QUANTITY_BARCODE{entry.ACCOUNT, -costs, entry.QUANTITY, entry.BARCODE}
 		}
 		if auto_completion {
-			for _, complement := range s.Auto_complete_entries {
-				if complement[0].Account == entry.Account && (entry.Quantity >= 0) == (complement[0].Value_or_percent >= 0) {
+			for _, complement := range s.AUTO_COMPLETE_ENTRIES {
+				if complement[0].ACCOUNT == entry.ACCOUNT && (entry.QUANTITY >= 0) == (complement[0].VALUE_OR_PERCENT >= 0) {
 					if costs == 0 {
-						array_of_entry[index] = Account_value_quantity_barcode{complement[0].Account, complement[0].Price * entry.Quantity, entry.Quantity, ""}
+						array_of_entry[index] = ACCOUNT_VALUE_QUANTITY_BARCODE{complement[0].ACCOUNT, complement[0].PRICE * entry.QUANTITY, entry.QUANTITY, ""}
 					}
 					for _, i := range complement[1:] {
-						switch i.Method {
+						switch i.METHOD {
 						case "copy_abs":
-							array_of_entry = append(array_of_entry, Account_value_quantity_barcode{i.Account, math.Abs(array_of_entry[index].Value), math.Abs(array_of_entry[index].Quantity), ""})
+							array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{i.ACCOUNT, math.Abs(array_of_entry[index].VALUE), math.Abs(array_of_entry[index].QUANTITY), ""})
 						case "copy":
-							array_of_entry = append(array_of_entry, Account_value_quantity_barcode{i.Account, array_of_entry[index].Value, array_of_entry[index].Quantity, ""})
+							array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{i.ACCOUNT, array_of_entry[index].VALUE, array_of_entry[index].QUANTITY, ""})
 						case "quantity_ratio":
-							array_of_entry = append(array_of_entry, Account_value_quantity_barcode{i.Account, math.Abs(array_of_entry[index].Quantity) * i.Price * i.Value_or_percent, math.Abs(array_of_entry[index].Quantity) * i.Value_or_percent, ""})
+							array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{i.ACCOUNT, math.Abs(array_of_entry[index].QUANTITY) * i.PRICE * i.VALUE_OR_PERCENT, math.Abs(array_of_entry[index].QUANTITY) * i.VALUE_OR_PERCENT, ""})
 						case "value":
-							array_of_entry = append(array_of_entry, Account_value_quantity_barcode{i.Account, i.Value_or_percent, i.Value_or_percent / i.Price, ""})
+							array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{i.ACCOUNT, i.VALUE_OR_PERCENT, i.VALUE_OR_PERCENT / i.PRICE, ""})
 						default:
-							log.Panic(i.Method, "in the method field for ", i, " dose not exist you just can use copy_abs or copy or quantity_ratio or value")
+							log.Panic(i.METHOD, "in the method field for ", i, " dose not exist you just can use copy_abs or copy or quantity_ratio or value")
 						}
 					}
 				}
@@ -178,23 +176,23 @@ func (s Financial_accounting) auto_completion_the_entry(array_of_entry []Account
 	return array_of_entry
 }
 
-func (s Financial_accounting) auto_completion_the_invoice_discount(auto_completion bool, array_of_entry []Account_value_quantity_barcode) []Account_value_quantity_barcode {
+func (s FINANCIAL_ACCOUNTING) auto_completion_the_invoice_discount(auto_completion bool, array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) []ACCOUNT_VALUE_QUANTITY_BARCODE {
 	if auto_completion {
 		var total_invoice_before_invoice_discount, discount float64
 		for _, entry := range array_of_entry {
-			if s.is_father(s.Income_statement, entry.Account) && s.is_credit(entry.Account) {
-				total_invoice_before_invoice_discount += entry.Value
-			} else if s.is_father(s.Discounts, entry.Account) && !s.is_credit(entry.Account) {
-				total_invoice_before_invoice_discount -= entry.Value
+			if s.is_father(s.INCOME_STATEMENT, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT) {
+				total_invoice_before_invoice_discount += entry.VALUE
+			} else if s.is_father(s.DISCOUNTS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT) {
+				total_invoice_before_invoice_discount -= entry.VALUE
 			}
 		}
-		for _, i := range s.Invoice_discounts_list {
+		for _, i := range s.INVOICE_DISCOUNTS_LIST {
 			if total_invoice_before_invoice_discount >= i[0] {
 				discount = i[1]
 			}
 		}
 		invoice_discount := discount_tax_calculator(total_invoice_before_invoice_discount, discount)
-		array_of_entry = append(array_of_entry, Account_value_quantity_barcode{s.Invoice_discount, invoice_discount, 1, ""})
+		array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{s.INVOICE_DISCOUNT, invoice_discount, 1, ""})
 	}
 	return array_of_entry
 }
@@ -208,69 +206,69 @@ func discount_tax_calculator(price, discount_tax float64) float64 {
 	return discount_tax
 }
 
-func (s Financial_accounting) can_the_account_be_negative(array_of_entry []Account_value_quantity_barcode) {
+func (s FINANCIAL_ACCOUNTING) can_the_account_be_negative(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) {
 	for _, entry := range array_of_entry {
-		if !(s.is_father(s.Equity, entry.Account) && s.is_credit(entry.Account)) {
+		if !(s.is_father(s.EQUITY, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT)) {
 			var account_balance float64
-			db.QueryRow("select sum(value) from journal where account=? and date<?", entry.Account, Now.String()).Scan(&account_balance)
-			if account_balance+entry.Value < 0 {
-				log.Panic("you cant enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.Account, " negative ", account_balance+entry.Value, " and that you just can do it in equity_normal accounts not other accounts")
+			db.QueryRow("select sum(value) from journal where account=? and date<?", entry.ACCOUNT, NOW.String()).Scan(&account_balance)
+			if account_balance+entry.VALUE < 0 {
+				log.Panic("you cant enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
 			}
 		}
 	}
 }
 
-func (s Financial_accounting) convert_to_simple_entry(debit_entries, credit_entries []Account_value_quantity_barcode) [][]Account_value_quantity_barcode {
-	simple_entries := [][]Account_value_quantity_barcode{}
+func (s FINANCIAL_ACCOUNTING) convert_to_simple_entry(debit_entries, credit_entries []ACCOUNT_VALUE_QUANTITY_BARCODE) [][]ACCOUNT_VALUE_QUANTITY_BARCODE {
+	simple_entries := [][]ACCOUNT_VALUE_QUANTITY_BARCODE{}
 	for _, debit_entry := range debit_entries {
 		for _, credit_entry := range credit_entries {
-			simple_entries = append(simple_entries, []Account_value_quantity_barcode{debit_entry, credit_entry})
+			simple_entries = append(simple_entries, []ACCOUNT_VALUE_QUANTITY_BARCODE{debit_entry, credit_entry})
 		}
 	}
 	for _, a := range simple_entries {
-		switch math.Abs(a[0].Value) >= math.Abs(a[1].Value) {
+		switch math.Abs(a[0].VALUE) >= math.Abs(a[1].VALUE) {
 		case true:
-			sign := a[0].Value / a[1].Value
-			price := a[0].Value / a[0].Quantity
-			a[0].Value = a[1].Value * sign / math.Abs(sign)
-			a[0].Quantity = a[0].Value / price
+			sign := a[0].VALUE / a[1].VALUE
+			price := a[0].VALUE / a[0].QUANTITY
+			a[0].VALUE = a[1].VALUE * sign / math.Abs(sign)
+			a[0].QUANTITY = a[0].VALUE / price
 		case false:
-			sign := a[0].Value / a[1].Value
-			price := a[1].Value / a[1].Quantity
-			a[1].Value = a[0].Value * sign / math.Abs(sign)
-			a[1].Quantity = a[1].Value / price
+			sign := a[0].VALUE / a[1].VALUE
+			price := a[1].VALUE / a[1].QUANTITY
+			a[1].VALUE = a[0].VALUE * sign / math.Abs(sign)
+			a[1].QUANTITY = a[1].VALUE / price
 		}
 	}
 	return simple_entries
 }
 
-func insert_to_journal_tag(array_of_entry []Account_value_quantity_barcode, date time.Time, entry_expair time.Time, description string, name string, employee_name string) []journal_tag {
+func insert_to_journal_tag(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, date time.Time, entry_expair time.Time, description string, name string, employee_name string) []journal_tag {
 	var array_to_insert []journal_tag
 	for _, entry := range array_of_entry {
-		price := entry.Value / entry.Quantity
+		price := entry.VALUE / entry.QUANTITY
 		if price < 0 {
-			log.Panic("the ", entry.Value, " and ", entry.Quantity, " for ", entry, " should be positive both or negative both")
+			log.Panic("the ", entry.VALUE, " and ", entry.QUANTITY, " for ", entry, " should be positive both or negative both")
 		}
 		array_to_insert = append(array_to_insert, journal_tag{
-			Date:          date.String(),
-			Entry_number:  0,
-			Account:       entry.Account,
-			Value:         entry.Value,
-			Price:         price,
-			Quantity:      entry.Quantity,
-			Barcode:       entry.Barcode,
-			Entry_expair:  entry_expair.String(),
-			Description:   description,
-			Name:          name,
-			Employee_name: employee_name,
-			Entry_date:    Now.String(),
-			Reverse:       false,
+			DATE:          date.String(),
+			ENTRY_NUMBER:  0,
+			ACCOUNT:       entry.ACCOUNT,
+			VALUE:         entry.VALUE,
+			PRICE:         price,
+			QUANTITY:      entry.QUANTITY,
+			BARCODE:       entry.BARCODE,
+			ENTRY_EXPAIR:  entry_expair.String(),
+			DESCRIPTION:   description,
+			NAME:          name,
+			EMPLOYEE_NAME: employee_name,
+			ENTRY_DATE:    NOW.String(),
+			REVERSE:       false,
 		})
 	}
 	return array_to_insert
 }
 
-func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_end []Day_start_end, array_to_insert []journal_tag, adjusting_method string, description string, name string, employee_name string) [][]journal_tag {
+func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_end []DAY_START_END, array_to_insert []journal_tag, adjusting_method string, description string, name string, employee_name string) [][]journal_tag {
 	var day_start_end_date_minutes_array []day_start_end_date_minutes
 	var total_minutes float64
 	var previous_end_date, end time.Time
@@ -278,18 +276,18 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 	year, month_sting, day := date.Date()
 	for day_counter := 0; day_counter < delta_days; day_counter++ {
 		for _, element := range array_day_start_end {
-			if start := time.Date(year, month_sting, day+day_counter, element.Start_hour, element.Start_minute, 0, 0, time.Local); start.Weekday().String() == element.Day {
+			if start := time.Date(year, month_sting, day+day_counter, element.START_HOUR, element.START_MINUTE, 0, 0, time.Local); start.Weekday().String() == element.DAY {
 				previous_end_date = end
-				end = time.Date(year, month_sting, day+day_counter, element.End_hour, element.End_minute, 0, 0, time.Local)
+				end = time.Date(year, month_sting, day+day_counter, element.END_HOUR, element.END_MINUTE, 0, 0, time.Local)
 				if start.After(end) {
-					log.Panic("the start_hour and start_minute should be smaller than end_hour and end_minute for ", element)
+					log.Panic("the start_hour and start_minute should be smaller than END_HOUR and end_minute for ", element)
 				}
 				if previous_end_date.After(start) {
-					log.Panic("the end_hour and end_minute for ", element.Day, " should be smaller than start_hour and start_minute for the second ", element)
+					log.Panic("the END_HOUR and end_minute for ", element.DAY, " should be smaller than start_hour and start_minute for the second ", element)
 				}
 				minutes := end.Sub(start).Minutes()
 				total_minutes += minutes
-				day_start_end_date_minutes_array = append(day_start_end_date_minutes_array, day_start_end_date_minutes{element.Day, start, end, minutes})
+				day_start_end_date_minutes_array = append(day_start_end_date_minutes_array, day_start_end_date_minutes{element.DAY, start, end, minutes})
 			}
 		}
 	}
@@ -297,9 +295,9 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 	for _, entry := range array_to_insert {
 		var value, value_counter, second_counter float64
 		var one_account_adjusted_list []journal_tag
-		total_value := math.Abs(entry.Value)
-		deprecation := Root(total_value, total_minutes)
-		value_per_second := entry.Value / total_minutes
+		total_value := math.Abs(entry.VALUE)
+		deprecation := ROOT(total_value, total_minutes)
+		value_per_second := entry.VALUE / total_minutes
 		for index, element := range day_start_end_date_minutes_array {
 			switch adjusting_method {
 			case "linear":
@@ -311,33 +309,33 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 			}
 			second_counter += element.minutes
 
-			quantity := value / entry.Price
+			quantity := value / entry.PRICE
 			if index >= delta_days-1 {
 				value = math.Abs(total_value - value_counter)
-				quantity = value / entry.Price
+				quantity = value / entry.PRICE
 			}
 			value_counter += math.Abs(value)
-			if entry.Value < 0 {
+			if entry.VALUE < 0 {
 				value = -math.Abs(value)
 			}
-			if entry.Quantity < 0 {
+			if entry.QUANTITY < 0 {
 				quantity = -math.Abs(quantity)
 			}
 
 			one_account_adjusted_list = append(one_account_adjusted_list, journal_tag{
-				Date:          element.start_date.String(),
-				Entry_number:  0,
-				Account:       entry.Account,
-				Value:         value,
-				Price:         entry.Price,
-				Quantity:      quantity,
-				Barcode:       entry.Barcode,
-				Entry_expair:  element.end_date.String(),
-				Description:   description,
-				Name:          name,
-				Employee_name: employee_name,
-				Entry_date:    Now.String(),
-				Reverse:       false,
+				DATE:          element.start_date.String(),
+				ENTRY_NUMBER:  0,
+				ACCOUNT:       entry.ACCOUNT,
+				VALUE:         value,
+				PRICE:         entry.PRICE,
+				QUANTITY:      quantity,
+				BARCODE:       entry.BARCODE,
+				ENTRY_EXPAIR:  element.end_date.String(),
+				DESCRIPTION:   description,
+				NAME:          name,
+				EMPLOYEE_NAME: employee_name,
+				ENTRY_DATE:    NOW.String(),
+				REVERSE:       false,
 			})
 		}
 		adjusted_array_to_insert = append(adjusted_array_to_insert, one_account_adjusted_list)
@@ -345,7 +343,7 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 	return adjusted_array_to_insert
 }
 
-func (s Financial_accounting) cost_flow(account string, quantity float64, barcode string, insert bool) float64 {
+func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcode string, insert bool) float64 {
 	var order_by_date_asc_or_desc string
 	switch {
 	case quantity > 0:
@@ -364,27 +362,27 @@ func (s Financial_accounting) cost_flow(account string, quantity float64, barcod
 	var inventory []journal_tag
 	for rows.Next() {
 		var tag journal_tag
-		rows.Scan(&tag.Price, &tag.Quantity)
+		rows.Scan(&tag.PRICE, &tag.QUANTITY)
 		inventory = append(inventory, tag)
 	}
 	quantity = math.Abs(quantity)
 	quantity_count := quantity
 	var costs float64
 	for _, item := range inventory {
-		if item.Quantity > quantity_count {
-			costs += item.Price * quantity_count
+		if item.QUANTITY > quantity_count {
+			costs += item.PRICE * quantity_count
 			if insert {
-				db.Exec("update inventory set quantity=quantity-? where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", quantity_count, account, item.Price, item.Quantity, barcode)
+				db.Exec("update inventory set quantity=quantity-? where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", quantity_count, account, item.PRICE, item.QUANTITY, barcode)
 			}
 			quantity_count = 0
 			break
 		}
-		if item.Quantity <= quantity_count {
-			costs += item.Price * item.Quantity
+		if item.QUANTITY <= quantity_count {
+			costs += item.PRICE * item.QUANTITY
 			if insert {
-				db.Exec("delete from inventory where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", account, item.Price, item.Quantity, barcode)
+				db.Exec("delete from inventory where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", account, item.PRICE, item.QUANTITY, barcode)
 			}
-			quantity_count -= item.Quantity
+			quantity_count -= item.QUANTITY
 		}
 	}
 	if quantity_count != 0 {
@@ -393,22 +391,22 @@ func (s Financial_accounting) cost_flow(account string, quantity float64, barcod
 	return costs
 }
 
-func (s Financial_accounting) insert_to_database(array_of_journal_tag []journal_tag, insert_into_journal, insert_into_inventory, inventory_flow bool) {
+func (s FINANCIAL_ACCOUNTING) insert_to_database(array_of_journal_tag []journal_tag, insert_into_journal, insert_into_inventory, inventory_flow bool) {
 	entry_number := float64(entry_number())
 	for indexa, entry := range array_of_journal_tag {
-		entry.Entry_number = int(entry_number)
-		array_of_journal_tag[indexa].Entry_number = int(entry_number)
+		entry.ENTRY_NUMBER = int(entry_number)
+		array_of_journal_tag[indexa].ENTRY_NUMBER = int(entry_number)
 		entry_number += 0.5
 		if insert_into_journal {
 			db.Exec("insert into journal(date,entry_number,account,value,price,quantity,barcode,entry_expair,description,name,employee_name,entry_date,reverse) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-				&entry.Date, &entry.Entry_number, &entry.Account, &entry.Value, &entry.Price, &entry.Quantity, &entry.Barcode,
-				&entry.Entry_expair, &entry.Description, &entry.Name, &entry.Employee_name, &entry.Entry_date, &entry.Reverse)
+				&entry.DATE, &entry.ENTRY_NUMBER, &entry.ACCOUNT, &entry.VALUE, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE,
+				&entry.ENTRY_EXPAIR, &entry.DESCRIPTION, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE, &entry.REVERSE)
 		}
-		if IS_IN(entry.Account, inventory) {
-			costs := s.cost_flow(entry.Account, entry.Quantity, entry.Barcode, inventory_flow)
+		if IS_IN(entry.ACCOUNT, inventory) {
+			costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, inventory_flow)
 			if insert_into_inventory && costs == 0 {
 				db.Exec("insert into inventory(date,account,price,quantity,barcode,entry_expair,name,employee_name,entry_date)values (?,?,?,?,?,?,?,?,?)",
-					&entry.Date, &entry.Account, &entry.Price, &entry.Quantity, &entry.Barcode, &entry.Entry_expair, &entry.Name, &entry.Employee_name, &entry.Entry_date)
+					&entry.DATE, &entry.ACCOUNT, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE, &entry.ENTRY_EXPAIR, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE)
 
 			}
 		}
@@ -430,46 +428,42 @@ func weighted_average(array_of_accounts []string) {
 	}
 }
 
-func (s Financial_accounting) Reverse_entry(entry_number uint, employee_name string) {
-	var array_of_entry_to_reverse, array_of_journal_tag []journal_tag
+func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRY(entry_number uint, employee_name string) {
+	var array_of_entry_to_reverse []journal_tag
 	rows, _ := db.Query("select * from journal where entry_number=? order by date", entry_number)
-	for rows.Next() {
-		var tag journal_tag
-		rows.Scan(&tag.Date, &tag.Entry_number, &tag.Account, &tag.Value, &tag.Price, &tag.Quantity, &tag.Barcode, &tag.Entry_expair, &tag.Description, &tag.Name, &tag.Employee_name, &tag.Entry_date, &tag.Reverse)
-		array_of_journal_tag = append(array_of_journal_tag, tag)
-	}
+	array_of_journal_tag := select_from_journal(rows)
 	if len(array_of_journal_tag) == 0 {
 		log.Panic("this entry not exist")
 	}
 	for _, entry := range array_of_journal_tag {
-		if !entry.Reverse {
-			if Parse_date(entry.Date, s.Date_layout).Before(Now) {
+		if !entry.REVERSE {
+			if PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW) {
 				db.Exec("update journal set reverse=True where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
-					entry.Date, entry.Entry_number, entry.Account, entry.Value, entry.Price, entry.Quantity, entry.Barcode, entry.Entry_expair, entry.Description, entry.Name, entry.Employee_name, entry.Entry_date, entry.Reverse)
-				entry.Description = "(reverse entry for entry number " + strconv.Itoa(entry.Entry_number) + " entered by " + entry.Employee_name + " and revised by " + employee_name + ")"
-				entry.Date = Now.String()
-				entry.Value *= -1
-				entry.Quantity *= -1
-				entry.Entry_expair = time.Time{}.String()
-				entry.Employee_name = employee_name
-				entry.Entry_date = Now.String()
+					entry.DATE, entry.ENTRY_NUMBER, entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE, entry.ENTRY_EXPAIR, entry.DESCRIPTION, entry.NAME, entry.EMPLOYEE_NAME, entry.ENTRY_DATE, entry.REVERSE)
+				entry.DESCRIPTION = "(reverse entry for entry number " + strconv.Itoa(entry.ENTRY_NUMBER) + " entered by " + entry.EMPLOYEE_NAME + " and revised by " + employee_name + ")"
+				entry.DATE = NOW.String()
+				entry.VALUE *= -1
+				entry.QUANTITY *= -1
+				entry.ENTRY_EXPAIR = time.Time{}.String()
+				entry.EMPLOYEE_NAME = employee_name
+				entry.ENTRY_DATE = NOW.String()
 				array_of_entry_to_reverse = append(array_of_entry_to_reverse, entry)
-				weighted_average([]string{entry.Account})
+				weighted_average([]string{entry.ACCOUNT})
 			} else {
 				db.Exec("delete from journal where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
-					entry.Date, entry.Entry_number, entry.Account, entry.Value, entry.Price, entry.Quantity, entry.Barcode, entry.Entry_expair, entry.Description, entry.Name, entry.Employee_name, entry.Entry_date, entry.Reverse)
+					entry.DATE, entry.ENTRY_NUMBER, entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE, entry.ENTRY_EXPAIR, entry.DESCRIPTION, entry.NAME, entry.EMPLOYEE_NAME, entry.ENTRY_DATE, entry.REVERSE)
 			}
 		}
 	}
 	s.insert_to_database(array_of_entry_to_reverse, true, true, true)
 }
 
-func (s Financial_accounting) Journal_entry(array_of_entry []Account_value_quantity_barcode, insert, auto_completion bool, date time.Time, entry_expair time.Time, adjusting_method string,
-	description string, name string, employee_name string, array_day_start_end []Day_start_end) []journal_tag {
+func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, insert, auto_completion bool, date time.Time, entry_expair time.Time, adjusting_method string,
+	description string, name string, employee_name string, array_day_start_end []DAY_START_END) []journal_tag {
 	array_day_start_end = check_the_params(entry_expair, adjusting_method, date, array_of_entry, array_day_start_end)
 	array_of_entry = group_by_account_and_barcode(array_of_entry)
 	array_of_entry = remove_zero_values(array_of_entry)
-	find_barcode(array_of_entry)
+	find_account_from_barcode(array_of_entry)
 	array_of_entry = s.auto_completion_the_entry(array_of_entry, auto_completion)
 	array_of_entry = s.auto_completion_the_invoice_discount(auto_completion, array_of_entry)
 	array_of_entry = group_by_account_and_barcode(array_of_entry)
