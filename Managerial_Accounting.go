@@ -96,26 +96,26 @@ func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE() {
 
 func (s MANAGERIAL_ACCOUNTING) calculate_cvp_map(check_if_keys_in_the_equations bool) {
 	for _, i := range s.CVP {
-		s.cost_volume_profit(check_if_keys_in_the_equations, i)
+		s.COST_VOLUME_PROFIT(check_if_keys_in_the_equations, i)
 		_, ok_variable_cost_per_units := i["variable_cost_per_units"]
 		if !ok_variable_cost_per_units {
 			i["variable_cost_per_units"] = 0
-			s.cost_volume_profit(false, i)
+			s.COST_VOLUME_PROFIT(false, i)
 		}
 		_, ok_fixed_cost := i["fixed_cost"]
 		if !ok_fixed_cost {
 			i["fixed_cost"] = 0
-			s.cost_volume_profit(false, i)
+			s.COST_VOLUME_PROFIT(false, i)
 		}
 		_, ok_sales_per_units := i["sales_per_units"]
 		if !ok_sales_per_units {
 			i["sales_per_units"] = 0
-			s.cost_volume_profit(false, i)
+			s.COST_VOLUME_PROFIT(false, i)
 		}
 		_, ok_units := i["units"]
 		if !ok_units {
 			i["units"] = 0
-			s.cost_volume_profit(false, i)
+			s.COST_VOLUME_PROFIT(false, i)
 		}
 	}
 }
@@ -131,10 +131,10 @@ func (s MANAGERIAL_ACCOUNTING) total_cost_volume_profit() {
 		}
 	}
 	s.CVP["total"] = map[string]float64{"units": units, "sales": sales, "variable_cost": variable_cost, "fixed_cost": fixed_cost}
-	s.cost_volume_profit(false, s.CVP["total"])
+	s.COST_VOLUME_PROFIT(false, s.CVP["total"])
 }
 
-func (s MANAGERIAL_ACCOUNTING) cost_volume_profit(check_if_keys_in_the_equations bool, m map[string]float64) {
+func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT(check_if_keys_in_the_equations bool, m map[string]float64) {
 	equations := [][]string{
 		{"variable_cost", "variable_cost_per_units", "*", "units"},
 		{"fixed_cost", "fixed_cost_per_units", "*", "units"},
@@ -174,9 +174,9 @@ func (s MANAGERIAL_ACCOUNTING) PROCESS_COSTING(check_if_keys_in_the_equations bo
 func (s MANAGERIAL_ACCOUNTING) LABOR_COST(check_if_keys_in_the_equations bool, m map[string]float64) {
 	equations := [][]string{
 		{"overtime_wage_rate", "bonus_percentage", "*", "hourly_wage_rate"},
-		{"total_wage", "total_hours", "*", "hourly_wage_rate"},
+
 		{"overtime_wage", "overtime_hours", "*", "overtime_wage_rate"},
-		{"normal_wage", "normal_hours", "*", "hourly_wage_rate"},
+		{"work_time_wage", "work_time_hours", "*", "hourly_wage_rate"},
 		{"holiday_wage", "holiday_hours", "*", "hourly_wage_rate"},
 		{"vacations_wage", "vacations_hours", "*", "hourly_wage_rate"},
 		{"normal_lost_time_wage", "normal_lost_time_hours", "*", "hourly_wage_rate"},
