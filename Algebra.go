@@ -54,11 +54,11 @@ func equation_solver(print bool, m map[string]float64, a, b, sign, c string) {
 	case "/":
 		equations_generator(print, m, a, b, sign, c, m[b]/m[c], m[a]*m[c], m[b]/m[a])
 	case "**":
-		equations_generator(print, m, a, b, sign, c, math.Pow(m[b], m[c]), ROOT(m[a], m[c]), LOG(m[a], m[b]))
+		equations_generator(print, m, a, b, sign, c, POW(m[b], m[c]), ROOT(m[a], m[c]), LOG(m[a], m[b]))
 	case "root":
-		equations_generator(print, m, a, b, sign, c, ROOT(m[b], m[c]), math.Pow(m[a], m[c]), LOG(m[b], m[a]))
+		equations_generator(print, m, a, b, sign, c, ROOT(m[b], m[c]), POW(m[a], m[c]), LOG(m[b], m[a]))
 	case "log":
-		equations_generator(print, m, a, b, sign, c, LOG(m[b], m[c]), math.Pow(m[c], m[a]), ROOT(m[b], m[a]))
+		equations_generator(print, m, a, b, sign, c, LOG(m[b], m[c]), POW(m[c], m[a]), ROOT(m[b], m[a]))
 	default:
 		log.Panic(sign, " is not in [+-*/**root log]")
 	}
