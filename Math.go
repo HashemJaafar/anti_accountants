@@ -28,21 +28,48 @@ func ROOT(a ...float64) float64 {
 	return result
 }
 
-func HIGH_LOW(points [][]float64) float64 {
-	var y2, y1, x2, x1 float64
+func MAX(points [][2]float64) (float64, float64) {
+	x, y := first_point(points)
 	for _, i := range points {
-		if i[0] >= x2 {
-			x2 = i[0]
-			y2 = i[1]
-		} else if i[0] < x1 {
-			x1 = i[0]
-			y1 = i[1]
+		if i[0] > x {
+			x = i[0]
+			y = i[1]
 		}
 	}
-	return (y2 - y1) / (x2 - x1)
+	return x, y
 }
 
-func LEAST_SQUARES_REGRESSION(points [][]float64) (float64, float64) {
+func MIN(points [][2]float64) (float64, float64) {
+	x, y := first_point(points)
+	for _, i := range points {
+		if i[0] < x {
+			x = i[0]
+			y = i[1]
+		}
+	}
+	return x, y
+}
+
+func X_UNDER_X(points [][2]float64, x_max float64) (float64, float64) {
+	x, y := 0.0, 0.0
+	for _, i := range points {
+		if i[0] > x && i[0] <= x_max {
+			x = i[0]
+			y = i[1]
+		}
+	}
+	return x, y
+}
+
+func first_point(points [][2]float64) (float64, float64) { return points[0][0], points[0][1] }
+
+func HIGH_LOW(points [][2]float64) float64 {
+	x_max, y_max := MAX(points)
+	x_low, y_low := MIN(points)
+	return (y_max - y_low) / (x_max - x_low)
+}
+
+func LEAST_SQUARES_REGRESSION(points [][2]float64) (float64, float64) {
 	var sum_x, sum_y, sum_x_quadratic, sum_xy float64
 	for _, i := range points {
 		sum_x += i[0]

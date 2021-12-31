@@ -1,6 +1,7 @@
 package anti_accountants
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"strconv"
@@ -25,9 +26,14 @@ type DAY_START_END struct {
 	END_MINUTE   int
 }
 
-type ACCOUNT_METHOD_VALUE_PRICE struct {
-	ACCOUNT, METHOD         string
-	VALUE_OR_PERCENT, PRICE float64
+type AUTO_COMPLETE_ENTRIE struct {
+	ACCOUNT_0  string
+	IS_PERCENT bool
+	VALUE      float64
+	ACCOUNT_1  string
+	QUANTITY_1 float64
+	ACCOUNT_2  string
+	QUANTITY_2 float64
 }
 
 type day_start_end_date_minutes struct {
@@ -144,57 +150,67 @@ func find_account_from_barcode(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) 
 }
 
 func (s FINANCIAL_ACCOUNTING) auto_completion_the_entry(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, auto_completion bool) []ACCOUNT_VALUE_QUANTITY_BARCODE {
-	for index, entry := range array_of_entry {
-		costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, false)
-		if costs != 0 {
-			array_of_entry[index] = ACCOUNT_VALUE_QUANTITY_BARCODE{entry.ACCOUNT, -costs, entry.QUANTITY, entry.BARCODE}
-		}
-		if auto_completion {
+	var new_array_of_entry [][]ACCOUNT_VALUE_QUANTITY_BARCODE
+	if auto_completion {
+		for _, entry := range array_of_entry {
 			for _, complement := range s.AUTO_COMPLETE_ENTRIES {
-				if complement[0].ACCOUNT == entry.ACCOUNT && (entry.QUANTITY >= 0) == (complement[0].VALUE_OR_PERCENT >= 0) {
-					if costs == 0 {
-						array_of_entry[index] = ACCOUNT_VALUE_QUANTITY_BARCODE{complement[0].ACCOUNT, complement[0].PRICE * entry.QUANTITY, entry.QUANTITY, ""}
-					}
-					for _, i := range complement[1:] {
-						switch i.METHOD {
-						case "copy_abs":
-							array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{i.ACCOUNT, math.Abs(array_of_entry[index].VALUE), math.Abs(array_of_entry[index].QUANTITY), ""})
-						case "copy":
-							array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{i.ACCOUNT, array_of_entry[index].VALUE, array_of_entry[index].QUANTITY, ""})
-						case "quantity_ratio":
-							array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{i.ACCOUNT, math.Abs(array_of_entry[index].QUANTITY) * i.PRICE * i.VALUE_OR_PERCENT, math.Abs(array_of_entry[index].QUANTITY) * i.VALUE_OR_PERCENT, ""})
-						case "value":
-							array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{i.ACCOUNT, i.VALUE_OR_PERCENT, i.VALUE_OR_PERCENT / i.PRICE, ""})
-						default:
-							log.Panic(i.METHOD, "in the method field for ", i, " dose not exist you just can use copy_abs or copy or quantity_ratio or value")
-						}
-					}
+				if complement.ACCOUNT_0 == entry.ACCOUNT {
+					// var barcode_1, barcode_2 string
+					// if complement.ACCOUNT_0 == complement.ACCOUNT_1 {
+					// 	barcode_1 = entry.BARCODE
+					// }
+					// if complement.ACCOUNT_0 == complement.ACCOUNT_2 {
+					// 	barcode_2 = entry.BARCODE
+					// }
+					// switch complement.IS_PERCENT {
+					// case true:
+					// 	new_array_of_entry = append(new_array_of_entry, []ACCOUNT_VALUE_QUANTITY_BARCODE{
+					// 		{complement.ACCOUNT_1, complement.NUMBER * entry.VALUE, complement.NUMBER * entry.QUANTITY, barcode_1},
+					// 		{complement.ACCOUNT_2, complement.NUMBER * entry.VALUE, complement.NUMBER * entry.QUANTITY, barcode_2},
+					// 	})
+					// case false:
+					// 	new_array_of_entry = append(new_array_of_entry, []ACCOUNT_VALUE_QUANTITY_BARCODE{
+					// 		{complement.ACCOUNT_1, complement.NUMBER, complement.NUMBER / complement.PRICE_1, barcode_1},
+					// 		{complement.ACCOUNT_2, complement.NUMBER, complement.NUMBER / complement.PRICE_2, barcode_2},
+					// 	})
+					// }
 				}
 			}
 		}
 	}
+	fmt.Println(new_array_of_entry)
 	return array_of_entry
+}
+
+func (s FINANCIAL_ACCOUNTING) find_cost(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) {
+	for index, entry := range array_of_entry {
+		costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, false)
+		if costs != 0 {
+			array_of_entry[index].VALUE = -costs
+		}
+	}
 }
 
 func (s FINANCIAL_ACCOUNTING) auto_completion_the_invoice_discount(auto_completion bool, array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) []ACCOUNT_VALUE_QUANTITY_BARCODE {
 	if auto_completion {
-		var total_invoice_before_invoice_discount, discount float64
-		for _, entry := range array_of_entry {
-			if s.is_father(s.INCOME_STATEMENT, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT) {
-				total_invoice_before_invoice_discount += entry.VALUE
-			} else if s.is_father(s.DISCOUNTS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT) {
-				total_invoice_before_invoice_discount -= entry.VALUE
-			}
-		}
-		for _, i := range s.INVOICE_DISCOUNTS_LIST {
-			if total_invoice_before_invoice_discount >= i[0] {
-				discount = i[1]
-			}
-		}
+		total_invoice_before_invoice_discount := s.total_invoice_before_invoice_discount(array_of_entry)
+		_, discount := X_UNDER_X(s.INVOICE_DISCOUNTS_LIST, total_invoice_before_invoice_discount)
 		invoice_discount := discount_tax_calculator(total_invoice_before_invoice_discount, discount)
 		array_of_entry = append(array_of_entry, ACCOUNT_VALUE_QUANTITY_BARCODE{s.INVOICE_DISCOUNT, invoice_discount, 1, ""})
 	}
 	return array_of_entry
+}
+
+func (s FINANCIAL_ACCOUNTING) total_invoice_before_invoice_discount(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) float64 {
+	var total_invoice_before_invoice_discount float64
+	for _, entry := range array_of_entry {
+		if s.is_father(s.INCOME_STATEMENT, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT) {
+			total_invoice_before_invoice_discount += entry.VALUE
+		} else if s.is_father(s.DISCOUNTS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT) {
+			total_invoice_before_invoice_discount -= entry.VALUE
+		}
+	}
+	return total_invoice_before_invoice_discount
 }
 
 func discount_tax_calculator(price, discount_tax float64) float64 {
@@ -464,8 +480,9 @@ func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(array_of_entry []ACCOUNT_VALUE_QUANT
 	array_of_entry = group_by_account_and_barcode(array_of_entry)
 	array_of_entry = remove_zero_values(array_of_entry)
 	find_account_from_barcode(array_of_entry)
+	s.find_cost(array_of_entry)
 	array_of_entry = s.auto_completion_the_entry(array_of_entry, auto_completion)
-	array_of_entry = s.auto_completion_the_invoice_discount(auto_completion, array_of_entry)
+	// array_of_entry = s.auto_completion_the_invoice_discount(auto_completion, array_of_entry)
 	array_of_entry = group_by_account_and_barcode(array_of_entry)
 	array_of_entry = remove_zero_values(array_of_entry)
 	s.can_the_account_be_negative(array_of_entry)
