@@ -4,6 +4,7 @@ import "log"
 
 type ONE_STEP_DISTRIBUTION struct {
 	SALES_OR_VARIABLE_OR_FIXED, DISTRIBUTION_METHOD string
+	AMOUNT                                          float64
 	FROM, TO                                        map[string]float64
 }
 
@@ -13,20 +14,14 @@ type MANAGERIAL_ACCOUNTING struct {
 	PRINT              bool
 }
 
-func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE() {
+func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE(simple bool) {
 	s.calculate_cvp_map(true)
 	for _, step := range s.DISTRIBUTION_STEPS {
 		var total_mixed_cost, total_portions_to, total_column_to_distribute float64
-		for key_portions_from, portions := range step.FROM {
-			if s.CVP[key_portions_from]["units"] < portions {
-				log.Panic(portions, " for ", key_portions_from, " in ", step.FROM, " is more than ", s.CVP[key_portions_from]["units"])
-			}
-			total_mixed_cost += portions * s.CVP[key_portions_from]["mixed_cost_per_units"]
-			s.CVP[key_portions_from]["fixed_cost"] -= (s.CVP[key_portions_from]["fixed_cost"] / s.CVP[key_portions_from]["units"]) * portions
-			s.CVP[key_portions_from]["units"] -= portions
-			if s.CVP[key_portions_from]["units"] == 0 {
-				s.CVP[key_portions_from]["variable_cost_per_units"] = 0
-			}
+		if simple {
+			total_mixed_cost = step.AMOUNT
+		} else {
+			total_mixed_cost = s.total_mixed_cost_in_complicated_and_multi_level_step(step, total_mixed_cost)
 		}
 		for key_portions_to, portions_to := range step.TO {
 			total_portions_to += portions_to
@@ -92,6 +87,21 @@ func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE() {
 		}
 	}
 	s.total_cost_volume_profit()
+}
+
+func (s MANAGERIAL_ACCOUNTING) total_mixed_cost_in_complicated_and_multi_level_step(step ONE_STEP_DISTRIBUTION, total_mixed_cost float64) float64 {
+	for key_portions_from, portions := range step.FROM {
+		if s.CVP[key_portions_from]["units"] < portions {
+			log.Panic(portions, " for ", key_portions_from, " in ", step.FROM, " is more than ", s.CVP[key_portions_from]["units"])
+		}
+		total_mixed_cost += portions * s.CVP[key_portions_from]["mixed_cost_per_units"]
+		s.CVP[key_portions_from]["fixed_cost"] -= (s.CVP[key_portions_from]["fixed_cost"] / s.CVP[key_portions_from]["units"]) * portions
+		s.CVP[key_portions_from]["units"] -= portions
+		if s.CVP[key_portions_from]["units"] == 0 {
+			s.CVP[key_portions_from]["variable_cost_per_units"] = 0
+		}
+	}
+	return total_mixed_cost
 }
 
 func (s MANAGERIAL_ACCOUNTING) calculate_cvp_map(check_if_keys_in_the_equations bool) {
