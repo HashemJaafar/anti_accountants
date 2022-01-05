@@ -309,42 +309,26 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 	}
 	var adjusted_array_to_insert [][]journal_tag
 	for _, entry := range array_to_insert {
-		var value, value_counter, second_counter float64
+		var value_counter, time_unit_counter float64
 		var one_account_adjusted_list []journal_tag
 		total_value := math.Abs(entry.VALUE)
-		deprecation := ROOT(total_value, total_minutes)
-		value_per_second := entry.VALUE / total_minutes
 		for index, element := range day_start_end_date_minutes_array {
-			switch adjusting_method {
-			case "linear":
-				value = element.minutes * value_per_second
-			case "exponential":
-				value = math.Pow(deprecation, second_counter+element.minutes) - math.Pow(deprecation, second_counter)
-			case "logarithmic":
-				value = (total_value / math.Pow(deprecation, second_counter)) - (total_value / math.Pow(deprecation, second_counter+element.minutes))
-			}
-			second_counter += element.minutes
+			value := value_after_adjust_using_adjusting_methods(adjusting_method, element, total_minutes, time_unit_counter, total_value)
 
-			quantity := value / entry.PRICE
 			if index >= delta_days-1 {
 				value = math.Abs(total_value - value_counter)
-				quantity = value / entry.PRICE
-			}
-			value_counter += math.Abs(value)
-			if entry.VALUE < 0 {
-				value = -math.Abs(value)
-			}
-			if entry.QUANTITY < 0 {
-				quantity = -math.Abs(quantity)
 			}
 
+			time_unit_counter += element.minutes
+			value_counter += math.Abs(value)
+			value = return_same_sign(entry.VALUE, value)
 			one_account_adjusted_list = append(one_account_adjusted_list, journal_tag{
 				DATE:          element.start_date.String(),
 				ENTRY_NUMBER:  0,
 				ACCOUNT:       entry.ACCOUNT,
 				VALUE:         value,
 				PRICE:         entry.PRICE,
-				QUANTITY:      quantity,
+				QUANTITY:      value / entry.PRICE,
 				BARCODE:       entry.BARCODE,
 				ENTRY_EXPAIR:  element.end_date.String(),
 				DESCRIPTION:   description,
@@ -357,6 +341,29 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 		adjusted_array_to_insert = append(adjusted_array_to_insert, one_account_adjusted_list)
 	}
 	return adjusted_array_to_insert
+}
+
+func return_same_sign(number_sign, number float64) float64 {
+	if number_sign < 0 {
+		number = -math.Abs(number)
+	} else {
+		number = math.Abs(number)
+	}
+	return number
+}
+
+func value_after_adjust_using_adjusting_methods(adjusting_method string, element day_start_end_date_minutes, total_minutes, time_unit_counter, total_value float64) float64 {
+	var value float64
+	percent := ROOT(total_value, total_minutes)
+	switch adjusting_method {
+	case "linear":
+		value = element.minutes * (total_value / total_minutes)
+	case "exponential":
+		value = math.Pow(percent, time_unit_counter+element.minutes) - math.Pow(percent, time_unit_counter)
+	case "logarithmic":
+		value = (total_value / math.Pow(percent, time_unit_counter)) - (total_value / math.Pow(percent, time_unit_counter+element.minutes))
+	}
+	return value
 }
 
 func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcode string, insert bool) float64 {
