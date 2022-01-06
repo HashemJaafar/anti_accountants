@@ -321,7 +321,7 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 
 			time_unit_counter += element.minutes
 			value_counter += math.Abs(value)
-			value = return_same_sign(entry.VALUE, value)
+			value = RETURN_SAME_SIGN_OF_NUMBER_SIGN(entry.VALUE, value)
 			one_account_adjusted_list = append(one_account_adjusted_list, journal_tag{
 				DATE:          element.start_date.String(),
 				ENTRY_NUMBER:  0,
@@ -343,27 +343,17 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 	return adjusted_array_to_insert
 }
 
-func return_same_sign(number_sign, number float64) float64 {
-	if number_sign < 0 {
-		number = -math.Abs(number)
-	} else {
-		number = math.Abs(number)
-	}
-	return number
-}
-
 func value_after_adjust_using_adjusting_methods(adjusting_method string, element day_start_end_date_minutes, total_minutes, time_unit_counter, total_value float64) float64 {
-	var value float64
 	percent := ROOT(total_value, total_minutes)
 	switch adjusting_method {
 	case "linear":
-		value = element.minutes * (total_value / total_minutes)
+		return element.minutes * (total_value / total_minutes)
 	case "exponential":
-		value = math.Pow(percent, time_unit_counter+element.minutes) - math.Pow(percent, time_unit_counter)
+		return math.Pow(percent, time_unit_counter+element.minutes) - math.Pow(percent, time_unit_counter)
 	case "logarithmic":
-		value = (total_value / math.Pow(percent, time_unit_counter)) - (total_value / math.Pow(percent, time_unit_counter+element.minutes))
+		return (total_value / math.Pow(percent, time_unit_counter)) - (total_value / math.Pow(percent, time_unit_counter+element.minutes))
 	}
-	return value
+	return 0
 }
 
 func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcode string, insert bool) float64 {

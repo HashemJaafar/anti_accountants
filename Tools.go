@@ -3,6 +3,7 @@ package anti_accountants
 import (
 	"database/sql"
 	"log"
+	"math"
 	"reflect"
 	"time"
 )
@@ -39,6 +40,15 @@ func unpack_the_array(adjusted_array_to_insert [][]journal_tag) []journal_tag {
 	return array_to_insert
 }
 
+func RETURN_SAME_SIGN_OF_NUMBER_SIGN(number_sign, number float64) float64 {
+	if number_sign < 0 {
+		number = -math.Abs(number)
+	} else {
+		number = math.Abs(number)
+	}
+	return number
+}
+
 func PARSE_DATE(string_date string, date_layouts []string) time.Time {
 	for _, i := range date_layouts {
 		date, err := time.Parse(i, string_date)
@@ -49,7 +59,7 @@ func PARSE_DATE(string_date string, date_layouts []string) time.Time {
 	return time.Time{}
 }
 
-func CHECK_IF_DUPLICATES(slice_of_elements []string) ([]string, []string) {
+func RETURN_SET_AND_DUPLICATES_SLICES(slice_of_elements []string) ([]string, []string) {
 	var set_of_elems, duplicated_element []string
 big_loop:
 	for _, element := range slice_of_elements {

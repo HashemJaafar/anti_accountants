@@ -12,7 +12,7 @@ func check_map_keys_for_equations(equations [][]string, m map[string]float64) {
 	for _, equation := range equations {
 		elements = append(elements, equation[0], equation[1], equation[3])
 	}
-	elements, _ = CHECK_IF_DUPLICATES(elements)
+	elements, _ = RETURN_SET_AND_DUPLICATES_SLICES(elements)
 	for keyb := range m {
 		if !IS_IN(keyb, elements) {
 			log.Panic(keyb, " is not in ", elements)
