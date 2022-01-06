@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	db        *sql.DB
+	DB        *sql.DB
 	inventory []string
 )
 
@@ -139,7 +139,7 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(array_of_entry []ACCOUNT_
 }
 
 func check_accounts(column, table, panic string, elements []string) {
-	results, err := db.Query("select " + column + " from " + table)
+	results, err := DB.Query("select " + column + " from " + table)
 	error_fatal(err)
 	for results.Next() {
 		var tag string
@@ -152,12 +152,12 @@ func check_accounts(column, table, panic string, elements []string) {
 
 func CHANGE_ACCOUNT_NAME(name, new_name string) {
 	var tag string
-	err := db.QueryRow("select account from journal where account=? limit 1", new_name).Scan(&tag)
+	err := DB.QueryRow("select account from journal where account=? limit 1", new_name).Scan(&tag)
 	if err == nil {
 		log.Panic("you can't change the name of [", name, "] to [", new_name, "] as new name because it used")
 	} else {
-		db.Exec("update journal set account=? where account=?", new_name, name)
-		db.Exec("update inventory set account=? where account=?", new_name, name)
+		DB.Exec("update journal set account=? where account=?", new_name, name)
+		DB.Exec("update inventory set account=? where account=?", new_name, name)
 	}
 }
 
@@ -194,9 +194,9 @@ func SELECT_JOURNAL(entry_number uint, account string, start_date, end_date time
 	var rows *sql.Rows
 	switch {
 	case entry_number != 0 && account == "":
-		rows, _ = db.Query("select * from journal where date>? and date<? and entry_number=? order by date", start_date.String(), end_date.String(), entry_number)
+		rows, _ = DB.Query("select * from journal where date>? and date<? and entry_number=? order by date", start_date.String(), end_date.String(), entry_number)
 	case entry_number == 0 && account != "":
-		rows, _ = db.Query("select * from journal where date>? and date<? and account=? order by date", start_date.String(), end_date.String(), account)
+		rows, _ = DB.Query("select * from journal where date>? and date<? and account=? order by date", start_date.String(), end_date.String(), account)
 	default:
 		log.Panic("should be one of these entry_number != 0 && account == '' or entry_number == 0 && account != '' ")
 	}
@@ -205,14 +205,14 @@ func SELECT_JOURNAL(entry_number uint, account string, start_date, end_date time
 }
 
 func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
-	db, _ = sql.Open(s.DRIVER_NAME, s.DATA_SOURCE_NAME)
-	err := db.Ping()
+	DB, _ = sql.Open(s.DRIVER_NAME, s.DATA_SOURCE_NAME)
+	err := DB.Ping()
 	error_fatal(err)
-	db.Exec("create database if not exists " + s.DATABASE_NAME)
-	_, err = db.Exec("USE " + s.DATABASE_NAME)
+	DB.Exec("create database if not exists " + s.DATABASE_NAME)
+	_, err = DB.Exec("USE " + s.DATABASE_NAME)
 	error_fatal(err)
-	db.Exec("create table if not exists journal (date text,entry_number integer,account text,value real,price real,quantity real,barcode text,entry_expair text,description text,name text,employee_name text,entry_date text,reverse bool)")
-	db.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
+	DB.Exec("create table if not exists journal (date text,entry_number integer,account text,value real,price real,quantity real,barcode text,entry_expair text,description text,name text,employee_name text,entry_date text,reverse bool)")
+	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
 
 	var all_accounts []string
 	for _, i := range s.ACCOUNTS {
@@ -270,7 +270,7 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	// entry_number := entry_number()
 	// var array_to_insert []journal_tag
 	// expair_expenses := journal_tag{NOW.String(), entry_number, s.expair_expenses, 0, 0, 0, "", time.Time{}.String(), "to record the expiry of the goods automatically", "", "", NOW.String(), false}
-	// expair_goods, _ := db.Query("select account,price*quantity*-1,price,quantity*-1,barcode from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
+	// expair_goods, _ := DB.Query("select account,price*quantity*-1,price,quantity*-1,barcode from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
 	// for expair_goods.Next() {
 	// 	tag := expair_expenses
 	// 	expair_goods.Scan(&tag.ACCOUNT, &tag.value, &tag.price, &tag.quantity, &tag.barcode)
@@ -281,12 +281,12 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	// expair_expenses.price = expair_expenses.value / expair_expenses.quantity
 	// array_to_insert = append(array_to_insert, expair_expenses)
 	// s.insert_to_database(array_to_insert, true, false, false)
-	// db.Exec("delete from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
-	db.Exec("delete from inventory where quantity=0")
+	// DB.Exec("delete from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
+	DB.Exec("delete from inventory where quantity=0")
 
 	var double_entry []ACCOUNT_VALUE_QUANTITY_BARCODE
 	previous_entry_number := 1
-	rows, _ := db.Query("select entry_number,account,value from journal order by date,entry_number")
+	rows, _ := DB.Query("select entry_number,account,value from journal order by date,entry_number")
 	for rows.Next() {
 		var entry_number int
 		var tag ACCOUNT_VALUE_QUANTITY_BARCODE

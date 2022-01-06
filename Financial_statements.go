@@ -397,7 +397,7 @@ func (s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT() financial_analysis_st
 func (s FINANCIAL_ACCOUNTING) FINANCIAL_STATEMENTS(start_date, end_date time.Time, periods int, names []string, in_names bool) ([]map[string]map[string]map[string]map[string]map[string]float64, []financial_analysis_statement, []journal_tag) {
 	check_dates(start_date, end_date)
 	days := int(end_date.Sub(start_date).Hours() / 24)
-	rows, _ := db.Query("select * from journal order by date,entry_number")
+	rows, _ := DB.Query("select * from journal order by date,entry_number")
 	journal := select_from_journal(rows)
 	statements := []map[string]map[string]map[string]map[string]map[string]float64{}
 	for a := 0; a < periods; a++ {

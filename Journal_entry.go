@@ -141,7 +141,7 @@ func find_account_from_barcode(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE) 
 			log.Panic("can't find the account name if the barcode is empty in ", entry)
 		}
 		if entry.ACCOUNT == "" {
-			err := db.QueryRow("select account from journal where barcode=? limit 1", entry.BARCODE).Scan(&array_of_entry[index].ACCOUNT)
+			err := DB.QueryRow("select account from journal where barcode=? limit 1", entry.BARCODE).Scan(&array_of_entry[index].ACCOUNT)
 			if err != nil {
 				log.Panic("the barcode is wrong for ", entry)
 			}
@@ -226,7 +226,7 @@ func (s FINANCIAL_ACCOUNTING) can_the_account_be_negative(array_of_entry []ACCOU
 	for _, entry := range array_of_entry {
 		if !(s.is_father(s.EQUITY, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT)) {
 			var account_balance float64
-			db.QueryRow("select sum(value) from journal where account=? and date<?", entry.ACCOUNT, NOW.String()).Scan(&account_balance)
+			DB.QueryRow("select sum(value) from journal where account=? and date<?", entry.ACCOUNT, NOW.String()).Scan(&account_balance)
 			if account_balance+entry.VALUE < 0 {
 				log.Panic("you cant enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
 			}
@@ -371,7 +371,7 @@ func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcod
 	default:
 		return 0
 	}
-	rows, _ := db.Query("select price,quantity from inventory where quantity>0 and account=? and barcode=? order by date "+order_by_date_asc_or_desc, account, barcode)
+	rows, _ := DB.Query("select price,quantity from inventory where quantity>0 and account=? and barcode=? order by date "+order_by_date_asc_or_desc, account, barcode)
 	var inventory []journal_tag
 	for rows.Next() {
 		var tag journal_tag
@@ -385,7 +385,7 @@ func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcod
 		if item.QUANTITY > quantity_count {
 			costs += item.PRICE * quantity_count
 			if insert {
-				db.Exec("update inventory set quantity=quantity-? where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", quantity_count, account, item.PRICE, item.QUANTITY, barcode)
+				DB.Exec("update inventory set quantity=quantity-? where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", quantity_count, account, item.PRICE, item.QUANTITY, barcode)
 			}
 			quantity_count = 0
 			break
@@ -393,7 +393,7 @@ func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcod
 		if item.QUANTITY <= quantity_count {
 			costs += item.PRICE * item.QUANTITY
 			if insert {
-				db.Exec("delete from inventory where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", account, item.PRICE, item.QUANTITY, barcode)
+				DB.Exec("delete from inventory where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", account, item.PRICE, item.QUANTITY, barcode)
 			}
 			quantity_count -= item.QUANTITY
 		}
@@ -411,14 +411,14 @@ func (s FINANCIAL_ACCOUNTING) insert_to_database(array_of_journal_tag []journal_
 		array_of_journal_tag[indexa].ENTRY_NUMBER = int(entry_number)
 		entry_number += 0.5
 		if insert_into_journal {
-			db.Exec("insert into journal(date,entry_number,account,value,price,quantity,barcode,entry_expair,description,name,employee_name,entry_date,reverse) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+			DB.Exec("insert into journal(date,entry_number,account,value,price,quantity,barcode,entry_expair,description,name,employee_name,entry_date,reverse) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
 				&entry.DATE, &entry.ENTRY_NUMBER, &entry.ACCOUNT, &entry.VALUE, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE,
 				&entry.ENTRY_EXPAIR, &entry.DESCRIPTION, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE, &entry.REVERSE)
 		}
 		if IS_IN(entry.ACCOUNT, inventory) {
 			costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, inventory_flow)
 			if insert_into_inventory && costs == 0 {
-				db.Exec("insert into inventory(date,account,price,quantity,barcode,entry_expair,name,employee_name,entry_date)values (?,?,?,?,?,?,?,?,?)",
+				DB.Exec("insert into inventory(date,account,price,quantity,barcode,entry_expair,name,employee_name,entry_date)values (?,?,?,?,?,?,?,?,?)",
 					&entry.DATE, &entry.ACCOUNT, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE, &entry.ENTRY_EXPAIR, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE)
 
 			}
@@ -428,7 +428,7 @@ func (s FINANCIAL_ACCOUNTING) insert_to_database(array_of_journal_tag []journal_
 
 func entry_number() int {
 	var tag int
-	err := db.QueryRow("select max(entry_number) from journal").Scan(&tag)
+	err := DB.QueryRow("select max(entry_number) from journal").Scan(&tag)
 	if err != nil {
 		tag = 0
 	}
@@ -437,13 +437,13 @@ func entry_number() int {
 
 func weighted_average(array_of_accounts []string) {
 	for _, account := range array_of_accounts {
-		db.Exec("update inventory set price=(select sum(value)/sum(quantity) from journal where account=?) where account=?", account, account)
+		DB.Exec("update inventory set price=(select sum(value)/sum(quantity) from journal where account=?) where account=?", account, account)
 	}
 }
 
 func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRY(entry_number uint, employee_name string) {
 	var array_of_entry_to_reverse []journal_tag
-	rows, _ := db.Query("select * from journal where entry_number=? order by date", entry_number)
+	rows, _ := DB.Query("select * from journal where entry_number=? order by date", entry_number)
 	array_of_journal_tag := select_from_journal(rows)
 	if len(array_of_journal_tag) == 0 {
 		log.Panic("this entry not exist")
@@ -451,7 +451,7 @@ func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRY(entry_number uint, employee_name str
 	for _, entry := range array_of_journal_tag {
 		if !entry.REVERSE {
 			if PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW) {
-				db.Exec("update journal set reverse=True where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
+				DB.Exec("update journal set reverse=True where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
 					entry.DATE, entry.ENTRY_NUMBER, entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE, entry.ENTRY_EXPAIR, entry.DESCRIPTION, entry.NAME, entry.EMPLOYEE_NAME, entry.ENTRY_DATE, entry.REVERSE)
 				entry.DESCRIPTION = "(reverse entry for entry number " + strconv.Itoa(entry.ENTRY_NUMBER) + " entered by " + entry.EMPLOYEE_NAME + " and revised by " + employee_name + ")"
 				entry.DATE = NOW.String()
@@ -463,7 +463,7 @@ func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRY(entry_number uint, employee_name str
 				array_of_entry_to_reverse = append(array_of_entry_to_reverse, entry)
 				weighted_average([]string{entry.ACCOUNT})
 			} else {
-				db.Exec("delete from journal where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
+				DB.Exec("delete from journal where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
 					entry.DATE, entry.ENTRY_NUMBER, entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE, entry.ENTRY_EXPAIR, entry.DESCRIPTION, entry.NAME, entry.EMPLOYEE_NAME, entry.ENTRY_DATE, entry.REVERSE)
 			}
 		}
