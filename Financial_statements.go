@@ -465,9 +465,8 @@ func (s FINANCIAL_ACCOUNTING) SORT_THE_STATMENT(all_statements_struct [][]FILTER
 			s.sort_by_multiple_alphabet_column(one_statement_struct)
 		case "number":
 			s.sort_by_number(one_statement_struct)
-		case "no_order":
 		default:
-			log.Panic(sort_by, " is not in [pre_order,father_name,multiple_alphabet_column,number,no_order]")
+			log.Panic(sort_by, " is not in [pre_order,father_name,multiple_alphabet_column,number]")
 		}
 		if is_reverse {
 			REVERSE_SLICE(one_statement_struct)
