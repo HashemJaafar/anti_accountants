@@ -44,7 +44,7 @@ type ACCOUNT struct {
 	COST_FLOW_TYPE, FATHER, NAME string
 }
 
-type journal_tag struct {
+type JOURNAL_TAG struct {
 	DATE          string
 	ENTRY_NUMBER  int
 	ACCOUNT       string
@@ -60,9 +60,9 @@ type journal_tag struct {
 	REVERSE       bool
 }
 
-type invoice_struct struct {
-	account                string
-	value, price, quantity float64
+type INVOICE_STRUCT struct {
+	ACCOUNT                string
+	VALUE, PRICE, QUANTITY float64
 }
 
 func (s FINANCIAL_ACCOUNTING) is_credit(name string) bool {
@@ -161,8 +161,8 @@ func CHANGE_ACCOUNT_NAME(name, new_name string) {
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) INVOICE(array_of_journal_tag []journal_tag) []invoice_struct {
-	m := map[string]*invoice_struct{}
+func (s FINANCIAL_ACCOUNTING) INVOICE(array_of_journal_tag []JOURNAL_TAG) []INVOICE_STRUCT {
+	m := map[string]*INVOICE_STRUCT{}
 	for _, entry := range array_of_journal_tag {
 		var key string
 		switch {
@@ -177,20 +177,20 @@ func (s FINANCIAL_ACCOUNTING) INVOICE(array_of_journal_tag []journal_tag) []invo
 		}
 		sums := m[key]
 		if sums == nil {
-			sums = &invoice_struct{}
+			sums = &INVOICE_STRUCT{}
 			m[key] = sums
 		}
-		sums.value += entry.VALUE
-		sums.quantity += entry.QUANTITY
+		sums.VALUE += entry.VALUE
+		sums.QUANTITY += entry.QUANTITY
 	}
-	invoice := []invoice_struct{}
+	invoice := []INVOICE_STRUCT{}
 	for k, v := range m {
-		invoice = append(invoice, invoice_struct{k, v.value, v.value / v.quantity, v.quantity})
+		invoice = append(invoice, INVOICE_STRUCT{k, v.VALUE, v.VALUE / v.QUANTITY, v.QUANTITY})
 	}
 	return invoice
 }
 
-func SELECT_JOURNAL(entry_number uint, account string, start_date, end_date time.Time) []journal_tag {
+func SELECT_JOURNAL(entry_number uint, account string, start_date, end_date time.Time) []JOURNAL_TAG {
 	var rows *sql.Rows
 	switch {
 	case entry_number != 0 && account == "":
@@ -268,8 +268,8 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	check_accounts("account", "inventory", " is not have fifo lifo wma on cost_flow_type field", inventory)
 
 	// entry_number := entry_number()
-	// var array_to_insert []journal_tag
-	// expair_expenses := journal_tag{NOW.String(), entry_number, s.expair_expenses, 0, 0, 0, "", time.Time{}.String(), "to record the expiry of the goods automatically", "", "", NOW.String(), false}
+	// var array_to_insert []JOURNAL_TAG
+	// expair_expenses := JOURNAL_TAG{NOW.String(), entry_number, s.expair_expenses, 0, 0, 0, "", time.Time{}.String(), "to record the expiry of the goods automatically", "", "", NOW.String(), false}
 	// expair_goods, _ := DB.Query("select account,price*quantity*-1,price,quantity*-1,barcode from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
 	// for expair_goods.Next() {
 	// 	tag := expair_expenses
@@ -280,7 +280,7 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	// }
 	// expair_expenses.price = expair_expenses.value / expair_expenses.quantity
 	// array_to_insert = append(array_to_insert, expair_expenses)
-	// s.insert_to_database(array_to_insert, true, false, false)
+	// s.insert_to_database(array_to_insert, true, false)
 	// DB.Exec("delete from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
 	DB.Exec("delete from inventory where quantity=0")
 

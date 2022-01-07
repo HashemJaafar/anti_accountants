@@ -1,6 +1,7 @@
 package anti_accountants
 
 import (
+	"log"
 	"math"
 	"time"
 )
@@ -30,7 +31,7 @@ type FINANCIAL_ANALYSIS struct {
 	WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING float64
 }
 
-type financial_analysis_statement struct {
+type FINANCIAL_ANALYSIS_STATEMENT struct {
 	CURRENT_RATIO                        float64 // current_assets / current_liabilities
 	ACID_TEST                            float64 // (cash + short_term_investments + net_receivables) / current_liabilities
 	RECEIVABLES_TURNOVER                 float64 // net_credit_sales / average_net_receivables
@@ -47,7 +48,7 @@ type financial_analysis_statement struct {
 	PRICE_EARNINGS_RATIO                 float64 // market_price_per_shares_outstanding / earnings_per_share
 }
 
-type filtered_statement struct {
+type FILTERED_STATEMENT struct {
 	KEY_ACCOUNT_FLOW, KEY_ACCOUNT, KEY_NAME, KEY_VPQ, KEY_NUMBER string
 	NUMBER                                                       float64
 }
@@ -56,7 +57,7 @@ func ending_balance(statement map[string]map[string]map[string]map[string]map[st
 	return statement[key_account_flow][key_account][key_name][key_vpq]["beginning_balance"] + statement[key_account][key_account][key_name][key_vpq]["increase"] - statement[key_account][key_account][key_name][key_vpq]["decrease"]
 }
 
-func sum_flows(b journal_tag, x float64, map_v, map_q map[string]float64) {
+func sum_flows(b JOURNAL_TAG, x float64, map_v, map_q map[string]float64) {
 	if b.VALUE*x < 0 {
 		map_v["outflow"] += math.Abs(b.VALUE)
 		map_q["outflow"] += math.Abs(b.QUANTITY)
@@ -66,7 +67,7 @@ func sum_flows(b journal_tag, x float64, map_v, map_q map[string]float64) {
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) sum_values(date, start_date time.Time, entry journal_tag, nan_flow_statement map[string]map[string]map[string]map[string]float64) {
+func (s FINANCIAL_ACCOUNTING) sum_values(date, start_date time.Time, entry JOURNAL_TAG, nan_flow_statement map[string]map[string]map[string]map[string]float64) {
 	map_v1 := initialize_map_3(nan_flow_statement, entry.ACCOUNT, entry.NAME, "value")
 	map_q1 := initialize_map_3(nan_flow_statement, entry.ACCOUNT, entry.NAME, "quantity")
 	map_v2 := initialize_map_3(nan_flow_statement, s.RETAINED_EARNINGS, entry.NAME, "value")
@@ -95,7 +96,7 @@ func (s FINANCIAL_ACCOUNTING) sum_values(date, start_date time.Time, entry journ
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) sum_flow(date, start_date time.Time, one_simple_entry []journal_tag, flow_statement map[string]map[string]map[string]map[string]map[string]float64) {
+func (s FINANCIAL_ACCOUNTING) sum_flow(date, start_date time.Time, one_simple_entry []JOURNAL_TAG, flow_statement map[string]map[string]map[string]map[string]map[string]float64) {
 	for _, a := range one_simple_entry {
 		for _, b := range one_simple_entry {
 			map_v := initialize_map_4(flow_statement, a.ACCOUNT, b.ACCOUNT, b.NAME, "value")
@@ -111,7 +112,7 @@ func (s FINANCIAL_ACCOUNTING) sum_flow(date, start_date time.Time, one_simple_en
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) analysis(statement map[string]map[string]map[string]map[string]map[string]float64) financial_analysis_statement {
+func (s FINANCIAL_ACCOUNTING) analysis(statement map[string]map[string]map[string]map[string]map[string]float64) FINANCIAL_ANALYSIS_STATEMENT {
 	return FINANCIAL_ANALYSIS{
 		CURRENT_ASSETS:                      statement[s.CASH_AND_CASH_EQUIVALENTS][s.CURRENT_ASSETS]["names"]["value"]["ending_balance"],
 		CURRENT_LIABILITIES:                 statement[s.CASH_AND_CASH_EQUIVALENTS][s.CURRENT_LIABILITIES]["names"]["value"]["ending_balance"],
@@ -340,8 +341,8 @@ func combine_statements(flow_statement map[string]map[string]map[string]map[stri
 	return flow_statement
 }
 
-func (s FINANCIAL_ACCOUNTING) statement(journal []journal_tag, start_date, end_date time.Time) (map[string]map[string]map[string]map[string]map[string]float64, map[string]map[string]map[string]map[string]float64) {
-	var one_simple_entry []journal_tag
+func (s FINANCIAL_ACCOUNTING) statement(journal []JOURNAL_TAG, start_date, end_date time.Time) (map[string]map[string]map[string]map[string]map[string]float64, map[string]map[string]map[string]map[string]float64) {
+	var one_simple_entry []JOURNAL_TAG
 	var previous_entry_number int
 	var date time.Time
 	flow_statement := map[string]map[string]map[string]map[string]map[string]float64{}
@@ -350,7 +351,7 @@ func (s FINANCIAL_ACCOUNTING) statement(journal []journal_tag, start_date, end_d
 		date = PARSE_DATE(entry.DATE, s.DATE_LAYOUT)
 		if previous_entry_number != entry.ENTRY_NUMBER {
 			s.sum_flow(date, start_date, one_simple_entry, flow_statement)
-			one_simple_entry = []journal_tag{}
+			one_simple_entry = []JOURNAL_TAG{}
 		}
 		if date.Before(end_date) {
 			s.sum_values(date, start_date, entry, nan_flow_statement)
@@ -362,7 +363,7 @@ func (s FINANCIAL_ACCOUNTING) statement(journal []journal_tag, start_date, end_d
 	return flow_statement, nan_flow_statement
 }
 
-func (s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT() financial_analysis_statement {
+func (s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT() FINANCIAL_ANALYSIS_STATEMENT {
 	CURRENT_RATIO := s.CURRENT_ASSETS / s.CURRENT_LIABILITIES
 	ACID_TEST := (s.CASH + s.SHORT_TERM_INVESTMENTS + s.NET_RECEIVABLES) / s.CURRENT_LIABILITIES
 	RECEIVABLES_TURNOVER := s.NET_CREDIT_SALES / s.AVERAGE_NET_RECEIVABLES
@@ -377,7 +378,7 @@ func (s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT() financial_analysis_st
 	RETURN_ON_COMMON_STOCKHOLDERS_EQUITY := (s.NET_INCOME - s.PREFERRED_DIVIDENDS) / s.AVERAGE_COMMON_STOCKHOLDERS_EQUITY
 	EARNINGS_PER_SHARE := (s.NET_INCOME - s.PREFERRED_DIVIDENDS) / s.WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING
 	PRICE_EARNINGS_RATIO := s.MARKET_PRICE_PER_SHARES_OUTSTANDING / EARNINGS_PER_SHARE
-	return financial_analysis_statement{
+	return FINANCIAL_ANALYSIS_STATEMENT{
 		CURRENT_RATIO:                        CURRENT_RATIO,
 		ACID_TEST:                            ACID_TEST,
 		RECEIVABLES_TURNOVER:                 RECEIVABLES_TURNOVER,
@@ -394,7 +395,7 @@ func (s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT() financial_analysis_st
 		PRICE_EARNINGS_RATIO:                 PRICE_EARNINGS_RATIO}
 }
 
-func (s FINANCIAL_ACCOUNTING) FINANCIAL_STATEMENTS(start_date, end_date time.Time, periods int, names []string, in_names bool) ([]map[string]map[string]map[string]map[string]map[string]float64, []financial_analysis_statement, []journal_tag) {
+func (s FINANCIAL_ACCOUNTING) FINANCIAL_STATEMENTS(start_date, end_date time.Time, periods int, names []string, in_names bool) ([]map[string]map[string]map[string]map[string]map[string]float64, []FINANCIAL_ANALYSIS_STATEMENT, []JOURNAL_TAG) {
 	check_dates(start_date, end_date)
 	days := int(end_date.Sub(start_date).Hours() / 24)
 	rows, _ := DB.Query("select * from journal order by date,entry_number")
@@ -410,7 +411,7 @@ func (s FINANCIAL_ACCOUNTING) FINANCIAL_STATEMENTS(start_date, end_date time.Tim
 		vertical_analysis(statement, float64(days))
 		statements = append(statements, statement)
 	}
-	var all_analysis []financial_analysis_statement
+	var all_analysis []FINANCIAL_ANALYSIS_STATEMENT
 	for _, statement_current := range statements {
 		horizontal_analysis(statement_current, statements[periods-1])
 		s.prepare_statement(statement_current)
@@ -422,10 +423,10 @@ func (s FINANCIAL_ACCOUNTING) FINANCIAL_STATEMENTS(start_date, end_date time.Tim
 }
 
 func (s FINANCIAL_ACCOUNTING) STATEMENT_FILTER(all_financial_statements []map[string]map[string]map[string]map[string]map[string]float64, account_flow_slice, account_slice, name_slice, vpq_slice, number_slice []string,
-	in_account_flow_slice, in_account_slice, in_name_slice, in_vpq_slice, in_number_slice bool) [][]filtered_statement {
-	var all_statements_struct [][]filtered_statement
+	in_account_flow_slice, in_account_slice, in_name_slice, in_vpq_slice, in_number_slice bool, type_of_sort string) [][]FILTERED_STATEMENT {
+	var all_statements_struct [][]FILTERED_STATEMENT
 	for _, statement := range all_financial_statements {
-		var statement_struct []filtered_statement
+		var one_statement_struct []FILTERED_STATEMENT
 		for key_account_flow, map_account_flow := range statement {
 			if IS_IN(key_account_flow, account_flow_slice) == in_account_flow_slice {
 				for key_account, map_account := range map_account_flow {
@@ -436,7 +437,7 @@ func (s FINANCIAL_ACCOUNTING) STATEMENT_FILTER(all_financial_statements []map[st
 									if IS_IN(key_vpq, vpq_slice) == in_vpq_slice {
 										for key_number, number := range map_vpq {
 											if IS_IN(key_number, number_slice) == in_number_slice {
-												statement_struct = append(statement_struct, filtered_statement{key_account_flow, key_account, key_name, key_vpq, key_number, number})
+												one_statement_struct = append(one_statement_struct, FILTERED_STATEMENT{key_account_flow, key_account, key_name, key_vpq, key_number, number})
 											}
 										}
 									}
@@ -447,17 +448,33 @@ func (s FINANCIAL_ACCOUNTING) STATEMENT_FILTER(all_financial_statements []map[st
 				}
 			}
 		}
-		var indexa int
-		for _, a := range s.ACCOUNTS {
-			for indexb, b := range statement_struct {
-				if a.NAME == b.KEY_ACCOUNT {
-					statement_struct[indexa], statement_struct[indexb] = statement_struct[indexb], statement_struct[indexa]
-					indexa++
-					break
-				}
-			}
+		switch type_of_sort {
+		case "pre_order":
+			s.sort_statement_by_pre_order_in_insertion_sort(one_statement_struct)
+		case "by_father_name":
+			s.sort_statement_by_father_name(one_statement_struct)
+		case "no_order":
+		default:
+			log.Panic(type_of_sort, " is not in [pre_order,by_father_name,no_order]")
 		}
-		all_statements_struct = append(all_statements_struct, statement_struct)
+		all_statements_struct = append(all_statements_struct, one_statement_struct)
 	}
 	return all_statements_struct
+}
+
+func (s FINANCIAL_ACCOUNTING) sort_statement_by_father_name(one_statement_struct []FILTERED_STATEMENT) {
+	// later to complete
+}
+
+func (s FINANCIAL_ACCOUNTING) sort_statement_by_pre_order_in_insertion_sort(one_statement_struct []FILTERED_STATEMENT) {
+	var indexa int
+	for _, a := range s.ACCOUNTS {
+		for indexb, b := range one_statement_struct {
+			if a.NAME == b.KEY_ACCOUNT {
+				one_statement_struct[indexa], one_statement_struct[indexb] = one_statement_struct[indexb], one_statement_struct[indexa]
+				indexa++
+				break
+			}
+		}
+	}
 }

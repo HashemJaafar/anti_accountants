@@ -258,14 +258,14 @@ func (s FINANCIAL_ACCOUNTING) convert_to_simple_entry(debit_entries, credit_entr
 	return simple_entries
 }
 
-func insert_to_journal_tag(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, date time.Time, entry_expair time.Time, description string, name string, employee_name string) []journal_tag {
-	var array_to_insert []journal_tag
+func insert_to_JOURNAL_TAG(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, date time.Time, entry_expair time.Time, description string, name string, employee_name string) []JOURNAL_TAG {
+	var array_to_insert []JOURNAL_TAG
 	for _, entry := range array_of_entry {
 		price := entry.VALUE / entry.QUANTITY
 		if price < 0 {
 			log.Panic("the ", entry.VALUE, " and ", entry.QUANTITY, " for ", entry, " should be positive both or negative both")
 		}
-		array_to_insert = append(array_to_insert, journal_tag{
+		array_to_insert = append(array_to_insert, JOURNAL_TAG{
 			DATE:          date.String(),
 			ENTRY_NUMBER:  0,
 			ACCOUNT:       entry.ACCOUNT,
@@ -284,7 +284,7 @@ func insert_to_journal_tag(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, date
 	return array_to_insert
 }
 
-func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_end []DAY_START_END, array_to_insert []journal_tag, adjusting_method string, description string, name string, employee_name string) [][]journal_tag {
+func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_end []DAY_START_END, array_to_insert []JOURNAL_TAG, adjusting_method string, description string, name string, employee_name string) [][]JOURNAL_TAG {
 	var day_start_end_date_minutes_array []day_start_end_date_minutes
 	var total_minutes float64
 	var previous_end_date, end time.Time
@@ -307,10 +307,10 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 			}
 		}
 	}
-	var adjusted_array_to_insert [][]journal_tag
+	var adjusted_array_to_insert [][]JOURNAL_TAG
 	for _, entry := range array_to_insert {
 		var value_counter, time_unit_counter float64
-		var one_account_adjusted_list []journal_tag
+		var one_account_adjusted_list []JOURNAL_TAG
 		total_value := math.Abs(entry.VALUE)
 		for index, element := range day_start_end_date_minutes_array {
 			value := value_after_adjust_using_adjusting_methods(adjusting_method, element, total_minutes, time_unit_counter, total_value)
@@ -322,7 +322,7 @@ func adjuste_the_array(entry_expair time.Time, date time.Time, array_day_start_e
 			time_unit_counter += element.minutes
 			value_counter += math.Abs(value)
 			value = RETURN_SAME_SIGN_OF_NUMBER_SIGN(entry.VALUE, value)
-			one_account_adjusted_list = append(one_account_adjusted_list, journal_tag{
+			one_account_adjusted_list = append(one_account_adjusted_list, JOURNAL_TAG{
 				DATE:          element.start_date.String(),
 				ENTRY_NUMBER:  0,
 				ACCOUNT:       entry.ACCOUNT,
@@ -357,24 +357,25 @@ func value_after_adjust_using_adjusting_methods(adjusting_method string, element
 }
 
 func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcode string, insert bool) float64 {
-	var order_by_date_asc_or_desc string
-	switch {
-	case quantity > 0:
+	if quantity > 0 {
 		return 0
-	case s.return_cost_flow_type(account) == "fifo":
+	}
+	var order_by_date_asc_or_desc string
+	switch s.return_cost_flow_type(account) {
+	case "fifo":
 		order_by_date_asc_or_desc = "asc"
-	case s.return_cost_flow_type(account) == "lifo":
+	case "lifo":
 		order_by_date_asc_or_desc = "desc"
-	case s.return_cost_flow_type(account) == "wma":
+	case "wma":
 		weighted_average([]string{account})
 		order_by_date_asc_or_desc = "asc"
 	default:
 		return 0
 	}
 	rows, _ := DB.Query("select price,quantity from inventory where quantity>0 and account=? and barcode=? order by date "+order_by_date_asc_or_desc, account, barcode)
-	var inventory []journal_tag
+	var inventory []JOURNAL_TAG
 	for rows.Next() {
-		var tag journal_tag
+		var tag JOURNAL_TAG
 		rows.Scan(&tag.PRICE, &tag.QUANTITY)
 		inventory = append(inventory, tag)
 	}
@@ -404,25 +405,39 @@ func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcod
 	return costs
 }
 
-func (s FINANCIAL_ACCOUNTING) insert_to_database(array_of_journal_tag []journal_tag, insert_into_journal, insert_into_inventory, inventory_flow bool) {
+func (s FINANCIAL_ACCOUNTING) insert_to_database(array_of_journal_tag []JOURNAL_TAG, insert_into_journal, insert_into_inventory bool) {
+	insert_entry_number(array_of_journal_tag)
+	if insert_into_journal {
+		insert_into_journal_func(array_of_journal_tag)
+	}
+	if insert_into_inventory {
+		s.insert_into_inventory(array_of_journal_tag)
+	}
+}
+
+func (s FINANCIAL_ACCOUNTING) insert_into_inventory(array_of_journal_tag []JOURNAL_TAG) {
+	for _, entry := range array_of_journal_tag {
+		costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, true)
+		if IS_IN(entry.ACCOUNT, inventory) && costs == 0 {
+			DB.Exec("insert into inventory(date,account,price,quantity,barcode,entry_expair,name,employee_name,entry_date)values (?,?,?,?,?,?,?,?,?)",
+				&entry.DATE, &entry.ACCOUNT, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE, &entry.ENTRY_EXPAIR, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE)
+		}
+	}
+}
+
+func insert_into_journal_func(array_of_journal_tag []JOURNAL_TAG) {
+	for _, entry := range array_of_journal_tag {
+		DB.Exec("insert into journal(date,entry_number,account,value,price,quantity,barcode,entry_expair,description,name,employee_name,entry_date,reverse) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+			&entry.DATE, &entry.ENTRY_NUMBER, &entry.ACCOUNT, &entry.VALUE, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE,
+			&entry.ENTRY_EXPAIR, &entry.DESCRIPTION, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE, &entry.REVERSE)
+	}
+}
+
+func insert_entry_number(array_of_journal_tag []JOURNAL_TAG) {
 	entry_number := float64(entry_number())
-	for indexa, entry := range array_of_journal_tag {
-		entry.ENTRY_NUMBER = int(entry_number)
+	for indexa := range array_of_journal_tag {
 		array_of_journal_tag[indexa].ENTRY_NUMBER = int(entry_number)
 		entry_number += 0.5
-		if insert_into_journal {
-			DB.Exec("insert into journal(date,entry_number,account,value,price,quantity,barcode,entry_expair,description,name,employee_name,entry_date,reverse) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-				&entry.DATE, &entry.ENTRY_NUMBER, &entry.ACCOUNT, &entry.VALUE, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE,
-				&entry.ENTRY_EXPAIR, &entry.DESCRIPTION, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE, &entry.REVERSE)
-		}
-		if IS_IN(entry.ACCOUNT, inventory) {
-			costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, inventory_flow)
-			if insert_into_inventory && costs == 0 {
-				DB.Exec("insert into inventory(date,account,price,quantity,barcode,entry_expair,name,employee_name,entry_date)values (?,?,?,?,?,?,?,?,?)",
-					&entry.DATE, &entry.ACCOUNT, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE, &entry.ENTRY_EXPAIR, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE)
-
-			}
-		}
 	}
 }
 
@@ -442,7 +457,7 @@ func weighted_average(array_of_accounts []string) {
 }
 
 func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRY(entry_number uint, employee_name string) {
-	var array_of_entry_to_reverse []journal_tag
+	var array_of_entry_to_reverse []JOURNAL_TAG
 	rows, _ := DB.Query("select * from journal where entry_number=? order by date", entry_number)
 	array_of_journal_tag := select_from_journal(rows)
 	if len(array_of_journal_tag) == 0 {
@@ -468,11 +483,11 @@ func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRY(entry_number uint, employee_name str
 			}
 		}
 	}
-	s.insert_to_database(array_of_entry_to_reverse, true, true, true)
+	s.insert_to_database(array_of_entry_to_reverse, true, true)
 }
 
 func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, insert, auto_completion bool, date time.Time, entry_expair time.Time, adjusting_method string,
-	description string, name string, employee_name string, array_day_start_end []DAY_START_END) []journal_tag {
+	description string, name string, employee_name string, array_day_start_end []DAY_START_END) []JOURNAL_TAG {
 	array_day_start_end = check_the_params(entry_expair, adjusting_method, date, array_of_entry, array_day_start_end)
 	array_of_entry = group_by_account_and_barcode(array_of_entry)
 	array_of_entry = remove_zero_values(array_of_entry)
@@ -485,9 +500,9 @@ func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(array_of_entry []ACCOUNT_VALUE_QUANT
 	s.can_the_account_be_negative(array_of_entry)
 	debit_entries, credit_entries := s.check_debit_equal_credit(array_of_entry, false)
 	simple_entries := s.convert_to_simple_entry(debit_entries, credit_entries)
-	var all_array_to_insert []journal_tag
+	var all_array_to_insert []JOURNAL_TAG
 	for _, simple_entry := range simple_entries {
-		array_to_insert := insert_to_journal_tag(simple_entry, date, entry_expair, description, name, employee_name)
+		array_to_insert := insert_to_JOURNAL_TAG(simple_entry, date, entry_expair, description, name, employee_name)
 		if IS_IN(adjusting_method, depreciation_methods[:]) {
 			adjusted_array_to_insert := adjuste_the_array(entry_expair, date, array_day_start_end, array_to_insert, adjusting_method, description, name, employee_name)
 			adjusted_array_to_insert = transpose(adjusted_array_to_insert)
@@ -495,6 +510,6 @@ func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(array_of_entry []ACCOUNT_VALUE_QUANT
 		}
 		all_array_to_insert = append(all_array_to_insert, array_to_insert...)
 	}
-	s.insert_to_database(all_array_to_insert, insert, insert, insert)
+	s.insert_to_database(all_array_to_insert, insert, insert)
 	return all_array_to_insert
 }

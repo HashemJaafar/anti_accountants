@@ -17,12 +17,12 @@ func IS_IN(element string, elements []string) bool {
 	return false
 }
 
-func transpose(slice [][]journal_tag) [][]journal_tag {
+func transpose(slice [][]JOURNAL_TAG) [][]JOURNAL_TAG {
 	xl := len(slice[0])
 	yl := len(slice)
-	result := make([][]journal_tag, xl)
+	result := make([][]JOURNAL_TAG, xl)
 	for i := range result {
-		result[i] = make([]journal_tag, yl)
+		result[i] = make([]JOURNAL_TAG, yl)
 	}
 	for i := 0; i < xl; i++ {
 		for j := 0; j < yl; j++ {
@@ -32,8 +32,8 @@ func transpose(slice [][]journal_tag) [][]journal_tag {
 	return result
 }
 
-func unpack_the_array(adjusted_array_to_insert [][]journal_tag) []journal_tag {
-	array_to_insert := []journal_tag{}
+func unpack_the_array(adjusted_array_to_insert [][]JOURNAL_TAG) []JOURNAL_TAG {
+	array_to_insert := []JOURNAL_TAG{}
 	for _, element := range adjusted_array_to_insert {
 		array_to_insert = append(array_to_insert, element...)
 	}
@@ -127,10 +127,10 @@ func check_dates(start_date, end_date time.Time) {
 	}
 }
 
-func select_from_journal(rows *sql.Rows) []journal_tag {
-	var journal []journal_tag
+func select_from_journal(rows *sql.Rows) []JOURNAL_TAG {
+	var journal []JOURNAL_TAG
 	for rows.Next() {
-		var tag journal_tag
+		var tag JOURNAL_TAG
 		rows.Scan(&tag.DATE, &tag.ENTRY_NUMBER, &tag.ACCOUNT, &tag.VALUE, &tag.PRICE, &tag.QUANTITY, &tag.BARCODE, &tag.ENTRY_EXPAIR, &tag.DESCRIPTION, &tag.NAME, &tag.EMPLOYEE_NAME, &tag.ENTRY_DATE, &tag.REVERSE)
 		journal = append(journal, tag)
 	}
