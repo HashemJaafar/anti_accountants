@@ -3,6 +3,7 @@ package anti_accountants
 import (
 	"log"
 	"math"
+	"sort"
 	"time"
 )
 
@@ -423,7 +424,7 @@ func (s FINANCIAL_ACCOUNTING) FINANCIAL_STATEMENTS(start_date, end_date time.Tim
 }
 
 func (s FINANCIAL_ACCOUNTING) STATEMENT_FILTER(all_financial_statements []map[string]map[string]map[string]map[string]map[string]float64, account_flow_slice, account_slice, name_slice, vpq_slice, number_slice []string,
-	in_account_flow_slice, in_account_slice, in_name_slice, in_vpq_slice, in_number_slice bool, type_of_sort string) [][]FILTERED_STATEMENT {
+	in_account_flow_slice, in_account_slice, in_name_slice, in_vpq_slice, in_number_slice bool) [][]FILTERED_STATEMENT {
 	var all_statements_struct [][]FILTERED_STATEMENT
 	for _, statement := range all_financial_statements {
 		var one_statement_struct []FILTERED_STATEMENT
@@ -448,22 +449,42 @@ func (s FINANCIAL_ACCOUNTING) STATEMENT_FILTER(all_financial_statements []map[st
 				}
 			}
 		}
-		switch type_of_sort {
-		case "pre_order":
-			s.sort_statement_by_pre_order_in_insertion_sort(one_statement_struct)
-		case "by_father_name":
-			s.sort_statement_by_father_name(one_statement_struct)
-		case "no_order":
-		default:
-			log.Panic(type_of_sort, " is not in [pre_order,by_father_name,no_order]")
-		}
 		all_statements_struct = append(all_statements_struct, one_statement_struct)
 	}
 	return all_statements_struct
 }
 
+func (s FINANCIAL_ACCOUNTING) SORT_THE_STATMENT(all_statements_struct [][]FILTERED_STATEMENT, sort_by string, is_reverse bool) {
+	for _, one_statement_struct := range all_statements_struct {
+		switch sort_by {
+		case "pre_order":
+			s.sort_statement_by_pre_order_in_insertion_sort(one_statement_struct)
+		case "father_name":
+			s.sort_statement_by_father_name(one_statement_struct)
+		case "multiple_alphabet_column":
+			s.sort_by_multiple_alphabet_column(one_statement_struct)
+		case "number":
+			s.sort_by_number(one_statement_struct)
+		case "no_order":
+		default:
+			log.Panic(sort_by, " is not in [pre_order,father_name,multiple_alphabet_column,number,no_order]")
+		}
+		if is_reverse {
+			REVERSE_SLICE(one_statement_struct)
+		}
+	}
+}
+
 func (s FINANCIAL_ACCOUNTING) sort_statement_by_father_name(one_statement_struct []FILTERED_STATEMENT) {
 	// later to complete
+}
+
+func (s FINANCIAL_ACCOUNTING) sort_by_multiple_alphabet_column(one_statement_struct []FILTERED_STATEMENT) {
+	// later to complete
+}
+
+func (s FINANCIAL_ACCOUNTING) sort_by_number(one_statement_struct []FILTERED_STATEMENT) {
+	sort.Slice(one_statement_struct, func(p, q int) bool { return one_statement_struct[p].NUMBER < one_statement_struct[q].NUMBER })
 }
 
 func (s FINANCIAL_ACCOUNTING) sort_statement_by_pre_order_in_insertion_sort(one_statement_struct []FILTERED_STATEMENT) {

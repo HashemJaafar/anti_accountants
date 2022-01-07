@@ -86,6 +86,14 @@ func CONCAT(args ...interface{}) interface{} {
 	return v.Interface()
 }
 
+func REVERSE_SLICE(s interface{}) {
+	n := reflect.ValueOf(s).Len()
+	swap := reflect.Swapper(s)
+	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
+		swap(i, j)
+	}
+}
+
 func initialize_map_4(m map[string]map[string]map[string]map[string]map[string]float64, a, b, c, d string) map[string]float64 {
 	if m[a] == nil {
 		m[a] = map[string]map[string]map[string]map[string]float64{}
