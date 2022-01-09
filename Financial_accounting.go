@@ -214,14 +214,7 @@ func SELECT_JOURNAL(entry_number uint, account string, start_date, end_date time
 }
 
 func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
-	DB, _ = sql.Open(s.DRIVER_NAME, s.DATA_SOURCE_NAME)
-	err := DB.Ping()
-	error_fatal(err)
-	DB.Exec("create database if not exists " + s.DATABASE_NAME)
-	_, err = DB.Exec("USE " + s.DATABASE_NAME)
-	error_fatal(err)
-	DB.Exec("create table if not exists journal (date text,entry_number integer,account text,value real,price real,quantity real,barcode text,entry_expair text,description text,name text,employee_name text,entry_date text,reverse bool)")
-	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
+	s.open_and_create_database()
 
 	var all_accounts []string
 	for _, i := range s.ACCOUNTS {
@@ -293,18 +286,32 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	// DB.Exec("delete from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
 	DB.Exec("delete from inventory where quantity=0")
 
+	s.check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal()
+}
+
+func (s FINANCIAL_ACCOUNTING) open_and_create_database() {
+	DB, _ = sql.Open(s.DRIVER_NAME, s.DATA_SOURCE_NAME)
+	err := DB.Ping()
+	error_fatal(err)
+	DB.Exec("create database if not exists " + s.DATABASE_NAME)
+	_, err = DB.Exec("USE " + s.DATABASE_NAME)
+	error_fatal(err)
+	DB.Exec("create table if not exists journal (date text,entry_number integer,account text,value real,price real,quantity real,barcode text,entry_expair text,description text,name text,employee_name text,entry_date text,reverse bool)")
+	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
+}
+
+func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal() {
 	var double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	previous_entry_number := 1
-	rows, _ := DB.Query("select entry_number,account,value from journal order by date,entry_number")
-	for rows.Next() {
-		var entry_number int
-		var tag ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
-		rows.Scan(&entry_number, &tag.ACCOUNT, &tag.VALUE)
-		if previous_entry_number != entry_number {
+	rows, _ := DB.Query("select * from journal order by date,entry_number")
+	journal := select_from_journal(rows)
+	for _, entry := range journal {
+		if previous_entry_number != entry.ENTRY_NUMBER {
 			s.check_debit_equal_credit(double_entry, true)
 			double_entry = []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
 		}
-		double_entry = append(double_entry, tag)
-		previous_entry_number = entry_number
+		double_entry = append(double_entry, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE})
+		previous_entry_number = entry.ENTRY_NUMBER
 	}
+	s.check_debit_equal_credit(double_entry, true)
 }

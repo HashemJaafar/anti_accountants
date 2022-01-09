@@ -56,6 +56,7 @@ func PARSE_DATE(string_date string, date_layouts []string) time.Time {
 			return date
 		}
 	}
+	log.Panic("you don't have layout for this date ", string_date)
 	return time.Time{}
 }
 

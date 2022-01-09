@@ -230,7 +230,7 @@ func (s FINANCIAL_ACCOUNTING) can_the_account_be_negative(entries []ACCOUNT_VALU
 			var account_balance float64
 			DB.QueryRow("select sum(value) from journal where account=? and date<?", entry.ACCOUNT, NOW.String()).Scan(&account_balance)
 			if account_balance+entry.VALUE < 0 {
-				log.Panic("you cant enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
+				log.Panic("you can't enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
 			}
 		}
 	}
@@ -463,6 +463,18 @@ func weighted_average_for_barcode(account string, barcode string) {
 	DB.Exec("update inventory set price=(select sum(value)/sum(quantity) from journal where account=? and barcode=?) where account=? and barcode=?", account, barcode, account, barcode)
 }
 
+func set_to_reverse(entry JOURNAL_TAG, is_before_now bool) {
+	var str string
+	switch is_before_now {
+	case true:
+		str = "update journal set reverse=True"
+	case false:
+		str = "delete from journal"
+	}
+	DB.Exec(str+" where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
+		entry.DATE, entry.ENTRY_NUMBER, entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE, entry.ENTRY_EXPAIR, entry.DESCRIPTION, entry.NAME, entry.EMPLOYEE_NAME, entry.ENTRY_DATE, entry.REVERSE)
+}
+
 func calculate_and_insert_value_price_quantity(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
 	for index, entry := range entries {
 		m := map[string]float64{}
@@ -486,33 +498,54 @@ func calculate_and_insert_value_price_quantity(entries []ACCOUNT_VALUE_PRICE_QUA
 }
 
 func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRY(entry_number uint, employee_name string) {
-	var entries_to_reverse []JOURNAL_TAG
 	rows, _ := DB.Query("select * from journal where entry_number=? order by date", entry_number)
 	array_of_journal_tag := select_from_journal(rows)
+	REVERSE_SLICE(array_of_journal_tag)
+
 	if len(array_of_journal_tag) == 0 {
 		log.Panic("this entry not exist")
+	} else if array_of_journal_tag[0].REVERSE == true {
+		fmt.Println("entry number ", entry_number, " was reversed")
 	}
+
+	reverse_entry := s.make_the_reverse_entries(array_of_journal_tag, employee_name)
+	s.can_the_account_be_negative(make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry))
+
+	for _, entry := range array_of_journal_tag {
+		if !entry.REVERSE {
+			weighted_average(entry.ACCOUNT)
+			set_to_reverse(entry, PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW))
+		}
+	}
+
+	s.insert_to_database(reverse_entry, true, true)
+}
+
+func make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry []JOURNAL_TAG) []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
+	var entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
+	for _, entry := range reverse_entry {
+		entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE = append(entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE})
+	}
+	return entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
+}
+
+func (s FINANCIAL_ACCOUNTING) make_the_reverse_entries(array_of_journal_tag []JOURNAL_TAG, employee_name string) []JOURNAL_TAG {
+	var entries_to_reverse []JOURNAL_TAG
 	for _, entry := range array_of_journal_tag {
 		if !entry.REVERSE {
 			if PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW) {
-				DB.Exec("update journal set reverse=True where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
-					entry.DATE, entry.ENTRY_NUMBER, entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE, entry.ENTRY_EXPAIR, entry.DESCRIPTION, entry.NAME, entry.EMPLOYEE_NAME, entry.ENTRY_DATE, entry.REVERSE)
-				entry.DESCRIPTION = "(reverse entry for entry number " + strconv.Itoa(entry.ENTRY_NUMBER) + " entered by " + entry.EMPLOYEE_NAME + " and revised by " + employee_name + ")"
 				entry.DATE = NOW.String()
 				entry.VALUE *= -1
 				entry.QUANTITY *= -1
 				entry.ENTRY_EXPAIR = time.Time{}.String()
+				entry.DESCRIPTION = "(reverse entry for entry number " + strconv.Itoa(entry.ENTRY_NUMBER) + " entered by " + entry.EMPLOYEE_NAME + " and revised by " + employee_name + ")"
 				entry.EMPLOYEE_NAME = employee_name
 				entry.ENTRY_DATE = NOW.String()
 				entries_to_reverse = append(entries_to_reverse, entry)
-				weighted_average(entry.ACCOUNT)
-			} else {
-				DB.Exec("delete from journal where date=? and entry_number=? and account=? and value=? and price=? and quantity=? and barcode=? and entry_expair=? and description=? and name=? and employee_name=? and entry_date=? and reverse=?",
-					entry.DATE, entry.ENTRY_NUMBER, entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE, entry.ENTRY_EXPAIR, entry.DESCRIPTION, entry.NAME, entry.EMPLOYEE_NAME, entry.ENTRY_DATE, entry.REVERSE)
 			}
 		}
 	}
-	s.insert_to_database(entries_to_reverse, true, true)
+	return entries_to_reverse
 }
 
 func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, insert, auto_completion, remove_zero bool, date time.Time, entry_expair time.Time, adjusting_method string,

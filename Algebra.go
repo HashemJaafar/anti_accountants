@@ -97,7 +97,7 @@ func equations_generator(print bool, m map[string]float64, a, b, sign, c string,
 		m[c] = c_value
 		print_equation(print, m, a, b, sign, c)
 	case oka && okb && okc && math.Round(la*1000)/1000 != math.Round(a_value*1000)/1000 && !inf:
-		log.Fatal(a, m[a], " != ", b, m[b], " ", sign, " ", c, m[c])
+		log.Fatal(a, " ", m[a], " != ", b, " ", m[b], " ", sign, " ", c, " ", m[c])
 	}
 }
 
