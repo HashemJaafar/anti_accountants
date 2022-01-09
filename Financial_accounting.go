@@ -103,10 +103,10 @@ func (s FINANCIAL_ACCOUNTING) is_father(father, name string) bool {
 	return false
 }
 
-func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(array_of_entry []ACCOUNT_VALUE_QUANTITY_BARCODE, check_one_debit_and_one_credit bool) ([]ACCOUNT_VALUE_QUANTITY_BARCODE, []ACCOUNT_VALUE_QUANTITY_BARCODE) {
-	var debit_entries, credit_entries []ACCOUNT_VALUE_QUANTITY_BARCODE
+func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, check_one_debit_and_one_credit bool) ([]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+	var debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	var zero float64
-	for _, entry := range array_of_entry {
+	for _, entry := range entries {
 		switch s.is_credit(entry.ACCOUNT) {
 		case false:
 			zero += entry.VALUE
@@ -127,13 +127,13 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(array_of_entry []ACCOUNT_
 	len_debit_entries := len(debit_entries)
 	len_credit_entries := len(credit_entries)
 	if (len_debit_entries != 1) && (len_credit_entries != 1) {
-		log.Panic("should be one credit or one debit in the entry ", array_of_entry)
+		log.Panic("should be one credit or one debit in the entry ", entries)
 	}
 	if !((len_debit_entries == 1) && (len_credit_entries == 1)) && check_one_debit_and_one_credit {
-		log.Panic("should be one credit and one debit in the entry ", array_of_entry)
+		log.Panic("should be one credit and one debit in the entry ", entries)
 	}
 	if zero != 0 {
-		log.Panic(zero, " not equal 0 if the number>0 it means debit overstated else credit overstated debit-credit should equal zero ", array_of_entry)
+		log.Panic(zero, " not equal 0 if the number>0 it means debit overstated else credit overstated debit-credit should equal zero ", entries)
 	}
 	return debit_entries, credit_entries
 }
@@ -284,16 +284,16 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	// DB.Exec("delete from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
 	DB.Exec("delete from inventory where quantity=0")
 
-	var double_entry []ACCOUNT_VALUE_QUANTITY_BARCODE
+	var double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	previous_entry_number := 1
 	rows, _ := DB.Query("select entry_number,account,value from journal order by date,entry_number")
 	for rows.Next() {
 		var entry_number int
-		var tag ACCOUNT_VALUE_QUANTITY_BARCODE
+		var tag ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 		rows.Scan(&entry_number, &tag.ACCOUNT, &tag.VALUE)
 		if previous_entry_number != entry_number {
 			s.check_debit_equal_credit(double_entry, true)
-			double_entry = []ACCOUNT_VALUE_QUANTITY_BARCODE{}
+			double_entry = []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
 		}
 		double_entry = append(double_entry, tag)
 		previous_entry_number = entry_number
