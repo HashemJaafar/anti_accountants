@@ -1,6 +1,7 @@
 package anti_accountants
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"math"
@@ -178,8 +179,8 @@ func (s FINANCIAL_ACCOUNTING) auto_completion_the_entry(entries []ACCOUNT_VALUE_
 				}
 			}
 		}
+		fmt.Println(new_entries)
 	}
-	fmt.Println(new_entries)
 	return entries
 }
 
@@ -228,7 +229,7 @@ func (s FINANCIAL_ACCOUNTING) can_the_account_be_negative(entries []ACCOUNT_VALU
 	for _, entry := range entries {
 		if !(s.is_father(s.EQUITY, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT)) {
 			var account_balance float64
-			DB.QueryRow("select sum(value) from journal where account=? and date<?", entry.ACCOUNT, NOW.String()).Scan(&account_balance)
+			DB.QueryRow("select sum(value) from journal where account=?", entry.ACCOUNT).Scan(&account_balance)
 			if account_balance+entry.VALUE < 0 {
 				log.Panic("you can't enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
 			}
@@ -497,21 +498,42 @@ func calculate_and_insert_value_price_quantity(entries []ACCOUNT_VALUE_PRICE_QUA
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRY(entry_number uint, employee_name string) {
-	rows, _ := DB.Query("select * from journal where entry_number=? order by date", entry_number)
-	array_of_journal_tag := select_from_journal(rows)
-	REVERSE_SLICE(array_of_journal_tag)
+func rows(reverse_method, date, entry_date string, entry_number int) *sql.Rows {
+	var rows *sql.Rows
+	switch reverse_method {
+	case "entry_number":
+		rows, _ = DB.Query("select * from journal where entry_number=?", entry_number)
+	case "date":
+		rows, _ = DB.Query("select * from journal where date=?", date)
+	case "entry_date":
+		rows, _ = DB.Query("select * from journal where entry_date=?", entry_date)
+	case "date_and_entry_date":
+		rows, _ = DB.Query("select * from journal where date=? and entry_date=?", date, entry_date)
+	default:
+		log.Panic(reverse_method, " is not in [entry_number,date,entry_date,date_and_entry_date]")
+	}
+	return rows
+}
 
-	if len(array_of_journal_tag) == 0 {
+func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRIES(employee_name, reverse_method, date, entry_date string, entry_number int) {
+	rows := rows(reverse_method, date, entry_date, entry_number)
+	entries := select_from_journal(rows)
+	REVERSE_SLICE(entries)
+
+	if len(entries) == 0 {
 		log.Panic("this entry not exist")
-	} else if array_of_journal_tag[0].REVERSE == true {
-		fmt.Println("entry number ", entry_number, " was reversed")
 	}
 
-	reverse_entry := s.make_the_reverse_entries(array_of_journal_tag, employee_name)
+	for _, entry := range entries {
+		if entry.REVERSE {
+			fmt.Println("entry number ", entry.ENTRY_NUMBER, " was reversed")
+		}
+	}
+
+	reverse_entry := s.make_the_reverse_entries(entries, employee_name)
 	s.can_the_account_be_negative(make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry))
 
-	for _, entry := range array_of_journal_tag {
+	for _, entry := range entries {
 		if !entry.REVERSE {
 			weighted_average(entry.ACCOUNT)
 			set_to_reverse(entry, PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW))
@@ -529,9 +551,9 @@ func make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry []
 	return entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 }
 
-func (s FINANCIAL_ACCOUNTING) make_the_reverse_entries(array_of_journal_tag []JOURNAL_TAG, employee_name string) []JOURNAL_TAG {
+func (s FINANCIAL_ACCOUNTING) make_the_reverse_entries(entries []JOURNAL_TAG, employee_name string) []JOURNAL_TAG {
 	var entries_to_reverse []JOURNAL_TAG
-	for _, entry := range array_of_journal_tag {
+	for _, entry := range entries {
 		if !entry.REVERSE {
 			if PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW) {
 				entry.DATE = NOW.String()

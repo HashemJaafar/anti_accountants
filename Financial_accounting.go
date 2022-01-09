@@ -2,6 +2,7 @@ package anti_accountants
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 )
@@ -126,11 +127,13 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []ACCOUNT_VALUE_P
 	}
 	len_debit_entries := len(debit_entries)
 	len_credit_entries := len(credit_entries)
-	if (len_debit_entries != 1) && (len_credit_entries != 1) {
-		log.Panic("should be one credit or one debit in the entry ", entries)
-	}
-	if !((len_debit_entries == 1) && (len_credit_entries == 1)) && check_one_debit_and_one_credit {
-		log.Panic("should be one credit and one debit in the entry ", entries)
+	if (len_debit_entries != 0) && (len_credit_entries != 0) {
+		if (len_debit_entries != 1) && (len_credit_entries != 1) {
+			log.Panic("should be one credit or one debit in the entry ", entries)
+		}
+		if !((len_debit_entries == 1) && (len_credit_entries == 1)) && check_one_debit_and_one_credit {
+			log.Panic("should be one credit and one debit in the entry ", entries)
+		}
 	}
 	if zero != 0 {
 		log.Panic(zero, " not equal 0 if the number>0 it means debit overstated else credit overstated debit-credit should equal zero ", entries)
@@ -307,11 +310,22 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_o
 	journal := select_from_journal(rows)
 	for _, entry := range journal {
 		if previous_entry_number != entry.ENTRY_NUMBER {
-			s.check_debit_equal_credit(double_entry, true)
+			delete_not_double_entry(double_entry, previous_entry_number)
+			if len(double_entry) == 2 {
+				s.check_debit_equal_credit(double_entry, true)
+			}
 			double_entry = []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
 		}
 		double_entry = append(double_entry, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE})
 		previous_entry_number = entry.ENTRY_NUMBER
 	}
+	delete_not_double_entry(double_entry, previous_entry_number)
 	s.check_debit_equal_credit(double_entry, true)
+}
+
+func delete_not_double_entry(double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, previous_entry_number int) {
+	if len(double_entry) != 2 {
+		DB.Exec("delete from journal where entry_number=?", previous_entry_number)
+		fmt.Println("this entry is deleted ", double_entry)
+	}
 }
