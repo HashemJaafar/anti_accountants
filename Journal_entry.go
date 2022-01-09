@@ -118,7 +118,7 @@ func group_by_account_and_barcode(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	}
 	entries = []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
 	for key, v := range g {
-		entries = append(entries, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{key.account, v.VALUE, 0, v.QUANTITY, key.barcode})
+		entries = append(entries, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{key.account, v.VALUE, v.VALUE / v.QUANTITY, v.QUANTITY, key.barcode})
 	}
 	return entries
 }
@@ -188,6 +188,7 @@ func (s FINANCIAL_ACCOUNTING) find_cost(entries []ACCOUNT_VALUE_PRICE_QUANTITY_B
 		costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, false)
 		if costs != 0 {
 			entries[index].VALUE = -costs
+			entries[index].PRICE = -costs / entry.QUANTITY
 		}
 	}
 }
@@ -197,7 +198,7 @@ func (s FINANCIAL_ACCOUNTING) auto_completion_the_invoice_discount(auto_completi
 		total_invoice_before_invoice_discount := s.total_invoice_before_invoice_discount(entries)
 		_, discount := X_UNDER_X(s.INVOICE_DISCOUNTS_LIST, total_invoice_before_invoice_discount)
 		invoice_discount := discount_tax_calculator(total_invoice_before_invoice_discount, discount)
-		entries = append(entries, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{s.INVOICE_DISCOUNT, invoice_discount, 0, 1, ""})
+		entries = append(entries, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{s.INVOICE_DISCOUNT, invoice_discount, invoice_discount, 1, ""})
 	}
 	return entries
 }

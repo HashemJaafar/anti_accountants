@@ -58,8 +58,8 @@ func ending_balance(statement map[string]map[string]map[string]map[string]map[st
 	return statement[key_account_flow][key_account][key_name][key_vpq]["beginning_balance"] + statement[key_account][key_account][key_name][key_vpq]["increase"] - statement[key_account][key_account][key_name][key_vpq]["decrease"]
 }
 
-func sum_flows(b JOURNAL_TAG, x float64, map_v, map_q map[string]float64) {
-	if b.VALUE*x < 0 {
+func sum_flows(b JOURNAL_TAG, both_credit_or_debit bool, map_v, map_q map[string]float64) {
+	if (b.VALUE > 0) == both_credit_or_debit {
 		map_v["outflow"] += math.Abs(b.VALUE)
 		map_q["outflow"] += math.Abs(b.QUANTITY)
 	} else {
@@ -103,10 +103,11 @@ func (s FINANCIAL_ACCOUNTING) sum_flow(date, start_date time.Time, one_simple_en
 			map_v := initialize_map_4(flow_statement, a.ACCOUNT, b.ACCOUNT, b.NAME, "value")
 			map_q := initialize_map_4(flow_statement, a.ACCOUNT, b.ACCOUNT, b.NAME, "quantity")
 			if date.After(start_date) {
-				if b.ACCOUNT == a.ACCOUNT || s.is_credit(b.ACCOUNT) != s.is_credit(a.ACCOUNT) {
-					sum_flows(b, 1, map_v, map_q)
+				both_credit_or_debit := s.is_credit(b.ACCOUNT) == s.is_credit(a.ACCOUNT)
+				if b.ACCOUNT == a.ACCOUNT {
+					sum_flows(b, false, map_v, map_q)
 				} else {
-					sum_flows(b, -1, map_v, map_q)
+					sum_flows(b, both_credit_or_debit, map_v, map_q)
 				}
 			}
 		}

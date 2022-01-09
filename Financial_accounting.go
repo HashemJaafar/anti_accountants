@@ -110,17 +110,17 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []ACCOUNT_VALUE_P
 		switch s.is_credit(entry.ACCOUNT) {
 		case false:
 			zero += entry.VALUE
-			if entry.VALUE >= 0 {
-				debit_entries = append(debit_entries, entry)
+			if entry.VALUE != 0.0 {
+				debit_entries, credit_entries = insert_to_debit_or_cridet(entry.VALUE, false, entry, debit_entries, credit_entries)
 			} else {
-				credit_entries = append(credit_entries, entry)
+				debit_entries, credit_entries = insert_to_debit_or_cridet(entry.QUANTITY, false, entry, debit_entries, credit_entries)
 			}
 		case true:
 			zero -= entry.VALUE
-			if entry.VALUE <= 0 {
-				debit_entries = append(debit_entries, entry)
+			if entry.VALUE != 0.0 {
+				debit_entries, credit_entries = insert_to_debit_or_cridet(entry.VALUE, true, entry, debit_entries, credit_entries)
 			} else {
-				credit_entries = append(credit_entries, entry)
+				debit_entries, credit_entries = insert_to_debit_or_cridet(entry.QUANTITY, true, entry, debit_entries, credit_entries)
 			}
 		}
 	}
@@ -134,6 +134,15 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []ACCOUNT_VALUE_P
 	}
 	if zero != 0 {
 		log.Panic(zero, " not equal 0 if the number>0 it means debit overstated else credit overstated debit-credit should equal zero ", entries)
+	}
+	return debit_entries, credit_entries
+}
+
+func insert_to_debit_or_cridet(number float64, is_credit bool, entry ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, debit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) ([]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+	if (number <= 0) == is_credit {
+		debit_entries = append(debit_entries, entry)
+	} else {
+		credit_entries = append(credit_entries, entry)
 	}
 	return debit_entries, credit_entries
 }
