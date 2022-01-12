@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 )
 
 var (
@@ -202,20 +201,6 @@ func (s FINANCIAL_ACCOUNTING) INVOICE(array_of_journal_tag []JOURNAL_TAG) []INVO
 	return invoice
 }
 
-func SELECT_JOURNAL(entry_number uint, account string, start_date, end_date time.Time) []JOURNAL_TAG {
-	var rows *sql.Rows
-	switch {
-	case entry_number != 0 && account == "":
-		rows, _ = DB.Query("select * from journal where date>? and date<? and entry_number=? order by date", start_date.String(), end_date.String(), entry_number)
-	case entry_number == 0 && account != "":
-		rows, _ = DB.Query("select * from journal where date>? and date<? and account=? order by date", start_date.String(), end_date.String(), account)
-	default:
-		log.Panic("should be one of these entry_number != 0 && account == '' or entry_number == 0 && account != '' ")
-	}
-	journal := select_from_journal(rows)
-	return journal
-}
-
 func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	s.open_and_create_database()
 
@@ -289,7 +274,7 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	// DB.Exec("delete from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
 	DB.Exec("delete from inventory where quantity=0")
 
-	s.check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal()
+	s.check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER())
 }
 
 func (s FINANCIAL_ACCOUNTING) open_and_create_database() {
@@ -303,12 +288,10 @@ func (s FINANCIAL_ACCOUNTING) open_and_create_database() {
 	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
 }
 
-func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal() {
+func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG) {
 	var double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	previous_entry_number := 1
-	rows, _ := DB.Query("select * from journal order by date,entry_number")
-	journal := select_from_journal(rows)
-	for _, entry := range journal {
+	for _, entry := range JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER {
 		if previous_entry_number != entry.ENTRY_NUMBER {
 			delete_not_double_entry(double_entry, previous_entry_number)
 			if len(double_entry) == 2 {

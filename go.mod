@@ -1,4 +1,4 @@
-module example.com/anti_accountants
+module Financial_accounting
 
 go 1.17
 
