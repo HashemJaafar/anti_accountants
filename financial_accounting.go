@@ -2,13 +2,13 @@ package anti_accountants
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 )
 
 var (
-	DB        *sql.DB
-	inventory []string
+	DB             *sql.DB
+	inventory      []string
+	cost_flow_type = []string{"fifo", "lifo", "wma", "barcode"}
 )
 
 type FINANCIAL_ACCOUNTING struct {
@@ -103,6 +103,15 @@ func (s FINANCIAL_ACCOUNTING) is_father(father, name string) bool {
 	return false
 }
 
+func (s FINANCIAL_ACCOUNTING) is_in_father_name(account string) bool {
+	for _, a := range s.ACCOUNTS {
+		if a.FATHER == account {
+			return true
+		}
+	}
+	return false
+}
+
 func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, check_one_debit_and_one_credit bool) ([]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
 	var debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	var zero float64
@@ -149,29 +158,6 @@ func insert_to_debit_or_cridet(number float64, is_credit bool, entry ACCOUNT_VAL
 	return debit_entries, credit_entries
 }
 
-func check_accounts(column, table, panic string, elements []string) {
-	results, err := DB.Query("select " + column + " from " + table)
-	error_fatal(err)
-	for results.Next() {
-		var tag string
-		results.Scan(&tag)
-		if !IS_IN(tag, elements) {
-			log.Panic(tag + panic)
-		}
-	}
-}
-
-func CHANGE_ACCOUNT_NAME(name, new_name string) {
-	var tag string
-	err := DB.QueryRow("select account from journal where account=? limit 1", new_name).Scan(&tag)
-	if err == nil {
-		log.Panic("you can't change the name of [", name, "] to [", new_name, "] as new name because it used")
-	} else {
-		DB.Exec("update journal set account=? where account=?", new_name, name)
-		DB.Exec("update inventory set account=? where account=?", new_name, name)
-	}
-}
-
 func (s FINANCIAL_ACCOUNTING) INVOICE(array_of_journal_tag []JOURNAL_TAG) []INVOICE_STRUCT {
 	m := map[string]*INVOICE_STRUCT{}
 	for _, entry := range array_of_journal_tag {
@@ -211,11 +197,11 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 		}
 		all_accounts = append(all_accounts, i.NAME)
 		switch {
-		case IS_IN(i.COST_FLOW_TYPE, []string{"fifo", "lifo", "wma"}) && !s.is_father(s.RETAINED_EARNINGS, i.NAME) && !i.IS_CREDIT:
+		case s.asc_of_desc(i.NAME, "") != "" && !s.is_father(s.RETAINED_EARNINGS, i.NAME) && !i.IS_CREDIT:
 			inventory = append(inventory, i.NAME)
 		case i.COST_FLOW_TYPE == "":
 		default:
-			log.Panic(i.COST_FLOW_TYPE, " for ", i.NAME, " is not in [fifo,lifo,wma,''] or you can't use it with ", s.RETAINED_EARNINGS, " or is_credit==true")
+			log.Panic(i.COST_FLOW_TYPE, " for ", i.NAME, " is not in ", cost_flow_type, " or you can't use it with ", s.RETAINED_EARNINGS, " or is_credit==true")
 		}
 	}
 
@@ -277,17 +263,6 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	s.check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER())
 }
 
-func (s FINANCIAL_ACCOUNTING) open_and_create_database() {
-	DB, _ = sql.Open(s.DRIVER_NAME, s.DATA_SOURCE_NAME)
-	err := DB.Ping()
-	error_fatal(err)
-	DB.Exec("create database if not exists " + s.DATABASE_NAME)
-	_, err = DB.Exec("USE " + s.DATABASE_NAME)
-	error_fatal(err)
-	DB.Exec("create table if not exists journal (date text,entry_number integer,account text,value real,price real,quantity real,barcode text,entry_expair text,description text,name text,employee_name text,entry_date text,reverse bool)")
-	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
-}
-
 func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG) {
 	var double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	previous_entry_number := 1
@@ -304,11 +279,4 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_o
 	}
 	delete_not_double_entry(double_entry, previous_entry_number)
 	s.check_debit_equal_credit(double_entry, true)
-}
-
-func delete_not_double_entry(double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, previous_entry_number int) {
-	if len(double_entry) != 2 {
-		DB.Exec("delete from journal where entry_number=?", previous_entry_number)
-		fmt.Println("this entry is deleted ", double_entry)
-	}
 }

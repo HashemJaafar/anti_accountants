@@ -11,11 +11,6 @@ type FILTERED_STATEMENT struct {
 	NUMBER                                                       float64
 }
 
-func JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER() []JOURNAL_TAG {
-	rows, _ := DB.Query("select * from journal order by date,entry_number")
-	return select_from_journal(rows)
-}
-
 func (s FINANCIAL_ACCOUNTING) JOURNAL_FILTER(
 	JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG,
 

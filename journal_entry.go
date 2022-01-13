@@ -135,20 +135,6 @@ func remove_zero_values(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) []ACCOUN
 	return entries
 }
 
-func find_account_from_barcode(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	for index, entry := range entries {
-		if entry.ACCOUNT == "" && entry.BARCODE == "" {
-			log.Panic("can't find the account name if the barcode is empty in ", entry)
-		}
-		if entry.ACCOUNT == "" {
-			err := DB.QueryRow("select account from journal where barcode=? limit 1", entry.BARCODE).Scan(&entries[index].ACCOUNT)
-			if err != nil {
-				log.Panic("the barcode is wrong for ", entry)
-			}
-		}
-	}
-}
-
 func (s FINANCIAL_ACCOUNTING) auto_completion_the_entry(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, auto_completion bool) []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
 	var new_entries [][]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	if auto_completion {
@@ -223,18 +209,6 @@ func discount_tax_calculator(price, discount_tax float64) float64 {
 	return discount_tax
 }
 
-func (s FINANCIAL_ACCOUNTING) can_the_account_be_negative(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	for _, entry := range entries {
-		if !(s.is_father(s.EQUITY, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT)) {
-			var account_balance float64
-			DB.QueryRow("select sum(value) from journal where account=?", entry.ACCOUNT).Scan(&account_balance)
-			if account_balance+entry.VALUE < 0 {
-				log.Panic("you can't enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
-			}
-		}
-	}
-}
-
 func (s FINANCIAL_ACCOUNTING) convert_to_simple_entry(debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) [][]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
 	simple_entries := [][]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
 	for _, debit_entry := range debit_entries {
@@ -257,6 +231,28 @@ func (s FINANCIAL_ACCOUNTING) convert_to_simple_entry(debit_entries, credit_entr
 		}
 	}
 	return simple_entries
+}
+
+func (s FINANCIAL_ACCOUNTING) can_the_account_be_negative(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+	for _, entry := range entries {
+		if !(s.is_father(s.EQUITY, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT)) {
+			account_balance := account_balance(entry.ACCOUNT)
+			if account_balance+entry.VALUE < 0 {
+				log.Panic("you can't enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
+			}
+		}
+	}
+}
+
+func find_account_from_barcode(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+	for index, entry := range entries {
+		if entry.QUANTITY < 0 && entry.BARCODE != "" {
+			err := DB.QueryRow("select account from journal where barcode=? limit 1", entry.BARCODE).Scan(&entries[index].ACCOUNT)
+			if err != nil {
+				log.Panic("the barcode is wrong for ", entry)
+			}
+		}
+	}
 }
 
 func insert_to_JOURNAL_TAG(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, date time.Time, entry_expair time.Time, description string, name string, employee_name string) []JOURNAL_TAG {
@@ -361,19 +357,8 @@ func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcod
 	if quantity > 0 {
 		return 0
 	}
-	var order_by_date_asc_or_desc string
-	switch s.return_cost_flow_type(account) {
-	case "lifo":
-		order_by_date_asc_or_desc = "desc"
-	case "fifo":
-		order_by_date_asc_or_desc = "asc"
-	case "wma":
-		weighted_average(account)
-		order_by_date_asc_or_desc = "asc"
-	case "barcode":
-		weighted_average_for_barcode(account, barcode)
-		order_by_date_asc_or_desc = "asc"
-	default:
+	order_by_date_asc_or_desc := s.asc_of_desc(account, barcode)
+	if order_by_date_asc_or_desc == "" {
 		return 0
 	}
 	rows, _ := DB.Query("select price,quantity from inventory where quantity>0 and account=? and barcode=? order by date "+order_by_date_asc_or_desc, account, barcode)
@@ -409,6 +394,22 @@ func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcod
 	return costs
 }
 
+func (s FINANCIAL_ACCOUNTING) asc_of_desc(account string, barcode string) string {
+	switch s.return_cost_flow_type(account) {
+	case "lifo":
+		return "desc"
+	case "fifo":
+		return "asc"
+	case "wma":
+		weighted_average(account)
+		return "asc"
+	case "barcode":
+		weighted_average_for_barcode(account, barcode)
+		return "asc"
+	}
+	return ""
+}
+
 func (s FINANCIAL_ACCOUNTING) insert_to_database(array_of_journal_tag []JOURNAL_TAG, insert_into_journal, insert_into_inventory bool) {
 	insert_entry_number(array_of_journal_tag)
 	if insert_into_journal {
@@ -419,47 +420,12 @@ func (s FINANCIAL_ACCOUNTING) insert_to_database(array_of_journal_tag []JOURNAL_
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) insert_into_inventory(array_of_journal_tag []JOURNAL_TAG) {
-	for _, entry := range array_of_journal_tag {
-		costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, true)
-		if IS_IN(entry.ACCOUNT, inventory) && costs == 0 {
-			DB.Exec("insert into inventory(date,account,price,quantity,barcode,entry_expair,name,employee_name,entry_date)values (?,?,?,?,?,?,?,?,?)",
-				&entry.DATE, &entry.ACCOUNT, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE, &entry.ENTRY_EXPAIR, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE)
-		}
-	}
-}
-
-func insert_into_journal_func(array_of_journal_tag []JOURNAL_TAG) {
-	for _, entry := range array_of_journal_tag {
-		DB.Exec("insert into journal(date,entry_number,account,value,price,quantity,barcode,entry_expair,description,name,employee_name,entry_date,reverse) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-			&entry.DATE, &entry.ENTRY_NUMBER, &entry.ACCOUNT, &entry.VALUE, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE,
-			&entry.ENTRY_EXPAIR, &entry.DESCRIPTION, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE, &entry.REVERSE)
-	}
-}
-
 func insert_entry_number(array_of_journal_tag []JOURNAL_TAG) {
 	entry_number := float64(entry_number())
 	for indexa := range array_of_journal_tag {
 		array_of_journal_tag[indexa].ENTRY_NUMBER = int(entry_number)
 		entry_number += 0.5
 	}
-}
-
-func entry_number() int {
-	var tag int
-	err := DB.QueryRow("select max(entry_number) from journal").Scan(&tag)
-	if err != nil {
-		tag = 0
-	}
-	return tag + 1
-}
-
-func weighted_average(account string) {
-	DB.Exec("update inventory set price=(select sum(value)/sum(quantity) from journal where account=?) where account=?", account, account)
-}
-
-func weighted_average_for_barcode(account string, barcode string) {
-	DB.Exec("update inventory set price=(select sum(value)/sum(quantity) from journal where account=? and barcode=?) where account=? and barcode=?", account, barcode, account, barcode)
 }
 
 func calculate_and_insert_value_price_quantity(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
@@ -484,6 +450,14 @@ func calculate_and_insert_value_price_quantity(entries []ACCOUNT_VALUE_PRICE_QUA
 	}
 }
 
+func (s FINANCIAL_ACCOUNTING) is_the_account_is_father(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+	for _, entry := range entries {
+		if s.is_in_father_name(entry.ACCOUNT) {
+			log.Panic(entry.ACCOUNT, " is in father name that mean you can't used in the entry")
+		}
+	}
+}
+
 func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, insert, auto_completion, remove_zero bool, date time.Time, entry_expair time.Time, adjusting_method string,
 	description string, name string, employee_name string, array_day_start_end []DAY_START_END) []JOURNAL_TAG {
 	calculate_and_insert_value_price_quantity(entries)
@@ -500,6 +474,7 @@ func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(entries []ACCOUNT_VALUE_PRICE_QUANTI
 	if remove_zero {
 		entries = remove_zero_values(entries)
 	}
+	s.is_the_account_is_father(entries)
 	s.can_the_account_be_negative(entries)
 	debit_entries, credit_entries := s.check_debit_equal_credit(entries, false)
 	simple_entries := s.convert_to_simple_entry(debit_entries, credit_entries)
