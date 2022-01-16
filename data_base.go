@@ -17,7 +17,7 @@ func (s FINANCIAL_ACCOUNTING) open_and_create_database() {
 	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
 }
 
-func delete_not_double_entry(double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, previous_entry_number int) {
+func delete_not_double_entry(double_entry []JOURNAL_TAG, previous_entry_number int) {
 	if len(double_entry) != 2 {
 		DB.Exec("delete from journal where entry_number=?", previous_entry_number)
 		fmt.Println("this entry is deleted ", double_entry)

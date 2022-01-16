@@ -6,8 +6,6 @@ import (
 	"log"
 	"strconv"
 	"time"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 func set_to_reverse(entry JOURNAL_TAG, is_before_now bool) {
@@ -51,12 +49,14 @@ func make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry []
 	return entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 }
 
-func (s FINANCIAL_ACCOUNTING) make_the_reverse_entries(entries []JOURNAL_TAG, employee_name string) []JOURNAL_TAG {
+func (s FINANCIAL_ACCOUNTING) make_the_reverse_entries(entries []JOURNAL_TAG, reverse_using_current_date bool, employee_name string) []JOURNAL_TAG {
 	var entries_to_reverse []JOURNAL_TAG
 	for _, entry := range entries {
 		if !entry.REVERSE {
 			if PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW) {
-				entry.DATE = NOW.String()
+				if reverse_using_current_date {
+					entry.DATE = NOW.String()
+				}
 				entry.VALUE *= -1
 				entry.QUANTITY *= -1
 				entry.ENTRY_EXPAIR = time.Time{}.String()
@@ -70,7 +70,7 @@ func (s FINANCIAL_ACCOUNTING) make_the_reverse_entries(entries []JOURNAL_TAG, em
 	return entries_to_reverse
 }
 
-func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRIES(employee_name, reverse_method, date, entry_date string, entry_number int) {
+func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRIES(reverse_using_current_date bool, employee_name, reverse_method, date, entry_date string, entry_number int) {
 	rows := rows(reverse_method, date, entry_date, entry_number)
 	entries := select_from_journal(rows)
 	REVERSE_SLICE(entries)
@@ -85,8 +85,8 @@ func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRIES(employee_name, reverse_method, dat
 		}
 	}
 
-	reverse_entry := s.make_the_reverse_entries(entries, employee_name)
-	s.can_the_account_be_negative(make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry))
+	reverse_entry := s.make_the_reverse_entries(entries, reverse_using_current_date, employee_name)
+	s.can_the_account_be_negative(reverse_entry)
 
 	for _, entry := range entries {
 		if !entry.REVERSE {

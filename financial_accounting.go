@@ -112,8 +112,8 @@ func (s FINANCIAL_ACCOUNTING) is_in_father_name(account string) bool {
 	return false
 }
 
-func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, check_one_debit_and_one_credit bool) ([]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	var debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
+func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []JOURNAL_TAG, check_one_debit_and_one_credit bool) ([]JOURNAL_TAG, []JOURNAL_TAG) {
+	var debit_entries, credit_entries []JOURNAL_TAG
 	var zero float64
 	for _, entry := range entries {
 		switch s.is_credit(entry.ACCOUNT) {
@@ -149,7 +149,7 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []ACCOUNT_VALUE_P
 	return debit_entries, credit_entries
 }
 
-func insert_to_debit_or_cridet(number float64, is_credit bool, entry ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, debit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) ([]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+func insert_to_debit_or_cridet(number float64, is_credit bool, entry JOURNAL_TAG, debit_entries []JOURNAL_TAG, credit_entries []JOURNAL_TAG) ([]JOURNAL_TAG, []JOURNAL_TAG) {
 	if (number <= 0) == is_credit {
 		debit_entries = append(debit_entries, entry)
 	} else {
@@ -264,7 +264,7 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 }
 
 func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG) {
-	var double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
+	var double_entry []JOURNAL_TAG
 	previous_entry_number := 1
 	for _, entry := range JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER {
 		if previous_entry_number != entry.ENTRY_NUMBER {
@@ -272,9 +272,15 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_o
 			if len(double_entry) == 2 {
 				s.check_debit_equal_credit(double_entry, true)
 			}
-			double_entry = []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
+			double_entry = []JOURNAL_TAG{}
 		}
-		double_entry = append(double_entry, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE})
+		double_entry = append(double_entry, JOURNAL_TAG{
+			ACCOUNT:  entry.ACCOUNT,
+			VALUE:    entry.VALUE,
+			PRICE:    entry.PRICE,
+			QUANTITY: entry.QUANTITY,
+			BARCODE:  entry.BARCODE,
+		}) //ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE})
 		previous_entry_number = entry.ENTRY_NUMBER
 	}
 	delete_not_double_entry(double_entry, previous_entry_number)
