@@ -2,7 +2,6 @@ package anti_accountants
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"strconv"
 )
@@ -12,10 +11,10 @@ func check_map_keys_for_equations(equations [][]string, m map[string]float64) {
 	for _, equation := range equations {
 		elements = append(elements, equation[0], equation[1], equation[3])
 	}
-	elements, _ = RETURN_SET_AND_DUPLICATES_SLICES(elements)
+	elements, _ = RETURN_SET_AND_DUPLICATES_STRING_SLICES(elements)
 	for keyb := range m {
 		if !IS_IN(keyb, elements) {
-			log.Panic(keyb, " is not in ", elements)
+			error_element_is_not_in_elements(keyb, elements)
 		}
 	}
 }
@@ -51,7 +50,7 @@ func equation_solver(print bool, m map[string]float64, a, b, sign, c string) {
 	case "log":
 		equations_generator(print, m, a, b, sign, c, LOG(m[b], m[c]), POW(m[c], m[a]), ROOT(m[b], m[a]))
 	default:
-		log.Panic(sign, " is not in [+-*/**root log]")
+		error_element_is_not_in_elements(sign, []string{"+", "-", "*", "/", "**", "root", "log"})
 	}
 }
 
@@ -83,7 +82,7 @@ func equations_generator(print bool, m map[string]float64, a, b, sign, c string,
 		m[c] = c_value
 		print_equation(print, m, a, b, sign, c)
 	case oka && okb && okc && math.Round(la*1000)/1000 != math.Round(a_value*1000)/1000 && !check_if_inf(m, a, b, c):
-		log.Fatal(a, " ", m[a], " != ", b, " ", m[b], " ", sign, " ", c, " ", m[c])
+		error_not_equal(m, a, b, sign, c)
 	}
 }
 

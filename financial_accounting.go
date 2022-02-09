@@ -2,13 +2,11 @@ package anti_accountants
 
 import (
 	"database/sql"
-	"log"
 )
 
 var (
-	DB             *sql.DB
-	inventory      []string
-	cost_flow_type = []string{"fifo", "lifo", "wma", "barcode"}
+	DB        *sql.DB
+	inventory []string
 )
 
 type FINANCIAL_ACCOUNTING struct {
@@ -39,11 +37,6 @@ type FINANCIAL_ACCOUNTING struct {
 	AUTO_COMPLETE_ENTRIES     []AUTO_COMPLETE_ENTRIE
 }
 
-type ACCOUNT struct {
-	IS_CREDIT                    bool
-	COST_FLOW_TYPE, FATHER, NAME string
-}
-
 type JOURNAL_TAG struct {
 	DATE          string
 	ENTRY_NUMBER  int
@@ -63,53 +56,6 @@ type JOURNAL_TAG struct {
 type INVOICE_STRUCT struct {
 	ACCOUNT                string
 	VALUE, PRICE, QUANTITY float64
-}
-
-func (s FINANCIAL_ACCOUNTING) is_credit(name string) bool {
-	for _, a := range s.ACCOUNTS {
-		if a.NAME == name {
-			return a.IS_CREDIT
-		}
-	}
-	log.Panic(name, " is not debit nor credit")
-	return false
-}
-
-func (s FINANCIAL_ACCOUNTING) return_cost_flow_type(name string) string {
-	for _, a := range s.ACCOUNTS {
-		if a.NAME == name {
-			return a.COST_FLOW_TYPE
-		}
-	}
-	return ""
-}
-
-func (s FINANCIAL_ACCOUNTING) is_father(father, name string) bool {
-	var last_name string
-	for {
-		for _, a := range s.ACCOUNTS {
-			if a.NAME == name {
-				name = a.FATHER
-			}
-			if father == name {
-				return true
-			}
-		}
-		if last_name == name {
-			break
-		}
-		last_name = name
-	}
-	return false
-}
-
-func (s FINANCIAL_ACCOUNTING) is_in_father_name(account string) bool {
-	for _, a := range s.ACCOUNTS {
-		if a.FATHER == account {
-			return true
-		}
-	}
-	return false
 }
 
 func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []JOURNAL_TAG, check_one_debit_and_one_credit bool) ([]JOURNAL_TAG, []JOURNAL_TAG) {
@@ -137,14 +83,14 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []JOURNAL_TAG, ch
 	len_credit_entries := len(credit_entries)
 	if (len_debit_entries != 0) && (len_credit_entries != 0) {
 		if (len_debit_entries != 1) && (len_credit_entries != 1) {
-			log.Panic("should be one credit or one debit in the entry ", entries)
+			error_one_credit___one_debit("or", entries)
 		}
 		if !((len_debit_entries == 1) && (len_credit_entries == 1)) && check_one_debit_and_one_credit {
-			log.Panic("should be one credit and one debit in the entry ", entries)
+			error_one_credit___one_debit("and", entries)
 		}
 	}
 	if zero != 0 {
-		log.Panic(zero, " not equal 0 if the number>0 it means debit overstated else credit overstated debit-credit should equal zero ", entries)
+		error_debit_not_equal_credit(zero, entries)
 	}
 	return debit_entries, credit_entries
 }
@@ -163,11 +109,11 @@ func (s FINANCIAL_ACCOUNTING) INVOICE(array_of_journal_tag []JOURNAL_TAG) []INVO
 	for _, entry := range array_of_journal_tag {
 		var key string
 		switch {
-		case s.is_father(s.ASSETS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT) && !IS_IN(entry.ACCOUNT, inventory) && entry.VALUE > 0:
+		case s.is_it_sub_account_using_name(s.ASSETS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT) && !IS_IN(entry.ACCOUNT, inventory) && entry.VALUE > 0:
 			key = "total"
-		case s.is_father(s.DISCOUNTS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT):
+		case s.is_it_sub_account_using_name(s.DISCOUNTS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT):
 			key = "total discounts"
-		case s.is_father(s.SALES, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT):
+		case s.is_it_sub_account_using_name(s.SALES, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT):
 			key = entry.ACCOUNT
 		default:
 			continue
@@ -189,58 +135,11 @@ func (s FINANCIAL_ACCOUNTING) INVOICE(array_of_journal_tag []JOURNAL_TAG) []INVO
 
 func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 	s.open_and_create_database()
-
-	var all_accounts []string
-	for _, i := range s.ACCOUNTS {
-		if !s.is_father("", i.NAME) {
-			log.Panic(i.NAME, " account does not ends in ''")
-		}
-		all_accounts = append(all_accounts, i.NAME)
-		switch {
-		case s.asc_of_desc(i.NAME, "") != "" && !s.is_father(s.RETAINED_EARNINGS, i.NAME) && !i.IS_CREDIT:
-			inventory = append(inventory, i.NAME)
-		case i.COST_FLOW_TYPE == "":
-		default:
-			log.Panic(i.COST_FLOW_TYPE, " for ", i.NAME, " is not in ", cost_flow_type, " or you can't use it with ", s.RETAINED_EARNINGS, " or is_credit==true")
-		}
-	}
-
-	switch {
-	case !s.is_father(s.ASSETS, s.CURRENT_ASSETS):
-		log.Panic(s.ASSETS, " should be one of the fathers of ", s.CURRENT_ASSETS)
-	case !s.is_father(s.CURRENT_ASSETS, s.CASH_AND_CASH_EQUIVALENTS):
-		log.Panic(s.CURRENT_ASSETS, " should be one of the fathers of ", s.CASH_AND_CASH_EQUIVALENTS)
-	case !s.is_father(s.CURRENT_ASSETS, s.SHORT_TERM_INVESTMENTS):
-		log.Panic(s.CURRENT_ASSETS, " should be one of the fathers of ", s.SHORT_TERM_INVESTMENTS)
-	case !s.is_father(s.CURRENT_ASSETS, s.RECEIVABLES):
-		log.Panic(s.CURRENT_ASSETS, " should be one of the fathers of ", s.RECEIVABLES)
-	case !s.is_father(s.CURRENT_ASSETS, s.INVENTORY):
-		log.Panic(s.CURRENT_ASSETS, " should be one of the fathers of ", s.INVENTORY)
-	case !s.is_father(s.LIABILITIES, s.CURRENT_LIABILITIES):
-		log.Panic(s.LIABILITIES, " should be one of the fathers of ", s.CURRENT_LIABILITIES)
-	case !s.is_father(s.EQUITY, s.RETAINED_EARNINGS):
-		log.Panic(s.EQUITY, " should be one of the fathers of ", s.RETAINED_EARNINGS)
-	case !s.is_father(s.RETAINED_EARNINGS, s.DIVIDENDS):
-		log.Panic(s.RETAINED_EARNINGS, " should be one of the fathers of ", s.DIVIDENDS)
-	case !s.is_father(s.RETAINED_EARNINGS, s.INCOME_STATEMENT):
-		log.Panic(s.RETAINED_EARNINGS, " should be one of the fathers of ", s.INCOME_STATEMENT)
-	case !s.is_father(s.INCOME_STATEMENT, s.EBITDA):
-		log.Panic(s.INCOME_STATEMENT, " should be one of the fathers of ", s.EBITDA)
-	case !s.is_father(s.INCOME_STATEMENT, s.INTEREST_EXPENSE):
-		log.Panic(s.INCOME_STATEMENT, " should be one of the fathers of ", s.INTEREST_EXPENSE)
-	case !s.is_father(s.EBITDA, s.SALES):
-		log.Panic(s.EBITDA, " should be one of the fathers of ", s.SALES)
-	case !s.is_father(s.EBITDA, s.COST_OF_GOODS_SOLD):
-		log.Panic(s.EBITDA, " should be one of the fathers of ", s.COST_OF_GOODS_SOLD)
-	case !s.is_father(s.EBITDA, s.DISCOUNTS):
-		log.Panic(s.EBITDA, " should be one of the fathers of ", s.DISCOUNTS)
-	case !s.is_father(s.DISCOUNTS, s.INVOICE_DISCOUNT):
-		log.Panic(s.DISCOUNTS, " should be one of the fathers of ", s.INVOICE_DISCOUNT)
-	}
-	_, duplicated_element := RETURN_SET_AND_DUPLICATES_SLICES(all_accounts)
-	if len(duplicated_element) != 0 {
-		log.Panic(duplicated_element, " is duplicated values in the fields of FINANCIAL_ACCOUNTING and that make error. you should remove the duplicate")
-	}
+	s.check_if_the_tree_connected()
+	s.check_cost_flow_type()
+	s.check_if_duplicated()
+	s.check_if_the_tree_ordered()
+	inventory = s.inventory_accounts()
 	check_accounts("account", "inventory", " is not have fifo lifo wma on cost_flow_type field", inventory)
 
 	// entry_number := entry_number()
@@ -280,7 +179,7 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_o
 			PRICE:    entry.PRICE,
 			QUANTITY: entry.QUANTITY,
 			BARCODE:  entry.BARCODE,
-		}) //ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE})
+		})
 		previous_entry_number = entry.ENTRY_NUMBER
 	}
 	delete_not_double_entry(double_entry, previous_entry_number)

@@ -67,7 +67,7 @@ func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE(simple bool) {
 			case "percent_from_contribution_margin":
 				total_overhead_cost_to_sum = s.CVP[key_portions_to]["contribution_margin"] * portions_to
 			default:
-				log.Panic(step.DISTRIBUTION_METHOD, " is not in [units_gap,1,equally,portions,units,variable_cost,fixed_cost,mixed_cost,sales,profit,contribution_margin,percent_from_variable_cost,percent_from_fixed_cost,percent_from_mixed_cost,percent_from_sales,percent_from_profit,percent_from_contribution_margin]")
+				error_element_is_not_in_elements(step.DISTRIBUTION_METHOD, []string{"units_gap", "1", "equally", "portions", "units", "variable_cost", "fixed_cost", "mixed_cost", "sales", "profit", "contribution_margin", "percent_from_variable_cost", "percent_from_fixed_cost", "percent_from_mixed_cost", "percent_from_sales", "percent_from_profit", "percent_from_contribution_margin"})
 			}
 			switch step.SALES_OR_VARIABLE_OR_FIXED {
 			case "sales":
@@ -77,7 +77,7 @@ func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE(simple bool) {
 			case "fixed_cost":
 				s.CVP[key_portions_to]["fixed_cost"] += total_overhead_cost_to_sum
 			default:
-				log.Panic(step.SALES_OR_VARIABLE_OR_FIXED, " is not in [sales,variable_cost,fixed_cost]")
+				error_element_is_not_in_elements(step.SALES_OR_VARIABLE_OR_FIXED, []string{"sales", "variable_cost", "fixed_cost"})
 			}
 			for key_name, map_cvp := range s.CVP {
 				s.CVP[key_name] = map[string]float64{"units_gap": map_cvp["units_gap"], "units": map_cvp["units"],

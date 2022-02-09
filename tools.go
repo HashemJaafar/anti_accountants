@@ -2,7 +2,6 @@ package anti_accountants
 
 import (
 	"database/sql"
-	"log"
 	"math"
 	"reflect"
 	"time"
@@ -56,16 +55,31 @@ func PARSE_DATE(string_date string, date_layouts []string) time.Time {
 			return date
 		}
 	}
-	log.Panic("you don't have layout for this date ", string_date)
+	error_date_layout(string_date)
 	return time.Time{}
 }
 
-func RETURN_SET_AND_DUPLICATES_SLICES(slice_of_elements []string) ([]string, []string) {
+func RETURN_SET_AND_DUPLICATES_STRING_SLICES(slice_of_elements []string) ([]string, []string) {
 	var set_of_elems, duplicated_element []string
 big_loop:
 	for _, element := range slice_of_elements {
 		for _, b := range set_of_elems {
 			if b == element {
+				duplicated_element = append(duplicated_element, element)
+				continue big_loop
+			}
+		}
+		set_of_elems = append(set_of_elems, element)
+	}
+	return set_of_elems, duplicated_element
+}
+
+func RETURN_SET_AND_DUPLICATES_UINT_SLICES(accounts_numbers [][]uint) ([][]uint, [][]uint) {
+	var set_of_elems, duplicated_element [][]uint
+big_loop:
+	for _, element := range accounts_numbers {
+		for _, b := range set_of_elems {
+			if reflect.DeepEqual(b, element) {
 				duplicated_element = append(duplicated_element, element)
 				continue big_loop
 			}
@@ -124,15 +138,9 @@ func initialize_map_3(m map[string]map[string]map[string]map[string]float64, a, 
 	return m[a][b][c]
 }
 
-func error_fatal(err error) {
-	if err != nil {
-		log.Panic(err)
-	}
-}
-
 func check_dates(start_date, end_date time.Time) {
 	if !start_date.Before(end_date) {
-		log.Panic("please enter the start_date<=end_date")
+		error_smaller_than_or_equal(start_date, end_date)
 	}
 }
 

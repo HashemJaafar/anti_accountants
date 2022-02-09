@@ -3,7 +3,6 @@ package anti_accountants
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 )
@@ -36,7 +35,7 @@ func rows(reverse_method, date, entry_date string, entry_number int) *sql.Rows {
 	case "smaller_than_date_and_in_entry_date":
 		rows, _ = DB.Query("select * from journal where date<=? and entry_date=?", date, entry_date)
 	default:
-		log.Panic(reverse_method, " is not in [entry_number,date,entry_date,date_and_entry_date,bigger_than_date_and_in_entry_date,smaller_than_date_and_in_entry_date]")
+		error_element_is_not_in_elements(reverse_method, []string{"entry_number", "date", "entry_date", "date_and_entry_date", "bigger_than_date_and_in_entry_date", "smaller_than_date_and_in_entry_date"})
 	}
 	return rows
 }
@@ -76,7 +75,7 @@ func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRIES(reverse_using_current_date bool, e
 	REVERSE_SLICE(entries)
 
 	if len(entries) == 0 {
-		log.Panic("this entry not exist")
+		error_this_entry_not_exist()
 	}
 
 	for _, entry := range entries {

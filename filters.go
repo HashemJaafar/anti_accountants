@@ -1,8 +1,8 @@
 package anti_accountants
 
 import (
-	"log"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -134,22 +134,30 @@ func (s FINANCIAL_ACCOUNTING) SORT_THE_STATMENT(all_statements_struct [][]FILTER
 		switch sort_by {
 		case "pre_order":
 			s.sort_statement_by_pre_order_in_insertion_sort(one_statement_struct)
-		case "father_name":
-			s.sort_statement_by_father_name(one_statement_struct)
+		case "account_number":
+			s.sort_statement_by_account_number(one_statement_struct)
 		case "multiple_alphabet_column":
 			s.sort_by_multiple_alphabet_column(one_statement_struct)
 		case "number":
 			s.sort_by_number(one_statement_struct)
 		default:
-			log.Panic(sort_by, " is not in [pre_order,father_name,multiple_alphabet_column,number]")
+			error_element_is_not_in_elements(sort_by, []string{"pre_order", "account_number", "multiple_alphabet_column", "number"})
 		}
 		if is_reverse {
 			REVERSE_SLICE(one_statement_struct)
 		}
+		s.make_space_before_account_in_statement_struct(one_statement_struct)
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) sort_statement_by_father_name(one_statement_struct []FILTERED_STATEMENT) { // later to complete
+func (s FINANCIAL_ACCOUNTING) sort_statement_by_account_number(one_statement_struct []FILTERED_STATEMENT) {
+	for indexa := range one_statement_struct {
+		for indexb := range one_statement_struct {
+			if indexa < indexb && !is_it_high_than_by_order(s.account_number(one_statement_struct[indexa].KEY_ACCOUNT), s.account_number(one_statement_struct[indexb].KEY_ACCOUNT)) {
+				one_statement_struct[indexa], one_statement_struct[indexb] = one_statement_struct[indexb], one_statement_struct[indexa]
+			}
+		}
+	}
 }
 
 func (s FINANCIAL_ACCOUNTING) sort_by_multiple_alphabet_column(one_statement_struct []FILTERED_STATEMENT) { // later to complete
@@ -163,11 +171,18 @@ func (s FINANCIAL_ACCOUNTING) sort_statement_by_pre_order_in_insertion_sort(one_
 	var indexa int
 	for _, a := range s.ACCOUNTS {
 		for indexb, b := range one_statement_struct {
-			if a.NAME == b.KEY_ACCOUNT {
+			if a.ACCOUNT_NAME == b.KEY_ACCOUNT {
 				one_statement_struct[indexa], one_statement_struct[indexb] = one_statement_struct[indexb], one_statement_struct[indexa]
 				indexa++
 				break
 			}
 		}
+	}
+}
+
+func (s FINANCIAL_ACCOUNTING) make_space_before_account_in_statement_struct(one_statement_struct []FILTERED_STATEMENT) {
+	for indexa, a := range one_statement_struct {
+		lenght_of_account_number := len(s.account_number(a.KEY_ACCOUNT))
+		one_statement_struct[indexa].KEY_ACCOUNT = strings.Repeat("  ", lenght_of_account_number) + a.KEY_ACCOUNT
 	}
 }

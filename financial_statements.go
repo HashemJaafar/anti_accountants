@@ -26,10 +26,10 @@ func (s FINANCIAL_ACCOUNTING) sum_values(date, start_date time.Time, entry JOURN
 	map_q2 := initialize_map_3(nan_flow_statement, s.RETAINED_EARNINGS, entry.NAME, "quantity")
 	if date.Before(start_date) {
 		switch {
-		case s.is_father(s.RETAINED_EARNINGS, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT):
+		case s.is_it_sub_account_using_name(s.RETAINED_EARNINGS, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT):
 			map_v2["beginning_balance"] += entry.VALUE
 			map_q2["beginning_balance"] += entry.QUANTITY
-		case s.is_father(s.RETAINED_EARNINGS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT):
+		case s.is_it_sub_account_using_name(s.RETAINED_EARNINGS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT):
 			map_v2["beginning_balance"] -= entry.VALUE
 			map_q2["beginning_balance"] -= entry.QUANTITY
 		default:
@@ -91,16 +91,16 @@ func (s FINANCIAL_ACCOUNTING) prepare_statement(statement map[string]map[string]
 						map_vpq1 := initialize_map_4(statement, "financial_statement", key_account, key_name, key_vpq)
 						for key_number, number := range map_vpq {
 							map_vpq1[key_number] = number
-							if !s.is_father(s.INCOME_STATEMENT, key_account) {
+							if !s.is_it_sub_account_using_name(s.INCOME_STATEMENT, key_account) {
 								map_vpq1["percent"] = statement[s.INCOME_STATEMENT][key_account][key_name][key_vpq]["percent"]
 							} else {
 								map_vpq1["percent"] = statement[s.ASSETS][key_account][key_name][key_vpq]["percent"]
 							}
 							switch {
-							case s.is_father(s.INVENTORY, key_account):
+							case s.is_it_sub_account_using_name(s.INVENTORY, key_account):
 								map_vpq1["turnover"] = statement[s.COST_OF_GOODS_SOLD][key_account][key_name][key_vpq]["turnover"]
 								map_vpq1["turnover_days"] = statement[s.COST_OF_GOODS_SOLD][key_account][key_name][key_vpq]["turnover_days"]
-							case s.is_father(s.ASSETS, key_account):
+							case s.is_it_sub_account_using_name(s.ASSETS, key_account):
 								map_vpq1["turnover"] = statement[s.SALES][key_account][key_name][key_vpq]["turnover"]
 								map_vpq1["turnover_days"] = statement[s.SALES][key_account][key_name][key_vpq]["turnover_days"]
 							}
@@ -177,77 +177,127 @@ func (s FINANCIAL_ACCOUNTING) sum_2nd_column(statement map[string]map[string]map
 	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
 	for key_account_flow, map_account_flow := range statement {
 		for key_account, map_account := range map_account_flow {
-			var last_name string
-			key1 := key_account
-			for {
-				for _, ss := range s.ACCOUNTS {
-					if ss.NAME == key_account {
-						key_account = ss.FATHER
-						for key_name, map_name := range map_account {
-							for key_vpq, map_vpq := range map_name {
-								map_vpq1 := initialize_map_4(new_statement, key_account_flow, ss.NAME, key_name, key_vpq)
-								for key_number, number := range map_vpq {
-									switch {
-									case !IS_IN(key_number, []string{"inflow", "outflow"}):
-										if s.is_credit(key1) == s.is_credit(ss.NAME) {
-											map_vpq1[key_number] += number
-										} else {
-											map_vpq1[key_number] -= number
-										}
-									case key_account_flow != key1:
-										map_vpq1[key_number] += number
-									case key_account_flow == ss.NAME:
-										new_statement[key_account_flow][key1][key_name][key_vpq][key_number] += number
-									}
+			higher_level_accounts := append(s.find_all_higher_level_accounts(key_account), key_account)
+			for key_name, map_name := range map_account {
+				for key_vpq, map_vpq := range map_name {
+					for _, accuont := range higher_level_accounts {
+						new_map_vpq := initialize_map_4(new_statement, key_account_flow, accuont, key_name, key_vpq)
+						for key_number, number := range map_vpq {
+							switch {
+							case !IS_IN(key_number, []string{"inflow", "outflow"}):
+								if s.is_credit(key_account) == s.is_credit(accuont) {
+									new_map_vpq[key_number] += number
+								} else {
+									new_map_vpq[key_number] -= number
 								}
+							case key_account_flow != accuont:
+								new_map_vpq[key_number] += number
+							case key_account_flow == accuont:
+								new_statement[key_account_flow][accuont][key_name][key_vpq][key_number] += number
 							}
 						}
 					}
 				}
-				if last_name == key_account {
-					break
-				}
-				last_name = key_account
 			}
 		}
 	}
+	// for key_account_flow, map_account_flow := range statement {
+	// 	for key_account, map_account := range map_account_flow {
+	// 		var last_name string
+	// 		key1 := key_account
+	// 		for {
+	// 			for _, ss := range s.ACCOUNTS {
+	// 				if ss.NAME == key_account {
+	// 					key_account = ss.FATHER
+	// 					for key_name, map_name := range map_account {
+	// 						for key_vpq, map_vpq := range map_name {
+	// 							map_vpq1 := initialize_map_4(new_statement, key_account_flow, ss.NAME, key_name, key_vpq)
+	// 							for key_number, number := range map_vpq {
+	// 								switch {
+	// 								case !IS_IN(key_number, []string{"inflow", "outflow"}):
+	// 									if s.is_credit(key1) == s.is_credit(ss.NAME) {
+	// 										map_vpq1[key_number] += number
+	// 									} else {
+	// 										map_vpq1[key_number] -= number
+	// 									}
+	// 								case key_account_flow != key1:
+	// 									map_vpq1[key_number] += number
+	// 								case key_account_flow == ss.NAME:
+	// 									new_statement[key_account_flow][key1][key_name][key_vpq][key_number] += number
+	// 								}
+	// 							}
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+	// 			if last_name == key_account {
+	// 				break
+	// 			}
+	// 			last_name = key_account
+	// 		}
+	// 	}
+	// }
 	return new_statement
 }
 
 func (s FINANCIAL_ACCOUNTING) sum_1st_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
 	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
-	var flow_accounts []string
-	for _, a := range s.ACCOUNTS {
-		for _, b := range s.ACCOUNTS {
-			if s.is_father(a.NAME, b.NAME) {
-				flow_accounts = append(flow_accounts, b.NAME)
-			}
-		}
-		for key_account_flow, map_account_flow := range statement {
-			if IS_IN(key_account_flow, flow_accounts) {
-				for key_account, map_account := range map_account_flow {
-					for key_name, map_name := range map_account {
-						for key_vpq, map_vpq := range map_name {
-							map_vpq1 := initialize_map_4(new_statement, a.NAME, key_account, key_name, key_vpq)
-							for key_number, number := range map_vpq {
-								switch {
-								case IS_IN(key_number, []string{"inflow", "outflow"}):
-									if s.is_credit(a.NAME) == s.is_credit(key_account_flow) {
-										map_vpq1[key_number] += number
-									} else {
-										map_vpq1[key_number] -= number
-									}
-								default:
-									map_vpq1[key_number] = number
-								}
+	for key_account_flow, map_account_flow := range statement {
+		higher_level_accounts := append(s.find_all_higher_level_accounts(key_account_flow), key_account_flow)
+		for key_account, map_account := range map_account_flow {
+			for key_name, map_name := range map_account {
+				for key_vpq, map_vpq := range map_name {
+					for _, accuont := range higher_level_accounts {
+						new_map_vpq := initialize_map_4(new_statement, accuont, key_account, key_name, key_vpq)
+						for key_number, number := range map_vpq {
+							switch {
+							case !IS_IN(key_number, []string{"inflow", "outflow"}):
+								// if s.is_credit(key_account) == s.is_credit(accuont) {
+								new_map_vpq[key_number] += number
+								// } else {
+								// 	new_map_vpq[key_number] -= number
+								// }
+							default:
+								new_map_vpq[key_number] = number
 							}
 						}
 					}
 				}
 			}
 		}
-		flow_accounts = []string{}
 	}
+	// var flow_accounts []string
+	// for _, a := range s.ACCOUNTS {
+	// 	for _, b := range s.ACCOUNTS {
+	// 		if s.is_it_sub_account_using_name(a.NAME, b.NAME) {
+	// 			flow_accounts = append(flow_accounts, b.NAME)
+	// 		}
+	// 	}
+	// 	for key_account_flow, map_account_flow := range statement {
+	// 		if IS_IN(key_account_flow, flow_accounts) {
+	// 			for key_account, map_account := range map_account_flow {
+	// 				for key_name, map_name := range map_account {
+	// 					for key_vpq, map_vpq := range map_name {
+	// 						map_vpq1 := initialize_map_4(new_statement, a.NAME, key_account, key_name, key_vpq)
+	// 						for key_number, number := range map_vpq {
+	// 							switch {
+	// 							case IS_IN(key_number, []string{"inflow", "outflow"}):
+	// 								if s.is_credit(a.NAME) == s.is_credit(key_account_flow) {
+	// 									map_vpq1[key_number] += number
+	// 								} else {
+	// 									map_vpq1[key_number] -= number
+	// 								}
+	// 							default:
+	// 								map_vpq1[key_number] = number
+	// 							}
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	flow_accounts = []string{}
+	// }
 	return new_statement
 }
 

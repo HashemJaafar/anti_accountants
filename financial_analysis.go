@@ -26,20 +26,20 @@ type FINANCIAL_ANALYSIS struct {
 }
 
 type FINANCIAL_ANALYSIS_STATEMENT struct {
-	CURRENT_RATIO                        float64 // current_assets / current_liabilities
-	ACID_TEST                            float64 // (cash + short_term_investments + net_receivables) / current_liabilities
-	RECEIVABLES_TURNOVER                 float64 // net_credit_sales / average_net_receivables
-	INVENTORY_TURNOVER                   float64 // cost_of_goods_sold / average_inventory
-	ASSET_TURNOVER                       float64 // net_sales / average_assets
-	PROFIT_MARGIN                        float64 // net_income / net_sales
-	RETURN_ON_ASSETS                     float64 // net_income / average_assets
-	RETURN_ON_EQUITY                     float64 // net_income / average_equity
-	PAYOUT_RATIO                         float64 // cash_dividends / net_income
-	DEBT_TO_TOTAL_ASSETS_RATIO           float64 // total_debt / total_assets
-	TIMES_INTEREST_EARNED                float64 // ebitda / interest_expense
-	RETURN_ON_COMMON_STOCKHOLDERS_EQUITY float64 // (net_income - preferred_dividends) / average_common_stockholders_equity
-	EARNINGS_PER_SHARE                   float64 // (net_income - preferred_dividends) / weighted_average_common_shares_outstanding
-	PRICE_EARNINGS_RATIO                 float64 // market_price_per_shares_outstanding / earnings_per_share
+	CURRENT_RATIO                        float64 // CURRENT_ASSETS / CURRENT_LIABILITIES
+	ACID_TEST                            float64 // (CASH + SHORT_TERM_INVESTMENTS + NET_RECEIVABLES) / CURRENT_LIABILITIES
+	RECEIVABLES_TURNOVER                 float64 // NET_CREDIT_SALES / AVERAGE_NET_RECEIVABLES
+	INVENTORY_TURNOVER                   float64 // COST_OF_GOODS_SOLD / AVERAGE_INVENTORY
+	PROFIT_MARGIN                        float64 // NET_INCOME / NET_SALES
+	ASSET_TURNOVER                       float64 // NET_SALES / AVERAGE_ASSETS
+	RETURN_ON_ASSETS                     float64 // NET_INCOME / AVERAGE_ASSETS
+	RETURN_ON_EQUITY                     float64 // NET_INCOME / AVERAGE_EQUITY
+	PAYOUT_RATIO                         float64 // CASH_DIVIDENDS / NET_INCOME
+	DEBT_TO_TOTAL_ASSETS_RATIO           float64 // TOTAL_DEBT / TOTAL_ASSETS
+	TIMES_INTEREST_EARNED                float64 // EBITDA / INTEREST_EXPENSE
+	RETURN_ON_COMMON_STOCKHOLDERS_EQUITY float64 // (NET_INCOME - PREFERRED_DIVIDENDS) / AVERAGE_COMMON_STOCKHOLDERS_EQUITY
+	EARNINGS_PER_SHARE                   float64 // (NET_INCOME - PREFERRED_DIVIDENDS) / WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING
+	PRICE_EARNINGS_RATIO                 float64 // MARKET_PRICE_PER_SHARES_OUTSTANDING / EARNINGS_PER_SHARE
 }
 
 func (s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT() FINANCIAL_ANALYSIS_STATEMENT {

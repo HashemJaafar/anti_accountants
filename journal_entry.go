@@ -49,15 +49,18 @@ var (
 )
 
 func check_the_params(entry_expair time.Time, adjusting_method string, date time.Time, entries []JOURNAL_TAG, array_day_start_end []DAY_START_END) []DAY_START_END {
+	if !(IS_IN(adjusting_method, adjusting_methods[:]) || adjusting_method == "") {
+		error_element_is_not_in_elements(adjusting_method, adjusting_methods[:])
+	}
 	if entry_expair.IsZero() == IS_IN(adjusting_method, adjusting_methods[:]) {
-		log.Panic("check entry_expair => ", entry_expair, " and adjusting_method => ", adjusting_method, " should be in ", adjusting_methods)
+		error_you_cant_use_entry_expire()
 	}
 	if !entry_expair.IsZero() {
 		check_dates(date, entry_expair)
 	}
 	for _, entry := range entries {
 		if IS_IN(entry.ACCOUNT, inventory) && !IS_IN(adjusting_method, []string{"expire", ""}) {
-			log.Panic(entry.ACCOUNT + " is in inventory you just can use expire or make it empty")
+			error_you_cant_use_depreciation_methods_with_inventory(entry.ACCOUNT)
 		}
 	}
 	if IS_IN(adjusting_method, depreciation_methods[:]) {
@@ -75,23 +78,23 @@ func check_the_params(entry_expair time.Time, adjusting_method string, date time
 			array_day_start_end[index].DAY = strings.Title(element.DAY)
 			switch {
 			case !IS_IN(array_day_start_end[index].DAY, standard_days[:]):
-				log.Panic("error ", element.DAY, " for ", element, " is not in ", standard_days)
+				error_element_is_not_in_elements(element.DAY, standard_days[:])
 			case element.START_HOUR < 0:
-				log.Panic("error ", element.START_HOUR, " for ", element, " is < 0")
+				error_the_time_is_not_in_range(element, 0)
 			case element.START_HOUR > 23:
-				log.Panic("error ", element.START_HOUR, " for ", element, " is > 23")
+				error_the_time_is_not_in_range(element, 23)
 			case element.START_MINUTE < 0:
-				log.Panic("error ", element.START_MINUTE, " for ", element, " is < 0")
+				error_the_time_is_not_in_range(element, 0)
 			case element.START_MINUTE > 59:
-				log.Panic("error ", element.START_MINUTE, " for ", element, " is > 59")
+				error_the_time_is_not_in_range(element, 59)
 			case element.END_HOUR < 0:
-				log.Panic("error ", element.END_HOUR, " for ", element, " is < 0")
+				error_the_time_is_not_in_range(element, 0)
 			case element.END_HOUR > 23:
-				log.Panic("error ", element.END_HOUR, " for ", element, " is > 23")
+				error_the_time_is_not_in_range(element, 23)
 			case element.END_MINUTE < 0:
-				log.Panic("error ", element.END_MINUTE, " for ", element, " is < 0")
+				error_the_time_is_not_in_range(element, 0)
 			case element.END_MINUTE > 59:
-				log.Panic("error ", element.END_MINUTE, " for ", element, " is > 59")
+				error_the_time_is_not_in_range(element, 59)
 			}
 		}
 	}
@@ -198,9 +201,9 @@ func (s FINANCIAL_ACCOUNTING) auto_completion_the_invoice_discount(auto_completi
 func (s FINANCIAL_ACCOUNTING) total_invoice_before_invoice_discount(entries []JOURNAL_TAG) float64 {
 	var total_invoice_before_invoice_discount float64
 	for _, entry := range entries {
-		if s.is_father(s.INCOME_STATEMENT, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT) {
+		if s.is_it_sub_account_using_name(s.INCOME_STATEMENT, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT) {
 			total_invoice_before_invoice_discount += entry.VALUE
-		} else if s.is_father(s.DISCOUNTS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT) {
+		} else if s.is_it_sub_account_using_name(s.DISCOUNTS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT) {
 			total_invoice_before_invoice_discount -= entry.VALUE
 		}
 	}
@@ -242,10 +245,10 @@ func (s FINANCIAL_ACCOUNTING) convert_to_simple_entry(debit_entries, credit_entr
 
 func (s FINANCIAL_ACCOUNTING) can_the_account_be_negative(entries []JOURNAL_TAG) {
 	for _, entry := range entries {
-		if !(s.is_father(s.EQUITY, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT)) {
+		if !(s.is_it_sub_account_using_name(s.EQUITY, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT)) {
 			account_balance := account_balance(entry.ACCOUNT)
 			if account_balance+entry.VALUE < 0 {
-				log.Panic("you can't enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
+				error_make_nagtive_balance(entry, account_balance)
 			}
 		}
 	}
@@ -256,7 +259,7 @@ func find_account_from_barcode(entries []JOURNAL_TAG) {
 		if entry.QUANTITY < 0 && entry.BARCODE != "" {
 			err := DB.QueryRow("select account from journal where barcode=? limit 1", entry.BARCODE).Scan(&entries[index].ACCOUNT)
 			if err != nil {
-				log.Panic("the barcode is wrong for ", entry)
+				error_the_barcode_is_wrong(entry)
 			}
 		}
 	}
@@ -265,16 +268,15 @@ func find_account_from_barcode(entries []JOURNAL_TAG) {
 func insert_to_JOURNAL_TAG(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, date time.Time, entry_expair time.Time, description string, name string, employee_name string) []JOURNAL_TAG {
 	var array_to_insert []JOURNAL_TAG
 	for _, entry := range entries {
-		price := entry.VALUE / entry.QUANTITY
-		if price < 0 {
-			log.Panic("the ", entry.VALUE, " and ", entry.QUANTITY, " for ", entry, " should be positive both or negative both")
+		if entry.PRICE < 0 {
+			error_the_price_should_be_positive(entry)
 		}
 		array_to_insert = append(array_to_insert, JOURNAL_TAG{
 			DATE:          date.String(),
 			ENTRY_NUMBER:  0,
 			ACCOUNT:       entry.ACCOUNT,
 			VALUE:         entry.VALUE,
-			PRICE:         price,
+			PRICE:         entry.PRICE,
 			QUANTITY:      entry.QUANTITY,
 			BARCODE:       entry.BARCODE,
 			ENTRY_EXPAIR:  entry_expair.String(),
@@ -364,7 +366,7 @@ func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcod
 	if quantity > 0 {
 		return 0
 	}
-	order_by_date_asc_or_desc := s.asc_of_desc(account, barcode)
+	order_by_date_asc_or_desc := s.asc_or_desc(account)
 	if order_by_date_asc_or_desc == "" {
 		return 0
 	}
@@ -396,12 +398,12 @@ func (s FINANCIAL_ACCOUNTING) cost_flow(account string, quantity float64, barcod
 		}
 	}
 	if quantity_count != 0 {
-		log.Panic("you order ", quantity, " but you have ", quantity-quantity_count, " ", account, " with barcode ", barcode)
+		error_the_order_out_of_stock(quantity, quantity_count, account, barcode)
 	}
 	return costs
 }
 
-func (s FINANCIAL_ACCOUNTING) asc_of_desc(account string, barcode string) string {
+func (s FINANCIAL_ACCOUNTING) asc_or_desc(account string) string {
 	switch s.return_cost_flow_type(account) {
 	case "lifo":
 		return "desc"
@@ -411,7 +413,7 @@ func (s FINANCIAL_ACCOUNTING) asc_of_desc(account string, barcode string) string
 		weighted_average(account)
 		return "asc"
 	case "barcode":
-		weighted_average_for_barcode(account, barcode)
+		weighted_average_for_barcode(account)
 		return "asc"
 	}
 	return ""
@@ -435,40 +437,37 @@ func insert_entry_number(array_of_journal_tag []JOURNAL_TAG) {
 	}
 }
 
-func calculate_and_insert_value_price_quantity(entries []JOURNAL_TAG) {
+func calculate_and_insert_value_price_quantity(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
 	for index, entry := range entries {
 		m := map[string]float64{}
-		if entry.VALUE != 0 {
-			m["VALUE"] = entry.VALUE
-		}
-		if entry.PRICE != 0 {
-			m["PRICE"] = entry.PRICE
-		}
-		if entry.QUANTITY != 0 {
-			m["QUANTITY"] = entry.QUANTITY
-		}
+		insert_if_not_zero(m, "VALUE", entry.VALUE)
+		insert_if_not_zero(m, "PRICE", entry.PRICE)
+		insert_if_not_zero(m, "QUANTITY", entry.QUANTITY)
 		EQUATIONS_SOLVER(false, false, m, [][]string{{"VALUE", "PRICE", "*", "QUANTITY"}})
 		entries[index].VALUE = m["VALUE"]
 		entries[index].PRICE = m["PRICE"]
 		entries[index].QUANTITY = m["QUANTITY"]
-		if entries[index].VALUE != entries[index].PRICE*entries[index].QUANTITY {
-			log.Panic(entries[index].VALUE, " != ", entries[index].PRICE, "*", entries[index].QUANTITY, " for entries ", entries[index])
-		}
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) is_the_account_is_father(entries []JOURNAL_TAG) {
+func insert_if_not_zero(m map[string]float64, str string, number float64) {
+	if number != 0 {
+		m[str] = number
+	}
+}
+
+func (s FINANCIAL_ACCOUNTING) is_the_account_is_it_sub_account_using_name(entries []JOURNAL_TAG) {
 	for _, entry := range entries {
-		if s.is_in_father_name(entry.ACCOUNT) {
-			log.Panic(entry.ACCOUNT, " is in father name that mean you can't used in the entry")
+		if s.is_it_high_by_level(s.account_number(entry.ACCOUNT)) {
+			error_is_high_level_account(entry.ACCOUNT)
 		}
 	}
 }
 
 func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, insert, auto_completion bool, date time.Time, entry_expair time.Time, adjusting_method string,
 	description string, name string, employee_name string, array_day_start_end []DAY_START_END) []JOURNAL_TAG {
+	calculate_and_insert_value_price_quantity(entries)
 	JOURNAL_TAG_entries := insert_to_JOURNAL_TAG(entries, date, entry_expair, description, name, employee_name)
-	calculate_and_insert_value_price_quantity(JOURNAL_TAG_entries)
 	array_day_start_end = check_the_params(entry_expair, adjusting_method, date, JOURNAL_TAG_entries, array_day_start_end)
 	JOURNAL_TAG_entries = group_by_account_and_barcode(JOURNAL_TAG_entries)
 	remove_zero_values(JOURNAL_TAG_entries)
@@ -478,7 +477,7 @@ func (s FINANCIAL_ACCOUNTING) JOURNAL_ENTRY(entries []ACCOUNT_VALUE_PRICE_QUANTI
 	// JOURNAL_TAG_entries = s.auto_completion_the_invoice_discount(auto_completion, JOURNAL_TAG_entries)
 	JOURNAL_TAG_entries = group_by_account_and_barcode(JOURNAL_TAG_entries)
 	remove_zero_values(JOURNAL_TAG_entries)
-	s.is_the_account_is_father(JOURNAL_TAG_entries)
+	s.is_the_account_is_it_sub_account_using_name(JOURNAL_TAG_entries)
 	s.can_the_account_be_negative(JOURNAL_TAG_entries)
 	debit_entries, credit_entries := s.check_debit_equal_credit(JOURNAL_TAG_entries, false)
 	simple_entries := s.convert_to_simple_entry(debit_entries, credit_entries)
