@@ -3,8 +3,12 @@ package anti_accountants
 import (
 	"fmt"
 	"math"
+	"os"
 	"strconv"
+	"text/tabwriter"
 )
+
+var p *tabwriter.Writer = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 
 func check_map_keys_for_equations(equations [][]string, m map[string]float64) {
 	var elements []string
@@ -28,6 +32,7 @@ func EQUATIONS_SOLVER(print, check_if_keys_in_the_equations bool, m map[string]f
 			equation_solver(print, m, equation[0], equation[1], equation[2], equation[3])
 		}
 	}
+	p.Flush()
 }
 
 func equation_solver(print bool, m map[string]float64, a, b, sign, c string) {
@@ -110,6 +115,6 @@ func convert_nan_to_zero_for_map(m map[string]float64, str string, value float64
 
 func print_equation(print bool, m map[string]float64, a, b, sign, c string) {
 	if print {
-		fmt.Println(a, m[a], " = ", b, m[b], " ", sign, " ", c, m[c])
+		fmt.Fprintln(p, a, "\t", m[a], "\t", " = ", "\t", b, "\t", m[b], "\t", sign, "\t", c, "\t", m[c])
 	}
 }

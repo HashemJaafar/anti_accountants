@@ -25,13 +25,8 @@ type DAY_START_END struct {
 }
 
 type AUTO_COMPLETE_ENTRIE struct {
-	ACCOUNT_0  string
-	IS_PERCENT bool
-	VALUE      float64
-	ACCOUNT_1  string
-	QUANTITY_1 float64
-	ACCOUNT_2  string
-	QUANTITY_2 float64
+	INVENTORY_ACCOUNT, COST_OF_GOOD_SOLD_ACCOUNT, REVENUE_OF_GOOD_SOLD_ACCOUNT string
+	SELLING_PRICE                                                              float64
 }
 
 type day_start_end_date_minutes struct {
@@ -141,30 +136,72 @@ func remove_zero_values(entries []JOURNAL_TAG) {
 }
 
 func (s FINANCIAL_ACCOUNTING) auto_completion_the_entry(entries []JOURNAL_TAG, auto_completion bool) []JOURNAL_TAG {
-	var new_entries [][]JOURNAL_TAG
+	var new_entries []JOURNAL_TAG
 	if auto_completion {
 		for _, entry := range entries {
 			for _, complement := range s.AUTO_COMPLETE_ENTRIES {
-				if complement.ACCOUNT_0 == entry.ACCOUNT {
-					// var barcode_1, barcode_2 string
-					// if complement.ACCOUNT_0 == complement.ACCOUNT_1 {
-					// 	barcode_1 = entry.BARCODE
-					// }
-					// if complement.ACCOUNT_0 == complement.ACCOUNT_2 {
-					// 	barcode_2 = entry.BARCODE
-					// }
-					// switch complement.IS_PERCENT {
-					// case true:
-					// 	new_entries = append(new_entries, []JOURNAL_TAG{
-					// 		{complement.ACCOUNT_1, complement.NUMBER * entry.VALUE, complement.NUMBER * entry.QUANTITY, barcode_1},
-					// 		{complement.ACCOUNT_2, complement.NUMBER * entry.VALUE, complement.NUMBER * entry.QUANTITY, barcode_2},
-					// 	})
-					// case false:
-					// 	new_entries = append(new_entries, []JOURNAL_TAG{
-					// 		{complement.ACCOUNT_1, complement.NUMBER, complement.NUMBER / complement.PRICE_1, barcode_1},
-					// 		{complement.ACCOUNT_2, complement.NUMBER, complement.NUMBER / complement.PRICE_2, barcode_2},
-					// 	})
-					// }
+				if complement.INVENTORY_ACCOUNT == entry.ACCOUNT {
+					fmt.Println(complement)
+					new_entries = append(new_entries, JOURNAL_TAG{
+						DATE:          entry.DATE,
+						ENTRY_NUMBER:  entry.ENTRY_NUMBER,
+						ACCOUNT:       complement.COST_OF_GOOD_SOLD_ACCOUNT,
+						VALUE:         entry.VALUE,
+						PRICE:         entry.PRICE,
+						QUANTITY:      entry.QUANTITY,
+						BARCODE:       entry.BARCODE,
+						ENTRY_EXPAIR:  entry.ENTRY_EXPAIR,
+						DESCRIPTION:   entry.DESCRIPTION,
+						NAME:          entry.NAME,
+						EMPLOYEE_NAME: entry.EMPLOYEE_NAME,
+						ENTRY_DATE:    entry.ENTRY_DATE,
+						REVERSE:       entry.REVERSE,
+					})
+					new_entries = append(new_entries, JOURNAL_TAG{
+						DATE:          entry.DATE,
+						ENTRY_NUMBER:  entry.ENTRY_NUMBER,
+						ACCOUNT:       entry.ACCOUNT,
+						VALUE:         entry.VALUE,
+						PRICE:         entry.PRICE,
+						QUANTITY:      entry.QUANTITY,
+						BARCODE:       entry.BARCODE,
+						ENTRY_EXPAIR:  entry.ENTRY_EXPAIR,
+						DESCRIPTION:   entry.DESCRIPTION,
+						NAME:          entry.NAME,
+						EMPLOYEE_NAME: entry.EMPLOYEE_NAME,
+						ENTRY_DATE:    entry.ENTRY_DATE,
+						REVERSE:       entry.REVERSE,
+					})
+					new_entries = append(new_entries, JOURNAL_TAG{
+						DATE:          entry.DATE,
+						ENTRY_NUMBER:  entry.ENTRY_NUMBER,
+						ACCOUNT:       entry.ACCOUNT,
+						VALUE:         entry.VALUE,
+						PRICE:         entry.PRICE,
+						QUANTITY:      entry.QUANTITY,
+						BARCODE:       entry.BARCODE,
+						ENTRY_EXPAIR:  entry.ENTRY_EXPAIR,
+						DESCRIPTION:   entry.DESCRIPTION,
+						NAME:          entry.NAME,
+						EMPLOYEE_NAME: entry.EMPLOYEE_NAME,
+						ENTRY_DATE:    entry.ENTRY_DATE,
+						REVERSE:       entry.REVERSE,
+					})
+					new_entries = append(new_entries, JOURNAL_TAG{
+						DATE:          entry.DATE,
+						ENTRY_NUMBER:  entry.ENTRY_NUMBER,
+						ACCOUNT:       complement.REVENUE_OF_GOOD_SOLD_ACCOUNT,
+						VALUE:         entry.QUANTITY * complement.SELLING_PRICE,
+						PRICE:         complement.SELLING_PRICE,
+						QUANTITY:      entry.QUANTITY,
+						BARCODE:       entry.BARCODE,
+						ENTRY_EXPAIR:  entry.ENTRY_EXPAIR,
+						DESCRIPTION:   entry.DESCRIPTION,
+						NAME:          entry.NAME,
+						EMPLOYEE_NAME: entry.EMPLOYEE_NAME,
+						ENTRY_DATE:    entry.ENTRY_DATE,
+						REVERSE:       entry.REVERSE,
+					})
 				}
 			}
 		}
