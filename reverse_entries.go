@@ -85,7 +85,7 @@ func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRIES(reverse_using_current_date bool, e
 	}
 
 	reverse_entry := s.make_the_reverse_entries(entries, reverse_using_current_date, employee_name)
-	s.can_the_account_be_negative(reverse_entry)
+	s.can_the_account_be_negative(make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry))
 
 	for _, entry := range entries {
 		if !entry.REVERSE {

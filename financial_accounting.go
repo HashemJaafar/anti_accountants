@@ -2,6 +2,7 @@ package anti_accountants
 
 import (
 	"database/sql"
+	"log"
 )
 
 var (
@@ -58,50 +59,56 @@ type INVOICE_STRUCT struct {
 	VALUE, PRICE, QUANTITY float64
 }
 
-func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []JOURNAL_TAG, check_one_debit_and_one_credit bool) ([]JOURNAL_TAG, []JOURNAL_TAG) {
-	var debit_entries, credit_entries []JOURNAL_TAG
+func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
 	var zero float64
 	for _, entry := range entries {
 		switch s.is_credit(entry.ACCOUNT) {
 		case false:
 			zero += entry.VALUE
-			if entry.VALUE != 0.0 {
-				debit_entries, credit_entries = insert_to_debit_or_cridet(entry.VALUE, false, entry, debit_entries, credit_entries)
-			} else {
-				debit_entries, credit_entries = insert_to_debit_or_cridet(entry.QUANTITY, false, entry, debit_entries, credit_entries)
-			}
 		case true:
 			zero -= entry.VALUE
-			if entry.VALUE != 0.0 {
-				debit_entries, credit_entries = insert_to_debit_or_cridet(entry.VALUE, true, entry, debit_entries, credit_entries)
-			} else {
-				debit_entries, credit_entries = insert_to_debit_or_cridet(entry.QUANTITY, true, entry, debit_entries, credit_entries)
-			}
-		}
-	}
-	len_debit_entries := len(debit_entries)
-	len_credit_entries := len(credit_entries)
-	if (len_debit_entries != 0) && (len_credit_entries != 0) {
-		if (len_debit_entries != 1) && (len_credit_entries != 1) {
-			error_one_credit___one_debit("or", entries)
-		}
-		if !((len_debit_entries == 1) && (len_credit_entries == 1)) && check_one_debit_and_one_credit {
-			error_one_credit___one_debit("and", entries)
 		}
 	}
 	if zero != 0 {
 		error_debit_not_equal_credit(zero, entries)
 	}
+}
+
+func (s FINANCIAL_ACCOUNTING) separate_debit_from_credit(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) ([]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+	var debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
+	for _, entry := range entries {
+		switch s.is_credit(entry.ACCOUNT) {
+		case false:
+			if entry.VALUE > 0 {
+				debit_entries = append(debit_entries, entry)
+			} else if entry.VALUE < 0 {
+				credit_entries = append(credit_entries, entry)
+			} else {
+				log.Panic("value is zero for entry: ", entry)
+			}
+		case true:
+			if entry.VALUE < 0 {
+				debit_entries = append(debit_entries, entry)
+			} else if entry.VALUE > 0 {
+				credit_entries = append(credit_entries, entry)
+			} else {
+				log.Panic("value is zero for entry: ", entry)
+			}
+		}
+	}
 	return debit_entries, credit_entries
 }
 
-func insert_to_debit_or_cridet(number float64, is_credit bool, entry JOURNAL_TAG, debit_entries []JOURNAL_TAG, credit_entries []JOURNAL_TAG) ([]JOURNAL_TAG, []JOURNAL_TAG) {
-	if (number <= 0) == is_credit {
-		debit_entries = append(debit_entries, entry)
-	} else {
-		credit_entries = append(credit_entries, entry)
+func check_one_debit_or_one_credit(debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+	if (len(debit_entries) != 1) && (len(credit_entries) != 1) {
+		error_one_credit___one_debit("or", debit_entries, credit_entries)
 	}
-	return debit_entries, credit_entries
+}
+
+func check_one_debit_and_one_credit(debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+	if !((len(debit_entries) == 1) && (len(credit_entries) == 1)) {
+		error_one_credit___one_debit("and", debit_entries, credit_entries)
+	}
 }
 
 func (s FINANCIAL_ACCOUNTING) INVOICE(array_of_journal_tag []JOURNAL_TAG) []INVOICE_STRUCT {
@@ -163,17 +170,19 @@ func (s FINANCIAL_ACCOUNTING) INITIALIZE() {
 }
 
 func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG) {
-	var double_entry []JOURNAL_TAG
+	var double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	previous_entry_number := 1
 	for _, entry := range JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER {
 		if previous_entry_number != entry.ENTRY_NUMBER {
 			delete_not_double_entry(double_entry, previous_entry_number)
 			if len(double_entry) == 2 {
-				s.check_debit_equal_credit(double_entry, true)
+				s.check_debit_equal_credit(double_entry)
+				debit_entries, credit_entries := s.separate_debit_from_credit(double_entry)
+				check_one_debit_and_one_credit(debit_entries, credit_entries)
 			}
-			double_entry = []JOURNAL_TAG{}
+			double_entry = []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
 		}
-		double_entry = append(double_entry, JOURNAL_TAG{
+		double_entry = append(double_entry, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{
 			ACCOUNT:  entry.ACCOUNT,
 			VALUE:    entry.VALUE,
 			PRICE:    entry.PRICE,
@@ -183,5 +192,7 @@ func (s FINANCIAL_ACCOUNTING) check_debit_equal_credit_and_check_one_debit_and_o
 		previous_entry_number = entry.ENTRY_NUMBER
 	}
 	delete_not_double_entry(double_entry, previous_entry_number)
-	s.check_debit_equal_credit(double_entry, true)
+	s.check_debit_equal_credit(double_entry)
+	debit_entries, credit_entries := s.separate_debit_from_credit(double_entry)
+	check_one_debit_and_one_credit(debit_entries, credit_entries)
 }
