@@ -48,11 +48,11 @@ func make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry []
 	return entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 }
 
-func (s FINANCIAL_ACCOUNTING) make_the_reverse_entries(entries []JOURNAL_TAG, reverse_using_current_date bool, employee_name string) []JOURNAL_TAG {
+func make_the_reverse_entries(entries []JOURNAL_TAG, reverse_using_current_date bool, employee_name string) []JOURNAL_TAG {
 	var entries_to_reverse []JOURNAL_TAG
 	for _, entry := range entries {
 		if !entry.REVERSE {
-			if PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW) {
+			if parse_date(entry.DATE, DATE_LAYOUT).Before(NOW) {
 				if reverse_using_current_date {
 					entry.DATE = NOW.String()
 				}
@@ -69,10 +69,10 @@ func (s FINANCIAL_ACCOUNTING) make_the_reverse_entries(entries []JOURNAL_TAG, re
 	return entries_to_reverse
 }
 
-func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRIES(reverse_using_current_date bool, employee_name, reverse_method, date, entry_date string, entry_number int) {
+func REVERSE_ENTRIES(reverse_using_current_date bool, employee_name, reverse_method, date, entry_date string, entry_number int) {
 	rows := rows(reverse_method, date, entry_date, entry_number)
 	entries := select_from_journal(rows)
-	REVERSE_SLICE(entries)
+	reverse_slice(entries)
 
 	if len(entries) == 0 {
 		error_this_entry_not_exist()
@@ -84,15 +84,15 @@ func (s FINANCIAL_ACCOUNTING) REVERSE_ENTRIES(reverse_using_current_date bool, e
 		}
 	}
 
-	reverse_entry := s.make_the_reverse_entries(entries, reverse_using_current_date, employee_name)
-	s.can_the_account_be_negative(make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry))
+	reverse_entry := make_the_reverse_entries(entries, reverse_using_current_date, employee_name)
+	can_the_account_be_negative(make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry))
 
 	for _, entry := range entries {
 		if !entry.REVERSE {
 			weighted_average(entry.ACCOUNT)
-			set_to_reverse(entry, PARSE_DATE(entry.DATE, s.DATE_LAYOUT).Before(NOW))
+			set_to_reverse(entry, parse_date(entry.DATE, DATE_LAYOUT).Before(NOW))
 		}
 	}
 
-	s.insert_to_database(reverse_entry, true, true)
+	insert_to_database(reverse_entry, true, true)
 }

@@ -8,16 +8,8 @@ import (
 	"text/tabwriter"
 )
 
-var cost_flow_type = []string{"fifo", "lifo", "wma", "barcode"}
-
-type ACCOUNT struct {
-	IS_CREDIT                    bool
-	COST_FLOW_TYPE, ACCOUNT_NAME string
-	ACCOUNT_NUMBER               []uint
-}
-
-func (s FINANCIAL_ACCOUNTING) is_credit(account_name string) bool {
-	for _, a := range s.ACCOUNTS {
+func is_credit(account_name string) bool {
+	for _, a := range ACCOUNTS {
 		if a.ACCOUNT_NAME == account_name {
 			return a.IS_CREDIT
 		}
@@ -26,8 +18,8 @@ func (s FINANCIAL_ACCOUNTING) is_credit(account_name string) bool {
 	return false
 }
 
-func (s FINANCIAL_ACCOUNTING) return_cost_flow_type(account_name string) string {
-	for _, a := range s.ACCOUNTS {
+func return_cost_flow_type(account_name string) string {
+	for _, a := range ACCOUNTS {
 		if a.ACCOUNT_NAME == account_name {
 			return a.COST_FLOW_TYPE
 		}
@@ -36,8 +28,8 @@ func (s FINANCIAL_ACCOUNTING) return_cost_flow_type(account_name string) string 
 	return ""
 }
 
-func (s FINANCIAL_ACCOUNTING) account_number(account_name string) []uint {
-	for _, a := range s.ACCOUNTS {
+func account_number(account_name string) []uint {
+	for _, a := range ACCOUNTS {
 		if a.ACCOUNT_NAME == account_name {
 			return a.ACCOUNT_NUMBER
 		}
@@ -46,8 +38,8 @@ func (s FINANCIAL_ACCOUNTING) account_number(account_name string) []uint {
 	return []uint{}
 }
 
-func (s FINANCIAL_ACCOUNTING) is_it_sub_account_using_name(higher_level_account, lower_level_account string) bool {
-	return is_it_sub_account_using_number(s.account_number(higher_level_account), s.account_number(lower_level_account))
+func is_it_sub_account_using_name(higher_level_account, lower_level_account string) bool {
+	return is_it_sub_account_using_number(account_number(higher_level_account), account_number(lower_level_account))
 }
 
 func is_it_sub_account_using_number(higher_level_account_number, lower_level_account_number []uint) bool {
@@ -65,8 +57,8 @@ func is_it_sub_account_using_number(higher_level_account_number, lower_level_acc
 	return true
 }
 
-func (s FINANCIAL_ACCOUNTING) is_it_high_by_level(account_number []uint) bool {
-	for _, a := range s.ACCOUNTS {
+func is_it_high_by_level(account_number []uint) bool {
+	for _, a := range ACCOUNTS {
 		if is_it_sub_account_using_number(account_number, a.ACCOUNT_NUMBER) {
 			return true
 		}
@@ -74,10 +66,10 @@ func (s FINANCIAL_ACCOUNTING) is_it_high_by_level(account_number []uint) bool {
 	return false
 }
 
-func (s FINANCIAL_ACCOUNTING) find_all_higher_level_accounts(account_name string) []string {
-	account_number := s.account_number(account_name)
+func find_all_higher_level_accounts(account_name string) []string {
+	account_number := account_number(account_name)
 	var higher_level_accounts []string
-	for _, a := range s.ACCOUNTS {
+	for _, a := range ACCOUNTS {
 		if is_it_sub_account_using_number(a.ACCOUNT_NUMBER, account_number) {
 			higher_level_accounts = append(higher_level_accounts, a.ACCOUNT_NAME)
 		}
@@ -92,11 +84,11 @@ func is_it_first_sub_level_account_using_number(higher_level_account_number, low
 	return is_it_sub_account_using_number(higher_level_account_number, lower_level_account_number)
 }
 
-func (s FINANCIAL_ACCOUNTING) check_if_the_tree_connected() {
+func check_if_the_tree_connected() {
 big_loop:
-	for _, a := range s.ACCOUNTS {
+	for _, a := range ACCOUNTS {
 		if len(a.ACCOUNT_NUMBER) > 1 {
-			for _, b := range s.ACCOUNTS {
+			for _, b := range ACCOUNTS {
 				if is_it_first_sub_level_account_using_number(b.ACCOUNT_NUMBER, a.ACCOUNT_NUMBER) {
 					continue big_loop
 				}
@@ -106,16 +98,16 @@ big_loop:
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) check_cost_flow_type() {
-	retained_earnings := s.account_number(s.RETAINED_EARNINGS)
-	receivables := s.account_number(s.RECEIVABLES)
-	liabilities := s.account_number(s.LIABILITIES)
-	for _, a := range s.ACCOUNTS {
-		is_in_cost_flow_type := IS_IN(a.COST_FLOW_TYPE, cost_flow_type)
+func check_cost_flow_type() {
+	retained_earnings := account_number(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS)
+	receivables := account_number(PRIMARY_ACCOUNTS_NAMES.RECEIVABLES)
+	liabilities := account_number(PRIMARY_ACCOUNTS_NAMES.LIABILITIES)
+	for _, a := range ACCOUNTS {
+		is_in_cost_flow_type := is_in(a.COST_FLOW_TYPE, cost_flow_type)
 		is_it_sub_from_retained_earnings := is_it_sub_account_using_number(retained_earnings, a.ACCOUNT_NUMBER) || reflect.DeepEqual(retained_earnings, a.ACCOUNT_NUMBER)
 		is_it_sub_from_receivables := is_it_sub_account_using_number(receivables, a.ACCOUNT_NUMBER) || reflect.DeepEqual(receivables, a.ACCOUNT_NUMBER)
 		is_it_sub_from_liabilities := is_it_sub_account_using_number(liabilities, a.ACCOUNT_NUMBER) || reflect.DeepEqual(liabilities, a.ACCOUNT_NUMBER)
-		is_it_high_by_level := s.is_it_high_by_level(a.ACCOUNT_NUMBER) && len(a.ACCOUNT_NUMBER) != 0
+		is_it_high_by_level := is_it_high_by_level(a.ACCOUNT_NUMBER) && len(a.ACCOUNT_NUMBER) != 0
 		if is_in_cost_flow_type {
 			if a.IS_CREDIT {
 				error_cost_flow_type_used_with___account(a, "credit")
@@ -141,10 +133,10 @@ func (s FINANCIAL_ACCOUNTING) check_cost_flow_type() {
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) check_if_duplicated() {
-	for indexa, a := range s.ACCOUNTS {
+func check_if_duplicated() {
+	for indexa, a := range ACCOUNTS {
 		not_empty_account_number := len(a.ACCOUNT_NUMBER) != 0
-		for indexb, b := range s.ACCOUNTS {
+		for indexb, b := range ACCOUNTS {
 			if indexa != indexb {
 				if reflect.DeepEqual(a, b) {
 					error_duplicate_value(a)
@@ -160,67 +152,67 @@ func (s FINANCIAL_ACCOUNTING) check_if_duplicated() {
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) check_if_the_tree_ordered() {
+func check_if_the_tree_ordered() {
 	switch {
-	case !s.is_it_sub_account_using_name(s.ASSETS, s.CURRENT_ASSETS):
-		error_should_be_one_of_the_fathers(s.ASSETS, s.CURRENT_ASSETS)
-	case !s.is_it_sub_account_using_name(s.CURRENT_ASSETS, s.CASH_AND_CASH_EQUIVALENTS):
-		error_should_be_one_of_the_fathers(s.CURRENT_ASSETS, s.CASH_AND_CASH_EQUIVALENTS)
-	case !s.is_it_sub_account_using_name(s.CURRENT_ASSETS, s.SHORT_TERM_INVESTMENTS):
-		error_should_be_one_of_the_fathers(s.CURRENT_ASSETS, s.SHORT_TERM_INVESTMENTS)
-	case !s.is_it_sub_account_using_name(s.CURRENT_ASSETS, s.RECEIVABLES):
-		error_should_be_one_of_the_fathers(s.CURRENT_ASSETS, s.RECEIVABLES)
-	case !s.is_it_sub_account_using_name(s.CURRENT_ASSETS, s.INVENTORY):
-		error_should_be_one_of_the_fathers(s.CURRENT_ASSETS, s.INVENTORY)
-	case !s.is_it_sub_account_using_name(s.LIABILITIES, s.CURRENT_LIABILITIES):
-		error_should_be_one_of_the_fathers(s.LIABILITIES, s.CURRENT_LIABILITIES)
-	case !s.is_it_sub_account_using_name(s.EQUITY, s.RETAINED_EARNINGS):
-		error_should_be_one_of_the_fathers(s.EQUITY, s.RETAINED_EARNINGS)
-	case !s.is_it_sub_account_using_name(s.RETAINED_EARNINGS, s.DIVIDENDS):
-		error_should_be_one_of_the_fathers(s.RETAINED_EARNINGS, s.DIVIDENDS)
-	case !s.is_it_sub_account_using_name(s.RETAINED_EARNINGS, s.INCOME_STATEMENT):
-		error_should_be_one_of_the_fathers(s.RETAINED_EARNINGS, s.INCOME_STATEMENT)
-	case !s.is_it_sub_account_using_name(s.INCOME_STATEMENT, s.EBITDA):
-		error_should_be_one_of_the_fathers(s.INCOME_STATEMENT, s.EBITDA)
-	case !s.is_it_sub_account_using_name(s.INCOME_STATEMENT, s.INTEREST_EXPENSE):
-		error_should_be_one_of_the_fathers(s.INCOME_STATEMENT, s.INTEREST_EXPENSE)
-	case !s.is_it_sub_account_using_name(s.EBITDA, s.SALES):
-		error_should_be_one_of_the_fathers(s.EBITDA, s.SALES)
-	case !s.is_it_sub_account_using_name(s.EBITDA, s.COST_OF_GOODS_SOLD):
-		error_should_be_one_of_the_fathers(s.EBITDA, s.COST_OF_GOODS_SOLD)
-	case !s.is_it_sub_account_using_name(s.EBITDA, s.DISCOUNTS):
-		error_should_be_one_of_the_fathers(s.EBITDA, s.DISCOUNTS)
-	case !s.is_it_sub_account_using_name(s.DISCOUNTS, s.INVOICE_DISCOUNT):
-		error_should_be_one_of_the_fathers(s.DISCOUNTS, s.INVOICE_DISCOUNT)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.ASSETS, PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.ASSETS, PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.SHORT_TERM_INVESTMENTS):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.SHORT_TERM_INVESTMENTS)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.RECEIVABLES):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.RECEIVABLES)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.INVENTORY):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.INVENTORY)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.LIABILITIES, PRIMARY_ACCOUNTS_NAMES.CURRENT_LIABILITIES):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.LIABILITIES, PRIMARY_ACCOUNTS_NAMES.CURRENT_LIABILITIES)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EQUITY, PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.EQUITY, PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, PRIMARY_ACCOUNTS_NAMES.DIVIDENDS):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, PRIMARY_ACCOUNTS_NAMES.DIVIDENDS)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, PRIMARY_ACCOUNTS_NAMES.EBITDA):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, PRIMARY_ACCOUNTS_NAMES.EBITDA)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, PRIMARY_ACCOUNTS_NAMES.INTEREST_EXPENSE):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, PRIMARY_ACCOUNTS_NAMES.INTEREST_EXPENSE)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.SALES):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.SALES)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.DISCOUNTS):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.DISCOUNTS)
+	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.DISCOUNTS, PRIMARY_ACCOUNTS_NAMES.INVOICE_DISCOUNT):
+		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.DISCOUNTS, PRIMARY_ACCOUNTS_NAMES.INVOICE_DISCOUNT)
 	}
 }
 
-func (s FINANCIAL_ACCOUNTING) inventory_accounts() []string {
+func inventory_accounts() []string {
 	var inventory []string
-	for _, a := range s.ACCOUNTS {
-		if IS_IN(a.COST_FLOW_TYPE, cost_flow_type) {
+	for _, a := range ACCOUNTS {
+		if is_in(a.COST_FLOW_TYPE, cost_flow_type) {
 			inventory = append(inventory, a.ACCOUNT_NAME)
 		}
 	}
 	return inventory
 }
 
-func (s FINANCIAL_ACCOUNTING) SORT_THE_ACCOUNT_BY_ACCOUNT_NUMBER() {
-	for index := range s.ACCOUNTS {
-		for indexb := range s.ACCOUNTS {
+func SORT_THE_ACCOUNT_BY_ACCOUNT_NUMBER() {
+	for index := range ACCOUNTS {
+		for indexb := range ACCOUNTS {
 			if index < indexb {
-				if !is_it_high_than_by_order(s.ACCOUNTS[index].ACCOUNT_NUMBER, s.ACCOUNTS[indexb].ACCOUNT_NUMBER) {
-					s.ACCOUNTS[index], s.ACCOUNTS[indexb] = s.ACCOUNTS[indexb], s.ACCOUNTS[index]
+				if !is_it_high_than_by_order(ACCOUNTS[index].ACCOUNT_NUMBER, ACCOUNTS[indexb].ACCOUNT_NUMBER) {
+					ACCOUNTS[index], ACCOUNTS[indexb] = ACCOUNTS[indexb], ACCOUNTS[index]
 				}
 			}
 		}
 	}
-	s.print_formated_accounts()
+	print_formated_accounts()
 }
 
-func (s FINANCIAL_ACCOUNTING) print_formated_accounts() {
+func print_formated_accounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	for _, a := range s.ACCOUNTS {
+	for _, a := range ACCOUNTS {
 		var account_number string
 		for _, b := range a.ACCOUNT_NUMBER {
 			account_number += strconv.Itoa(int(b)) + ","

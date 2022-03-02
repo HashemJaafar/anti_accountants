@@ -1,10 +1,8 @@
 package anti_accountants
 
-import (
-	"math"
-)
+import "math"
 
-func POW(a ...float64) float64 {
+func pow(a ...float64) float64 {
 	result := a[0]
 	for i := 1; i <= len(a)-1; i++ {
 		result = math.Pow(result, a[i])
@@ -12,7 +10,7 @@ func POW(a ...float64) float64 {
 	return result
 }
 
-func LOG(a ...float64) float64 {
+func logarithm(a ...float64) float64 {
 	result := a[0]
 	for i := 1; i <= len(a)-1; i++ {
 		result = math.Log(result) / math.Log(a[i])
@@ -20,7 +18,7 @@ func LOG(a ...float64) float64 {
 	return result
 }
 
-func ROOT(a ...float64) float64 {
+func root(a ...float64) float64 {
 	result := a[0]
 	for i := 1; i <= len(a)-1; i++ {
 		result = math.Pow(result, 1/a[i])
@@ -28,7 +26,7 @@ func ROOT(a ...float64) float64 {
 	return result
 }
 
-func MAX(points [][2]float64) (float64, float64) {
+func max(points [][2]float64) (float64, float64) {
 	x, y := first_point(points)
 	for _, i := range points {
 		if i[0] > x {
@@ -39,7 +37,7 @@ func MAX(points [][2]float64) (float64, float64) {
 	return x, y
 }
 
-func MIN(points [][2]float64) (float64, float64) {
+func min(points [][2]float64) (float64, float64) {
 	x, y := first_point(points)
 	for _, i := range points {
 		if i[0] < x {
@@ -50,7 +48,7 @@ func MIN(points [][2]float64) (float64, float64) {
 	return x, y
 }
 
-func X_UNDER_X(points [][2]float64, x_max float64) (float64, float64) {
+func x_under_x(points [][2]float64, x_max float64) (float64, float64) {
 	x, y := 0.0, 0.0
 	for _, i := range points {
 		if i[0] > x && i[0] <= x_max {
@@ -64,8 +62,8 @@ func X_UNDER_X(points [][2]float64, x_max float64) (float64, float64) {
 func first_point(points [][2]float64) (float64, float64) { return points[0][0], points[0][1] }
 
 func HIGH_LOW(points [][2]float64) float64 {
-	x_max, y_max := MAX(points)
-	x_low, y_low := MIN(points)
+	x_max, y_max := max(points)
+	x_low, y_low := min(points)
 	return (y_max - y_low) / (x_max - x_low)
 }
 

@@ -2,38 +2,26 @@ package anti_accountants
 
 import "log"
 
-type ONE_STEP_DISTRIBUTION struct {
-	SALES_OR_VARIABLE_OR_FIXED, DISTRIBUTION_METHOD string
-	AMOUNT                                          float64
-	FROM, TO                                        map[string]float64
-}
-
-type MANAGERIAL_ACCOUNTING struct {
-	CVP                map[string]map[string]float64
-	DISTRIBUTION_STEPS []ONE_STEP_DISTRIBUTION
-	PRINT              bool
-}
-
-func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE(simple bool) {
-	s.calculate_cvp_map(true)
-	for _, step := range s.DISTRIBUTION_STEPS {
+func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_steps []ONE_STEP_DISTRIBUTION, print, simple bool) {
+	calculate_cvp_map(cvp, print, true)
+	for _, step := range distribution_steps {
 		var total_mixed_cost, total_portions_to, total_column_to_distribute float64
 		if simple {
 			total_mixed_cost = step.AMOUNT
 		} else {
-			total_mixed_cost = s.total_mixed_cost_in_complicated_and_multi_level_step(step, total_mixed_cost)
+			total_mixed_cost = total_mixed_cost_in_complicated_and_multi_level_step(cvp, step, total_mixed_cost)
 		}
 		for key_portions_to, portions_to := range step.TO {
 			total_portions_to += portions_to
-			total_column_to_distribute += s.CVP[key_portions_to][step.DISTRIBUTION_METHOD]
+			total_column_to_distribute += cvp[key_portions_to][step.DISTRIBUTION_METHOD]
 		}
 		for key_portions_to, portions_to := range step.TO {
 			var total_overhead_cost_to_sum float64
 			switch step.DISTRIBUTION_METHOD {
 			case "units_gap":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["units_gap"] * s.CVP[key_portions_to]["variable_cost_per_units"]
-				s.CVP[key_portions_to]["units"] -= s.CVP[key_portions_to]["units_gap"]
-				s.CVP[key_portions_to]["units_gap"] = 0
+				total_overhead_cost_to_sum = cvp[key_portions_to]["units_gap"] * cvp[key_portions_to]["variable_cost_per_units"]
+				cvp[key_portions_to]["units"] -= cvp[key_portions_to]["units_gap"]
+				cvp[key_portions_to]["units_gap"] = 0
 			case "1":
 				total_overhead_cost_to_sum = total_mixed_cost
 			case "equally":
@@ -41,98 +29,98 @@ func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT_SLICE(simple bool) {
 			case "portions":
 				total_overhead_cost_to_sum = portions_to / total_portions_to * total_mixed_cost
 			case "units":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["units"] / total_column_to_distribute * total_mixed_cost
+				total_overhead_cost_to_sum = cvp[key_portions_to]["units"] / total_column_to_distribute * total_mixed_cost
 			case "variable_cost":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["variable_cost"] / total_column_to_distribute * total_mixed_cost
+				total_overhead_cost_to_sum = cvp[key_portions_to]["variable_cost"] / total_column_to_distribute * total_mixed_cost
 			case "fixed_cost":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["fixed_cost"] / total_column_to_distribute * total_mixed_cost
+				total_overhead_cost_to_sum = cvp[key_portions_to]["fixed_cost"] / total_column_to_distribute * total_mixed_cost
 			case "mixed_cost":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["mixed_cost"] / total_column_to_distribute * total_mixed_cost
+				total_overhead_cost_to_sum = cvp[key_portions_to]["mixed_cost"] / total_column_to_distribute * total_mixed_cost
 			case "sales":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["sales"] / total_column_to_distribute * total_mixed_cost
+				total_overhead_cost_to_sum = cvp[key_portions_to]["sales"] / total_column_to_distribute * total_mixed_cost
 			case "profit":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["profit"] / total_column_to_distribute * total_mixed_cost
+				total_overhead_cost_to_sum = cvp[key_portions_to]["profit"] / total_column_to_distribute * total_mixed_cost
 			case "contribution_margin":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["contribution_margin"] / total_column_to_distribute * total_mixed_cost
+				total_overhead_cost_to_sum = cvp[key_portions_to]["contribution_margin"] / total_column_to_distribute * total_mixed_cost
 			case "percent_from_variable_cost":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["variable_cost"] * portions_to
+				total_overhead_cost_to_sum = cvp[key_portions_to]["variable_cost"] * portions_to
 			case "percent_from_fixed_cost":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["fixed_cost"] * portions_to
+				total_overhead_cost_to_sum = cvp[key_portions_to]["fixed_cost"] * portions_to
 			case "percent_from_mixed_cost":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["mixed_cost"] * portions_to
+				total_overhead_cost_to_sum = cvp[key_portions_to]["mixed_cost"] * portions_to
 			case "percent_from_sales":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["sales"] * portions_to
+				total_overhead_cost_to_sum = cvp[key_portions_to]["sales"] * portions_to
 			case "percent_from_profit":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["profit"] * portions_to
+				total_overhead_cost_to_sum = cvp[key_portions_to]["profit"] * portions_to
 			case "percent_from_contribution_margin":
-				total_overhead_cost_to_sum = s.CVP[key_portions_to]["contribution_margin"] * portions_to
+				total_overhead_cost_to_sum = cvp[key_portions_to]["contribution_margin"] * portions_to
 			default:
 				error_element_is_not_in_elements(step.DISTRIBUTION_METHOD, []string{"units_gap", "1", "equally", "portions", "units", "variable_cost", "fixed_cost", "mixed_cost", "sales", "profit", "contribution_margin", "percent_from_variable_cost", "percent_from_fixed_cost", "percent_from_mixed_cost", "percent_from_sales", "percent_from_profit", "percent_from_contribution_margin"})
 			}
 			switch step.SALES_OR_VARIABLE_OR_FIXED {
 			case "sales":
-				s.CVP[key_portions_to]["sales_per_units"] = ((s.CVP[key_portions_to]["sales_per_units"] * s.CVP[key_portions_to]["units"]) - total_overhead_cost_to_sum) / s.CVP[key_portions_to]["units"]
+				cvp[key_portions_to]["sales_per_units"] = ((cvp[key_portions_to]["sales_per_units"] * cvp[key_portions_to]["units"]) - total_overhead_cost_to_sum) / cvp[key_portions_to]["units"]
 			case "variable_cost":
-				s.CVP[key_portions_to]["variable_cost_per_units"] = ((s.CVP[key_portions_to]["variable_cost_per_units"] * s.CVP[key_portions_to]["units"]) + total_overhead_cost_to_sum) / s.CVP[key_portions_to]["units"]
+				cvp[key_portions_to]["variable_cost_per_units"] = ((cvp[key_portions_to]["variable_cost_per_units"] * cvp[key_portions_to]["units"]) + total_overhead_cost_to_sum) / cvp[key_portions_to]["units"]
 			case "fixed_cost":
-				s.CVP[key_portions_to]["fixed_cost"] += total_overhead_cost_to_sum
+				cvp[key_portions_to]["fixed_cost"] += total_overhead_cost_to_sum
 			default:
 				error_element_is_not_in_elements(step.SALES_OR_VARIABLE_OR_FIXED, []string{"sales", "variable_cost", "fixed_cost"})
 			}
-			for key_name, map_cvp := range s.CVP {
-				s.CVP[key_name] = map[string]float64{"units_gap": map_cvp["units_gap"], "units": map_cvp["units"],
+			for key_name, map_cvp := range cvp {
+				cvp[key_name] = map[string]float64{"units_gap": map_cvp["units_gap"], "units": map_cvp["units"],
 					"sales_per_units": map_cvp["sales_per_units"], "variable_cost_per_units": map_cvp["variable_cost_per_units"], "fixed_cost": map_cvp["fixed_cost"]}
 			}
-			s.calculate_cvp_map(false)
+			calculate_cvp_map(cvp, print, false)
 		}
 	}
-	s.total_cost_volume_profit()
+	total_cost_volume_profit(cvp, print)
 }
 
-func (s MANAGERIAL_ACCOUNTING) total_mixed_cost_in_complicated_and_multi_level_step(step ONE_STEP_DISTRIBUTION, total_mixed_cost float64) float64 {
+func total_mixed_cost_in_complicated_and_multi_level_step(cvp map[string]map[string]float64, step ONE_STEP_DISTRIBUTION, total_mixed_cost float64) float64 {
 	for key_portions_from, portions := range step.FROM {
-		if s.CVP[key_portions_from]["units"] < portions {
-			log.Panic(portions, " for ", key_portions_from, " in ", step.FROM, " is more than ", s.CVP[key_portions_from]["units"])
+		if cvp[key_portions_from]["units"] < portions {
+			log.Panic(portions, " for ", key_portions_from, " in ", step.FROM, " is more than ", cvp[key_portions_from]["units"])
 		}
-		total_mixed_cost += portions * s.CVP[key_portions_from]["mixed_cost_per_units"]
-		s.CVP[key_portions_from]["fixed_cost"] -= (s.CVP[key_portions_from]["fixed_cost"] / s.CVP[key_portions_from]["units"]) * portions
-		s.CVP[key_portions_from]["units"] -= portions
-		if s.CVP[key_portions_from]["units"] == 0 {
-			s.CVP[key_portions_from]["variable_cost_per_units"] = 0
+		total_mixed_cost += portions * cvp[key_portions_from]["mixed_cost_per_units"]
+		cvp[key_portions_from]["fixed_cost"] -= (cvp[key_portions_from]["fixed_cost"] / cvp[key_portions_from]["units"]) * portions
+		cvp[key_portions_from]["units"] -= portions
+		if cvp[key_portions_from]["units"] == 0 {
+			cvp[key_portions_from]["variable_cost_per_units"] = 0
 		}
 	}
 	return total_mixed_cost
 }
 
-func (s MANAGERIAL_ACCOUNTING) calculate_cvp_map(check_if_keys_in_the_equations bool) {
-	for _, i := range s.CVP {
-		s.COST_VOLUME_PROFIT(check_if_keys_in_the_equations, i)
+func calculate_cvp_map(cvp map[string]map[string]float64, print, check_if_keys_in_the_equations bool) {
+	for _, i := range cvp {
+		COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations, i)
 		_, ok_variable_cost_per_units := i["variable_cost_per_units"]
 		if !ok_variable_cost_per_units {
 			i["variable_cost_per_units"] = 0
-			s.COST_VOLUME_PROFIT(false, i)
+			COST_VOLUME_PROFIT(print, false, i)
 		}
 		_, ok_fixed_cost := i["fixed_cost"]
 		if !ok_fixed_cost {
 			i["fixed_cost"] = 0
-			s.COST_VOLUME_PROFIT(false, i)
+			COST_VOLUME_PROFIT(print, false, i)
 		}
 		_, ok_sales_per_units := i["sales_per_units"]
 		if !ok_sales_per_units {
 			i["sales_per_units"] = 0
-			s.COST_VOLUME_PROFIT(false, i)
+			COST_VOLUME_PROFIT(print, false, i)
 		}
 		_, ok_units := i["units"]
 		if !ok_units {
 			i["units"] = 0
-			s.COST_VOLUME_PROFIT(false, i)
+			COST_VOLUME_PROFIT(print, false, i)
 		}
 	}
 }
 
-func (s MANAGERIAL_ACCOUNTING) total_cost_volume_profit() {
+func total_cost_volume_profit(cvp map[string]map[string]float64, print bool) {
 	var units, sales, variable_cost, fixed_cost float64
-	for key_name, map_name := range s.CVP {
+	for key_name, map_name := range cvp {
 		if key_name != "total" {
 			units += map_name["units"]
 			sales += map_name["sales"]
@@ -140,11 +128,11 @@ func (s MANAGERIAL_ACCOUNTING) total_cost_volume_profit() {
 			fixed_cost += map_name["fixed_cost"]
 		}
 	}
-	s.CVP["total"] = map[string]float64{"units": units, "sales": sales, "variable_cost": variable_cost, "fixed_cost": fixed_cost}
-	s.COST_VOLUME_PROFIT(false, s.CVP["total"])
+	cvp["total"] = map[string]float64{"units": units, "sales": sales, "variable_cost": variable_cost, "fixed_cost": fixed_cost}
+	COST_VOLUME_PROFIT(print, false, cvp["total"])
 }
 
-func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT(check_if_keys_in_the_equations bool, m map[string]float64) {
+func COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations bool, m map[string]float64) {
 	equations := [][]string{
 		{"variable_cost", "variable_cost_per_units", "*", "units"},
 		{"fixed_cost", "fixed_cost_per_units", "*", "units"},
@@ -161,10 +149,10 @@ func (s MANAGERIAL_ACCOUNTING) COST_VOLUME_PROFIT(check_if_keys_in_the_equations
 		{"contribution_margin", "degree_of_operating_leverage", "*", "profit"},
 		{"units_gap", "units", "-", "actual_units"},
 	}
-	EQUATIONS_SOLVER(s.PRINT, check_if_keys_in_the_equations, m, equations)
+	EQUATIONS_SOLVER(print, check_if_keys_in_the_equations, m, equations)
 }
 
-func (s MANAGERIAL_ACCOUNTING) PROCESS_COSTING(check_if_keys_in_the_equations bool, m map[string]float64) {
+func PROCESS_COSTING(print, check_if_keys_in_the_equations bool, m map[string]float64) {
 	equations := [][]string{
 		{"increase_or_decrease", "increase", "-", "decrease"},
 		{"increase_or_decrease", "ending_balance", "-", "beginning_balance"},
@@ -178,10 +166,10 @@ func (s MANAGERIAL_ACCOUNTING) PROCESS_COSTING(check_if_keys_in_the_equations bo
 		{"equivalent_units_to_complete_beginning_work_in_process_inventory", "equivalent_units_in_beginning_work_in_process_inventory", "*", "percentage_completion_minus_one"},
 		{"cost_per_equivalent_unit_fifo_method", "cost_added_during_the_period", "/", "equivalent_units_of_production_fifo_method"},
 	}
-	EQUATIONS_SOLVER(s.PRINT, check_if_keys_in_the_equations, m, equations)
+	EQUATIONS_SOLVER(print, check_if_keys_in_the_equations, m, equations)
 }
 
-func (s MANAGERIAL_ACCOUNTING) LABOR_COST(check_if_keys_in_the_equations bool, m map[string]float64) {
+func LABOR_COST(print, check_if_keys_in_the_equations bool, m map[string]float64) {
 	equations := [][]string{
 		{"overtime_wage_rate", "bonus_percentage", "*", "hourly_wage_rate"},
 
@@ -192,5 +180,5 @@ func (s MANAGERIAL_ACCOUNTING) LABOR_COST(check_if_keys_in_the_equations bool, m
 		{"normal_lost_time_wage", "normal_lost_time_hours", "*", "hourly_wage_rate"},
 		{"abnormal_lost_time_wage", "abnormal_lost_time_hours", "*", "hourly_wage_rate"},
 	}
-	EQUATIONS_SOLVER(s.PRINT, check_if_keys_in_the_equations, m, equations)
+	EQUATIONS_SOLVER(print, check_if_keys_in_the_equations, m, equations)
 }

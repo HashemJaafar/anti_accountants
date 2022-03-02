@@ -6,12 +6,12 @@ import (
 	"log"
 )
 
-func (s FINANCIAL_ACCOUNTING) open_and_create_database() {
-	DB, _ = sql.Open(s.DRIVER_NAME, s.DATA_SOURCE_NAME)
+func open_and_create_database(driverName, dataSourceName, database_name string) {
+	DB, _ = sql.Open(driverName, dataSourceName)
 	err := DB.Ping()
 	error_panic(err)
-	DB.Exec("create database if not exists " + s.DATABASE_NAME)
-	_, err = DB.Exec("USE " + s.DATABASE_NAME)
+	DB.Exec("create database if not exists " + database_name)
+	_, err = DB.Exec("USE " + database_name)
 	error_panic(err)
 	DB.Exec("create table if not exists journal (date text,entry_number integer,account text,value real,price real,quantity real,barcode text,entry_expair text,description text,name text,employee_name text,entry_date text,reverse bool)")
 	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
@@ -30,7 +30,7 @@ func check_accounts(column, table, panic string, elements []string) {
 	for results.Next() {
 		var tag string
 		results.Scan(&tag)
-		if !IS_IN(tag, elements) {
+		if !is_in(tag, elements) {
 			log.Panic(tag + panic)
 		}
 	}
@@ -58,10 +58,10 @@ func account_balance(account string) float64 {
 	return account_balance
 }
 
-func (s FINANCIAL_ACCOUNTING) insert_into_inventory(array_of_journal_tag []JOURNAL_TAG) {
+func insert_into_inventory_func(array_of_journal_tag []JOURNAL_TAG) {
 	for _, entry := range array_of_journal_tag {
-		costs := s.cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, true)
-		if s.asc_or_desc(entry.ACCOUNT) != "" && costs == 0 {
+		costs := cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, true)
+		if asc_or_desc(entry.ACCOUNT) != "" && costs == 0 {
 			DB.Exec("insert into inventory(date,account,price,quantity,barcode,entry_expair,name,employee_name,entry_date)values (?,?,?,?,?,?,?,?,?)",
 				&entry.DATE, &entry.ACCOUNT, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE, &entry.ENTRY_EXPAIR, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE)
 		}

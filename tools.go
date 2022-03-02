@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func IS_IN(element string, elements []string) bool {
+func is_in(element string, elements []string) bool {
 	for _, a := range elements {
 		if a == element {
 			return true
@@ -39,7 +39,7 @@ func unpack_the_array(adjusted_array_to_insert [][]JOURNAL_TAG) []JOURNAL_TAG {
 	return array_to_insert
 }
 
-func RETURN_SAME_SIGN_OF_NUMBER_SIGN(number_sign, number float64) float64 {
+func return_same_sign_of_number_sign(number_sign, number float64) float64 {
 	if number_sign < 0 {
 		number = -math.Abs(number)
 	} else {
@@ -48,7 +48,7 @@ func RETURN_SAME_SIGN_OF_NUMBER_SIGN(number_sign, number float64) float64 {
 	return number
 }
 
-func PARSE_DATE(string_date string, date_layouts []string) time.Time {
+func parse_date(string_date string, date_layouts []string) time.Time {
 	for _, i := range date_layouts {
 		date, err := time.Parse(i, string_date)
 		if err == nil {
@@ -59,7 +59,7 @@ func PARSE_DATE(string_date string, date_layouts []string) time.Time {
 	return time.Time{}
 }
 
-func RETURN_SET_AND_DUPLICATES_STRING_SLICES(slice_of_elements []string) ([]string, []string) {
+func return_set_and_duplicates_string_slices(slice_of_elements []string) ([]string, []string) {
 	var set_of_elems, duplicated_element []string
 big_loop:
 	for _, element := range slice_of_elements {
@@ -74,7 +74,7 @@ big_loop:
 	return set_of_elems, duplicated_element
 }
 
-func RETURN_SET_AND_DUPLICATES_UINT_SLICES(accounts_numbers [][]uint) ([][]uint, [][]uint) {
+func return_set_and_duplicates_uint_slices(accounts_numbers [][]uint) ([][]uint, [][]uint) {
 	var set_of_elems, duplicated_element [][]uint
 big_loop:
 	for _, element := range accounts_numbers {
@@ -89,7 +89,7 @@ big_loop:
 	return set_of_elems, duplicated_element
 }
 
-func CONCAT(args ...interface{}) interface{} {
+func concat(args ...interface{}) interface{} {
 	n := 0
 	for _, arg := range args {
 		n += reflect.ValueOf(arg).Len()
@@ -101,7 +101,7 @@ func CONCAT(args ...interface{}) interface{} {
 	return v.Interface()
 }
 
-func REVERSE_SLICE(s interface{}) {
+func reverse_slice(s interface{}) {
 	n := reflect.ValueOf(s).Len()
 	swap := reflect.Swapper(s)
 	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {

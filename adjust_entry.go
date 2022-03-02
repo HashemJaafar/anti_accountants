@@ -7,26 +7,6 @@ import (
 	"time"
 )
 
-type DAY_START_END struct {
-	DAY          string
-	START_HOUR   int
-	START_MINUTE int
-	END_HOUR     int
-	END_MINUTE   int
-}
-
-type start_end_minutes struct {
-	start_date time.Time
-	end_date   time.Time
-	minutes    float64
-}
-
-var (
-	standard_days        = [7]string{"Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"}
-	adjusting_methods    = [4]string{"linear", "exponential", "logarithmic", "expire"}
-	depreciation_methods = [3]string{"linear", "exponential", "logarithmic"}
-)
-
 func initialize_array_day_start_end(array_day_start_end []DAY_START_END) []DAY_START_END {
 	if len(array_day_start_end) == 0 {
 		array_day_start_end = []DAY_START_END{
@@ -45,8 +25,8 @@ func check_array_day_start_end(array_day_start_end []DAY_START_END) {
 	for index, element := range array_day_start_end {
 		array_day_start_end[index].DAY = strings.Title(element.DAY)
 		switch {
-		case !IS_IN(array_day_start_end[index].DAY, standard_days[:]):
-			error_element_is_not_in_elements(element.DAY, standard_days[:])
+		case !is_in(array_day_start_end[index].DAY, standard_days):
+			error_element_is_not_in_elements(element.DAY, standard_days)
 		case element.START_HOUR < 0:
 			error_the_time_is_not_in_range(element, 0)
 		case element.START_HOUR > 23:
@@ -118,7 +98,7 @@ func adjust_the_array(array_to_insert []JOURNAL_TAG, array_start_end_minutes []s
 
 			time_unit_counter += element.minutes
 			value_counter += math.Abs(value)
-			value = RETURN_SAME_SIGN_OF_NUMBER_SIGN(entry.VALUE, value)
+			value = return_same_sign_of_number_sign(entry.VALUE, value)
 			one_account_adjusted_list = append(one_account_adjusted_list, JOURNAL_TAG{
 				DATE:          element.start_date.String(),
 				ENTRY_NUMBER:  0,
@@ -141,7 +121,7 @@ func adjust_the_array(array_to_insert []JOURNAL_TAG, array_start_end_minutes []s
 }
 
 func value_after_adjust_using_adjusting_methods(adjusting_method string, element start_end_minutes, total_minutes, time_unit_counter, total_value float64) float64 {
-	percent := ROOT(total_value, total_minutes)
+	percent := root(total_value, total_minutes)
 	switch adjusting_method {
 	case "linear":
 		return element.minutes * (total_value / total_minutes)

@@ -3,21 +3,17 @@ package anti_accountants
 import (
 	"fmt"
 	"math"
-	"os"
 	"strconv"
-	"text/tabwriter"
 )
-
-var p *tabwriter.Writer = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 
 func check_map_keys_for_equations(equations [][]string, m map[string]float64) {
 	var elements []string
 	for _, equation := range equations {
 		elements = append(elements, equation[0], equation[1], equation[3])
 	}
-	elements, _ = RETURN_SET_AND_DUPLICATES_STRING_SLICES(elements)
+	elements, _ = return_set_and_duplicates_string_slices(elements)
 	for keyb := range m {
-		if !IS_IN(keyb, elements) {
+		if !is_in(keyb, elements) {
 			error_element_is_not_in_elements(keyb, elements)
 		}
 	}
@@ -32,7 +28,7 @@ func EQUATIONS_SOLVER(print, check_if_keys_in_the_equations bool, m map[string]f
 			equation_solver(print, m, equation[0], equation[1], equation[2], equation[3])
 		}
 	}
-	p.Flush()
+	print_table.Flush()
 }
 
 func equation_solver(print bool, m map[string]float64, a, b, sign, c string) {
@@ -49,11 +45,11 @@ func equation_solver(print bool, m map[string]float64, a, b, sign, c string) {
 	case "/":
 		equations_generator(print, m, a, b, sign, c, m[b]/m[c], m[a]*m[c], m[b]/m[a])
 	case "**":
-		equations_generator(print, m, a, b, sign, c, POW(m[b], m[c]), ROOT(m[a], m[c]), LOG(m[a], m[b]))
+		equations_generator(print, m, a, b, sign, c, pow(m[b], m[c]), root(m[a], m[c]), logarithm(m[a], m[b]))
 	case "root":
-		equations_generator(print, m, a, b, sign, c, ROOT(m[b], m[c]), POW(m[a], m[c]), LOG(m[b], m[a]))
+		equations_generator(print, m, a, b, sign, c, root(m[b], m[c]), pow(m[a], m[c]), logarithm(m[b], m[a]))
 	case "log":
-		equations_generator(print, m, a, b, sign, c, LOG(m[b], m[c]), POW(m[c], m[a]), ROOT(m[b], m[a]))
+		equations_generator(print, m, a, b, sign, c, logarithm(m[b], m[c]), pow(m[c], m[a]), root(m[b], m[a]))
 	default:
 		error_element_is_not_in_elements(sign, []string{"+", "-", "*", "/", "**", "root", "log"})
 	}
@@ -115,6 +111,6 @@ func convert_nan_to_zero_for_map(m map[string]float64, str string, value float64
 
 func print_equation(print bool, m map[string]float64, a, b, sign, c string) {
 	if print {
-		fmt.Fprintln(p, a, "\t", m[a], "\t", " = ", "\t", b, "\t", m[b], "\t", sign, "\t", c, "\t", m[c])
+		fmt.Fprintln(print_table, a, "\t", m[a], "\t", " = ", "\t", b, "\t", m[b], "\t", sign, "\t", c, "\t", m[c])
 	}
 }

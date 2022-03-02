@@ -1,10 +1,8 @@
 package anti_accountants
 
-import (
-	"time"
-)
+import "time"
 
-func (s FINANCIAL_ACCOUNTING) JOURNAL_FILTER(
+func JOURNAL_FILTER(
 	JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG,
 
 	filter_date, in_date bool,
@@ -56,21 +54,21 @@ func (s FINANCIAL_ACCOUNTING) JOURNAL_FILTER(
 
 	for _, entry := range JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER {
 
-		date := PARSE_DATE(entry.DATE, s.DATE_LAYOUT)
-		entry_expair := PARSE_DATE(entry.ENTRY_EXPAIR, s.DATE_LAYOUT)
-		entry_date := PARSE_DATE(entry.ENTRY_DATE, s.DATE_LAYOUT)
+		date := parse_date(entry.DATE, DATE_LAYOUT)
+		entry_expair := parse_date(entry.ENTRY_EXPAIR, DATE_LAYOUT)
+		entry_date := parse_date(entry.ENTRY_DATE, DATE_LAYOUT)
 
 		if filter_date || (in_date == (date.After(min_date) && date.Before(max_date))) {
 			if filter_entry_number || (in_entry_number == (entry.ENTRY_NUMBER >= min_entry_number && entry.ENTRY_NUMBER <= max_entry_number)) {
-				if filter_account || (in_account == IS_IN(entry.ACCOUNT, account)) {
+				if filter_account || (in_account == is_in(entry.ACCOUNT, account)) {
 					if filter_value || (in_value == (entry.VALUE >= min_value && entry.VALUE <= max_value)) {
 						if filter_price || (in_price == (entry.PRICE >= min_price && entry.PRICE <= max_price)) {
 							if filter_quantity || (in_quantity == (entry.QUANTITY >= min_quantity && entry.QUANTITY <= max_quantity)) {
-								if filter_barcode || (in_barcode == IS_IN(entry.BARCODE, barcode)) {
+								if filter_barcode || (in_barcode == is_in(entry.BARCODE, barcode)) {
 									if filter_entry_expair || (in_entry_expair == (entry_expair.After(min_entry_expair) && entry_expair.Before(max_entry_expair))) {
-										if filter_description || (in_description == IS_IN(entry.DESCRIPTION, description)) {
-											if filter_name || (in_name == IS_IN(entry.NAME, name)) {
-												if filter_employee_name || (in_employee_name == IS_IN(entry.EMPLOYEE_NAME, employee_name)) {
+										if filter_description || (in_description == is_in(entry.DESCRIPTION, description)) {
+											if filter_name || (in_name == is_in(entry.NAME, name)) {
+												if filter_employee_name || (in_employee_name == is_in(entry.EMPLOYEE_NAME, employee_name)) {
 													if filter_entry_date || (in_entry_date == (entry_date.After(min_entry_date) && entry_date.Before(max_entry_date))) {
 														if filter_reverse || reverse == entry.REVERSE {
 															filtered_journal = append(filtered_journal, entry)

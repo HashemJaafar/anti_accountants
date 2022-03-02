@@ -5,15 +5,10 @@ import (
 	"math"
 )
 
-type AUTO_COMPLETE_ENTRIE struct {
-	INVENTORY_ACCOUNT, COST_OF_GOOD_SOLD_ACCOUNT, REVENUE_ACCOUNT, DESCOUNT_ACCOUNT string
-	SELLING_PRICE, DESCOUNT_PRICE                                                   float64
-}
-
-func (s FINANCIAL_ACCOUNTING) auto_completion_the_entry(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
+func auto_completion_the_entry(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
 	var new_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
 	for _, entry := range entries {
-		for _, complement := range s.AUTO_COMPLETE_ENTRIES {
+		for _, complement := range AUTO_COMPLETE_ENTRIES {
 			if complement.INVENTORY_ACCOUNT == entry.ACCOUNT {
 				fmt.Println(complement)
 				new_entries = append(new_entries, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{
@@ -51,12 +46,12 @@ func (s FINANCIAL_ACCOUNTING) auto_completion_the_entry(entries []ACCOUNT_VALUE_
 	return entries
 }
 
-func (s FINANCIAL_ACCOUNTING) auto_completion_the_invoice_discount(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
-	total_invoice_before_invoice_discount := s.total_invoice_before_invoice_discount(entries)
-	_, discount := X_UNDER_X(s.INVOICE_DISCOUNTS_LIST, total_invoice_before_invoice_discount)
+func auto_completion_the_invoice_discount(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
+	total_invoice_before_invoice_discount := total_invoice_before_invoice_discount(entries)
+	_, discount := x_under_x(INVOICE_DISCOUNTS_LIST, total_invoice_before_invoice_discount)
 	invoice_discount := discount_tax_calculator(total_invoice_before_invoice_discount, discount)
 	entries = append(entries, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{
-		ACCOUNT:  s.INVOICE_DISCOUNT,
+		ACCOUNT:  PRIMARY_ACCOUNTS_NAMES.INVOICE_DISCOUNT,
 		VALUE:    invoice_discount,
 		PRICE:    invoice_discount,
 		QUANTITY: 1,
@@ -64,12 +59,12 @@ func (s FINANCIAL_ACCOUNTING) auto_completion_the_invoice_discount(entries []ACC
 	return entries
 }
 
-func (s FINANCIAL_ACCOUNTING) total_invoice_before_invoice_discount(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) float64 {
+func total_invoice_before_invoice_discount(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) float64 {
 	var total_invoice_before_invoice_discount float64
 	for _, entry := range entries {
-		if s.is_it_sub_account_using_name(s.INCOME_STATEMENT, entry.ACCOUNT) && s.is_credit(entry.ACCOUNT) {
+		if is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, entry.ACCOUNT) && is_credit(entry.ACCOUNT) {
 			total_invoice_before_invoice_discount += entry.VALUE
-		} else if s.is_it_sub_account_using_name(s.DISCOUNTS, entry.ACCOUNT) && !s.is_credit(entry.ACCOUNT) {
+		} else if is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.DISCOUNTS, entry.ACCOUNT) && !is_credit(entry.ACCOUNT) {
 			total_invoice_before_invoice_discount -= entry.VALUE
 		}
 	}
