@@ -100,19 +100,24 @@ func adjust_the_array(array_to_insert []JOURNAL_TAG, array_start_end_minutes []s
 			value_counter += math.Abs(value)
 			value = return_same_sign_of_number_sign(entry.VALUE, value)
 			one_account_adjusted_list = append(one_account_adjusted_list, JOURNAL_TAG{
-				DATE:          element.start_date.String(),
-				ENTRY_NUMBER:  0,
-				ACCOUNT:       entry.ACCOUNT,
-				VALUE:         value,
-				PRICE:         entry.PRICE,
-				QUANTITY:      value / entry.PRICE,
-				BARCODE:       entry.BARCODE,
-				ENTRY_EXPAIR:  element.end_date.String(),
-				DESCRIPTION:   description,
-				NAME:          name,
-				EMPLOYEE_NAME: employee_name,
-				ENTRY_DATE:    NOW.String(),
-				REVERSE:       false,
+				REVERSE:         false,
+				ENTRY_NUMBER:    0,
+				LINE_NUMBER:     0,
+				VALUE:           value,
+				PRICE_DEBIT:     entry.PRICE_DEBIT,
+				PRICE_CREDIT:    entry.PRICE_CREDIT,
+				QUANTITY_DEBIT:  value / entry.PRICE_DEBIT,
+				QUANTITY_CREDIT: value / entry.PRICE_CREDIT,
+				ACCOUNT_DEBIT:   entry.ACCOUNT_DEBIT,
+				ACCOUNT_CREDIT:  entry.ACCOUNT_CREDIT,
+				BARCODE_DEBIT:   entry.BARCODE_DEBIT,
+				BARCODE_CREDIT:  entry.BARCODE_CREDIT,
+				DESCRIPTION:     description,
+				NAME:            name,
+				EMPLOYEE_NAME:   employee_name,
+				DATE:            element.start_date.String(),
+				ENTRY_EXPAIR:    element.end_date.String(),
+				ENTRY_DATE:      NOW.String(),
 			})
 		}
 		adjusted_array_to_insert = append(adjusted_array_to_insert, one_account_adjusted_list)

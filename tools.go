@@ -1,7 +1,6 @@
 package anti_accountants
 
 import (
-	"database/sql"
 	"math"
 	"reflect"
 	"time"
@@ -144,12 +143,12 @@ func check_dates(start_date, end_date time.Time) {
 	}
 }
 
-func select_from_journal(rows *sql.Rows) []JOURNAL_TAG {
-	var journal []JOURNAL_TAG
-	for rows.Next() {
-		var tag JOURNAL_TAG
-		rows.Scan(&tag.DATE, &tag.ENTRY_NUMBER, &tag.ACCOUNT, &tag.VALUE, &tag.PRICE, &tag.QUANTITY, &tag.BARCODE, &tag.ENTRY_EXPAIR, &tag.DESCRIPTION, &tag.NAME, &tag.EMPLOYEE_NAME, &tag.ENTRY_DATE, &tag.REVERSE)
-		journal = append(journal, tag)
-	}
-	return journal
-}
+// func select_from_journal(rows *sql.Rows) []JOURNAL_TAG {
+// 	var journal []JOURNAL_TAG
+// 	for rows.Next() {
+// 		var tag JOURNAL_TAG
+// 		rows.Scan(&tag.DATE, &tag.ENTRY_NUMBER, &tag.ACCOUNT, &tag.VALUE, &tag.PRICE, &tag.QUANTITY, &tag.BARCODE, &tag.ENTRY_EXPAIR, &tag.DESCRIPTION, &tag.NAME, &tag.EMPLOYEE_NAME, &tag.ENTRY_DATE, &tag.REVERSE)
+// 		journal = append(journal, tag)
+// 	}
+// 	return journal
+// }

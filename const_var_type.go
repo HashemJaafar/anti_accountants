@@ -9,54 +9,53 @@ import (
 
 var (
 	// exportable
-	NOW                    = time.Now()
-	DB                     *sql.DB
-	INVOICE_DISCOUNTS_LIST [][2]float64
-	AUTO_COMPLETE_ENTRIES  []AUTO_COMPLETE_ENTRIE
-	DATE_LAYOUT            = []string{"2006-01-02 15:04:05.999999999 -0700 +03 m=+0.999999999", "2006-01-02 15:04:05.999999999 -0700 +03"}
-	PRIMARY_ACCOUNTS_NAMES = FINANCIAL_ACCOUNTING{
-		ASSETS:                    "ASSETS",
-		CURRENT_ASSETS:            "CURRENT_ASSETS",
-		CASH_AND_CASH_EQUIVALENTS: "CASH_AND_CASH_EQUIVALENTS",
-		SHORT_TERM_INVESTMENTS:    "SHORT_TERM_INVESTMENTS",
-		RECEIVABLES:               "RECEIVABLES",
-		INVENTORY:                 "INVENTORY",
-		LIABILITIES:               "LIABILITIES",
-		CURRENT_LIABILITIES:       "CURRENT_LIABILITIES",
-		EQUITY:                    "EQUITY",
-		RETAINED_EARNINGS:         "RETAINED_EARNINGS",
-		DIVIDENDS:                 "DIVIDENDS",
-		INCOME_STATEMENT:          "INCOME_STATEMENT",
-		EBITDA:                    "EBITDA",
-		SALES:                     "SALES",
-		COST_OF_GOODS_SOLD:        "COST_OF_GOODS_SOLD",
-		DISCOUNTS:                 "DISCOUNTS",
-		INVOICE_DISCOUNT:          "INVOICE_DISCOUNT",
-		INTEREST_EXPENSE:          "INTEREST_EXPENSE",
+	NOW                     = time.Now()
+	DB                      *sql.DB
+	INDEX_OF_ACCOUNT_NUMBER = 0
+	INVOICE_DISCOUNTS_LIST  [][2]float64
+	AUTO_COMPLETE_ENTRIES   []AUTO_COMPLETE_ENTRIE
+	DATE_LAYOUT             = []string{"2006-01-02 15:04:05.999999999 -0700 +03 m=+0.999999999", "2006-01-02 15:04:05.999999999 -0700 +03"}
+	PRIMARY_ACCOUNTS_NAMES  = FINANCIAL_ACCOUNTING{
+		ASSETS:                    []string{"ASSETS"},
+		CURRENT_ASSETS:            []string{"CURRENT_ASSETS"},
+		CASH_AND_CASH_EQUIVALENTS: []string{"CASH_AND_CASH_EQUIVALENTS"},
+		SHORT_TERM_INVESTMENTS:    []string{"SHORT_TERM_INVESTMENTS"},
+		RECEIVABLES:               []string{"RECEIVABLES"},
+		INVENTORY:                 []string{"INVENTORY"},
+		LIABILITIES:               []string{"LIABILITIES"},
+		CURRENT_LIABILITIES:       []string{"CURRENT_LIABILITIES"},
+		EQUITY:                    []string{"EQUITY"},
+		RETAINED_EARNINGS:         []string{"RETAINED_EARNINGS"},
+		DIVIDENDS:                 []string{"DIVIDENDS"},
+		INCOME_STATEMENT:          []string{"INCOME_STATEMENT"},
+		EBITDA:                    []string{"EBITDA"},
+		SALES:                     []string{"SALES"},
+		COST_OF_GOODS_SOLD:        []string{"COST_OF_GOODS_SOLD"},
+		DISCOUNTS:                 []string{"DISCOUNTS"},
+		INVOICE_DISCOUNT:          []string{"INVOICE_DISCOUNT"},
+		INTEREST_EXPENSE:          []string{"INTEREST_EXPENSE"},
 	}
 	ACCOUNTS = []ACCOUNT{
-		{false, "", "ASSETS", []uint{1}},
-		{false, "", "CURRENT_ASSETS", []uint{1, 1}},
-		{false, "", "CASH_AND_CASH_EQUIVALENTS", []uint{1, 1, 1}},
-		{false, "", "SHORT_TERM_INVESTMENTS", []uint{1, 2}},
-		{false, "", "RECEIVABLES", []uint{1, 3}},
-		{false, "", "INVENTORY", []uint{1, 4}},
-		{false, "", "LIABILITIES", []uint{2}},
-		{false, "", "CURRENT_LIABILITIES", []uint{2, 1}},
-		{false, "", "EQUITY", []uint{3}},
-		{false, "", "RETAINED_EARNINGS", []uint{3, 1}},
-		{false, "", "DIVIDENDS", []uint{3, 1, 1}},
-		{false, "", "INCOME_STATEMENT", []uint{3, 1, 2}},
-		{false, "", "EBITDA", []uint{3, 1, 2, 1}},
-		{false, "", "SALES", []uint{3, 1, 2, 1, 1}},
-		{false, "", "COST_OF_GOODS_SOLD", []uint{3, 1, 2, 1, 2}},
-		{false, "", "DISCOUNTS", []uint{3, 1, 2, 1, 3}},
-		{false, "", "INVOICE_DISCOUNT", []uint{3, 1, 2, 1, 3, 1}},
-		{false, "", "INTEREST_EXPENSE", []uint{3, 1, 2, 1, 4}},
+		{false, false, false, "", "ASSETS", "", [][]uint{{1}, {}}, []uint{1, 0}, ""},
+		{false, false, false, "", "CURRENT_ASSETS", "", [][]uint{{1, 1}, {2}}, []uint{2, 1}, ""},
+		{true, false, false, "fifo", "CASH_AND_CASH_EQUIVALENTS", "", [][]uint{{1, 1, 1}, {2, 1}}, []uint{3, 2}, ""},
+		{true, false, false, "fifo", "SHORT_TERM_INVESTMENTS", "", [][]uint{{1, 2}, {2, 2}}, []uint{2, 2}, ""},
+		{true, false, false, "", "RECEIVABLES", "", [][]uint{{1, 3}, {2, 3}}, []uint{2, 2}, ""},
+		{true, false, false, "fifo", "INVENTORY", "", [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, ""},
+		{false, true, false, "", "LIABILITIES", "", [][]uint{{2}, {}}, []uint{1, 0}, ""},
+		{true, true, false, "", "CURRENT_LIABILITIES", "", [][]uint{{2, 1}, {4}}, []uint{2, 1}, ""},
+		{false, true, false, "", "EQUITY", "", [][]uint{{3}, {5}}, []uint{1, 1}, ""},
+		{false, true, false, "", "RETAINED_EARNINGS", "", [][]uint{{3, 1}, {}}, []uint{2, 0}, ""},
+		{true, false, true, "", "DIVIDENDS", "", [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, ""},
+		{false, true, true, "", "INCOME_STATEMENT", "", [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, ""},
+		{false, true, true, "", "EBITDA", "", [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, ""},
+		{true, true, true, "", "SALES", "", [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, ""},
+		{true, false, true, "", "COST_OF_GOODS_SOLD", "", [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, ""},
+		{false, false, true, "", "DISCOUNTS", "", [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, ""},
+		{true, false, true, "", "INVOICE_DISCOUNT", "", [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, ""},
 	}
-
 	// var
-	inventory []string
+	inventory, higher_level_accounts []string
 
 	// const
 	print_table          = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
@@ -67,9 +66,11 @@ var (
 )
 
 type ACCOUNT struct {
-	IS_CREDIT                    bool
-	COST_FLOW_TYPE, ACCOUNT_NAME string
-	ACCOUNT_NUMBER               []uint
+	is_low_level_account, IS_CREDIT, IS_TEMPORARY bool
+	COST_FLOW_TYPE, ACCOUNT_NAME, DESCRIPTION     string
+	ACCOUNT_NUMBER                                [][]uint
+	account_levels                                []uint
+	IMAGE                                         string
 }
 
 type DAY_START_END struct {
@@ -97,40 +98,45 @@ type FILTERED_STATEMENT struct {
 }
 
 type FINANCIAL_ACCOUNTING struct {
-	ASSETS                    string
-	CURRENT_ASSETS            string
-	CASH_AND_CASH_EQUIVALENTS string
-	SHORT_TERM_INVESTMENTS    string
-	RECEIVABLES               string
-	INVENTORY                 string
-	LIABILITIES               string
-	CURRENT_LIABILITIES       string
-	EQUITY                    string
-	RETAINED_EARNINGS         string
-	DIVIDENDS                 string
-	INCOME_STATEMENT          string
-	EBITDA                    string
-	SALES                     string
-	COST_OF_GOODS_SOLD        string
-	DISCOUNTS                 string
-	INVOICE_DISCOUNT          string
-	INTEREST_EXPENSE          string
+	ASSETS,
+	CURRENT_ASSETS,
+	CASH_AND_CASH_EQUIVALENTS,
+	SHORT_TERM_INVESTMENTS,
+	RECEIVABLES,
+	INVENTORY,
+	LIABILITIES,
+	CURRENT_LIABILITIES,
+	EQUITY,
+	RETAINED_EARNINGS,
+	DIVIDENDS,
+	INCOME_STATEMENT,
+	EBITDA,
+	SALES,
+	COST_OF_GOODS_SOLD,
+	DISCOUNTS,
+	INVOICE_DISCOUNT,
+	INTEREST_EXPENSE []string
 }
 
 type JOURNAL_TAG struct {
-	DATE          string
-	ENTRY_NUMBER  int
-	ACCOUNT       string
-	VALUE         float64
-	PRICE         float64
-	QUANTITY      float64
-	BARCODE       string
-	ENTRY_EXPAIR  string
-	DESCRIPTION   string
-	NAME          string
-	EMPLOYEE_NAME string
-	ENTRY_DATE    string
-	REVERSE       bool
+	REVERSE         bool
+	ENTRY_NUMBER    int
+	LINE_NUMBER     int
+	VALUE           float64
+	PRICE_DEBIT     float64
+	PRICE_CREDIT    float64
+	QUANTITY_DEBIT  float64
+	QUANTITY_CREDIT float64
+	ACCOUNT_DEBIT   string
+	ACCOUNT_CREDIT  string
+	BARCODE_DEBIT   string
+	BARCODE_CREDIT  string
+	DESCRIPTION     string
+	NAME            string
+	EMPLOYEE_NAME   string
+	DATE            string
+	ENTRY_EXPAIR    string
+	ENTRY_DATE      string
 }
 
 type INVOICE_STRUCT struct {
