@@ -36,26 +36,25 @@ var (
 		INTEREST_EXPENSE:          []string{"INTEREST_EXPENSE"},
 	}
 	ACCOUNTS = []ACCOUNT{
-		{false, false, false, "", "ASSETS", "", [][]uint{{1}, {}}, []uint{1, 0}, ""},
-		{false, false, false, "", "CURRENT_ASSETS", "", [][]uint{{1, 1}, {2}}, []uint{2, 1}, ""},
-		{true, false, false, "fifo", "CASH_AND_CASH_EQUIVALENTS", "", [][]uint{{1, 1, 1}, {2, 1}}, []uint{3, 2}, ""},
-		{true, false, false, "fifo", "SHORT_TERM_INVESTMENTS", "", [][]uint{{1, 2}, {2, 2}}, []uint{2, 2}, ""},
-		{true, false, false, "", "RECEIVABLES", "", [][]uint{{1, 3}, {2, 3}}, []uint{2, 2}, ""},
-		{true, false, false, "fifo", "INVENTORY", "", [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, ""},
-		{false, true, false, "", "LIABILITIES", "", [][]uint{{2}, {}}, []uint{1, 0}, ""},
-		{true, true, false, "", "CURRENT_LIABILITIES", "", [][]uint{{2, 1}, {4}}, []uint{2, 1}, ""},
-		{false, true, false, "", "EQUITY", "", [][]uint{{3}, {5}}, []uint{1, 1}, ""},
-		{false, true, false, "", "RETAINED_EARNINGS", "", [][]uint{{3, 1}, {}}, []uint{2, 0}, ""},
-		{true, false, true, "", "DIVIDENDS", "", [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, ""},
-		{false, true, true, "", "INCOME_STATEMENT", "", [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, ""},
-		{false, true, true, "", "EBITDA", "", [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, ""},
-		{true, true, true, "", "SALES", "", [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, ""},
-		{true, false, true, "", "COST_OF_GOODS_SOLD", "", [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, ""},
-		{false, false, true, "", "DISCOUNTS", "", [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, ""},
-		{true, false, true, "", "INVOICE_DISCOUNT", "", [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, ""},
-	}
+		{false, false, false, "", "ASSETS", "", [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}, ""},
+		{false, false, false, "", "CURRENT_ASSETS", "", [][]uint{{1, 1}, {2}}, []uint{2, 1}, [][]string{{"ASSETS"}, {}}, ""},
+		{true, false, false, "fifo", "CASH_AND_CASH_EQUIVALENTS", "", [][]uint{{1, 1, 1}, {2, 1}}, []uint{3, 2}, [][]string{{"ASSETS", "CURRENT_ASSETS"}, {"CURRENT_ASSETS"}}, ""},
+		{true, false, false, "fifo", "SHORT_TERM_INVESTMENTS", "", [][]uint{{1, 2}, {2, 2}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CURRENT_ASSETS"}}, ""},
+		{true, false, false, "", "RECEIVABLES", "", [][]uint{{1, 3}, {2, 3}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CURRENT_ASSETS"}}, ""},
+		{true, false, false, "wma", "INVENTORY", "", [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CURRENT_ASSETS"}}, ""},
+		{false, true, false, "", "LIABILITIES", "", [][]uint{{2}, {}}, []uint{1, 0}, [][]string{{}, {}}, ""},
+		{true, true, false, "", "CURRENT_LIABILITIES", "", [][]uint{{2, 1}, {4}}, []uint{2, 1}, [][]string{{"LIABILITIES"}, {}}, ""},
+		{false, true, false, "", "EQUITY", "", [][]uint{{3}, {5}}, []uint{1, 1}, [][]string{{}, {}}, ""},
+		{false, true, false, "", "RETAINED_EARNINGS", "", [][]uint{{3, 1}, {}}, []uint{2, 0}, [][]string{{"EQUITY"}, {}}, ""},
+		{true, false, true, "", "DIVIDENDS", "", [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"EQUITY"}}, ""},
+		{false, true, false, "", "INCOME_STATEMENT", "", [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"EQUITY"}}, ""},
+		{false, true, false, "", "EBITDA", "", [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT"}, {}}, ""},
+		{true, true, true, "", "SALES", "", [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"EQUITY", "INCOME_STATEMENT"}}, ""},
+		{true, false, true, "", "COST_OF_GOODS_SOLD", "", [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"EQUITY", "INCOME_STATEMENT"}}, ""},
+		{false, false, false, "", "DISCOUNTS", "", [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {}}, ""},
+		{true, false, true, "", "INVOICE_DISCOUNT", "", [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA", "DISCOUNTS"}, {}}, ""}}
 	// var
-	inventory, higher_level_accounts []string
+	inventory []string
 
 	// const
 	print_table          = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
@@ -70,6 +69,7 @@ type ACCOUNT struct {
 	COST_FLOW_TYPE, ACCOUNT_NAME, DESCRIPTION     string
 	ACCOUNT_NUMBER                                [][]uint
 	account_levels                                []uint
+	father_and_grandpa_accounts_name              [][]string
 	IMAGE                                         string
 }
 

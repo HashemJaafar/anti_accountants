@@ -84,19 +84,20 @@ package anti_accountants
 // }
 
 func INITIALIZE(driverName, dataSourceName, database_name string) {
-	open_and_create_database(driverName, dataSourceName, database_name)
-	check_if_all_have_same_len_account_numbers()
+	// open_and_create_database(driverName, dataSourceName, database_name)
+	init_account_numbers_and_father_and_grandpa_accounts_name()
 	remove_duplicate_accounts_name()
 	remove_duplicate_accounts_number()
 	set_low_level_accounts()
 	check_if_low_level_account_for_all()
-	check_cost_flow_type()
+	set_high_level_account_to_permanent()
 	set_account_levels()
+	set_father_and_grandpa_accounts_name()
 	check_if_the_tree_connected()
-	find_all_higher_level_accounts()
+	set_cost_flow_type()
 	inventory_accounts()
 	// check_accounts("account", "inventory", " is not have fifo lifo wma on cost_flow_type field", inventory)
-	SORT_THE_ACCOUNT_BY_ACCOUNT_NUMBER()
+	sort_the_accounts_by_account_number()
 
 	// entry_number := entry_number()
 	// var array_to_insert []JOURNAL_TAG
@@ -113,7 +114,7 @@ func INITIALIZE(driverName, dataSourceName, database_name string) {
 	// array_to_insert = append(array_to_insert, expair_expenses)
 	// insert_to_database(array_to_insert, true, false)
 	// DB.Exec("delete from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
-	DB.Exec("delete from inventory where quantity=0")
+	// DB.Exec("delete from inventory where quantity=0")
 
 	// check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER())
 }

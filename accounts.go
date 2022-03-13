@@ -50,19 +50,8 @@ func is_it_sub_account_using_number(higher_level_account_number, lower_level_acc
 	return true
 }
 
-func find_all_higher_level_accounts() {
-	for _, a := range ACCOUNTS {
-		if !a.is_low_level_account {
-			higher_level_accounts = append(higher_level_accounts, a.ACCOUNT_NAME)
-		}
-	}
-}
-
 func is_it_first_higher_level_account_using_number(higher_level_account_number, lower_level_account_number []uint) bool {
-	if len(higher_level_account_number)+1 != len(lower_level_account_number) {
-		return false
-	}
-	return is_it_sub_account_using_number(higher_level_account_number, lower_level_account_number)
+	return reflect.DeepEqual(higher_level_account_number, lower_level_account_number[:len(lower_level_account_number)-1])
 }
 
 func check_if_the_tree_connected() {
@@ -82,28 +71,15 @@ func check_if_the_tree_connected() {
 	}
 }
 
-func check_cost_flow_type() {
+func set_cost_flow_type() {
 	for indexa, a := range ACCOUNTS {
 		is_in_cost_flow_type := is_in(a.COST_FLOW_TYPE, cost_flow_type)
 		is_in_receivables := is_in(a.ACCOUNT_NAME, PRIMARY_ACCOUNTS_NAMES.RECEIVABLES)
 		is_in_liabilities := is_in(a.ACCOUNT_NAME, PRIMARY_ACCOUNTS_NAMES.LIABILITIES)
-		if is_in_cost_flow_type {
-			switch {
-			case a.IS_CREDIT:
-				ACCOUNTS[indexa].COST_FLOW_TYPE = ""
-			case a.IS_TEMPORARY:
-				ACCOUNTS[indexa].COST_FLOW_TYPE = ""
-			case is_in_receivables:
-				ACCOUNTS[indexa].COST_FLOW_TYPE = ""
-			case is_in_liabilities:
-				ACCOUNTS[indexa].COST_FLOW_TYPE = ""
-			case !a.is_low_level_account:
-				ACCOUNTS[indexa].COST_FLOW_TYPE = ""
-			}
-		} else if a.COST_FLOW_TYPE != "" {
+		cost_flow_rules := !a.IS_CREDIT && !a.IS_TEMPORARY && a.is_low_level_account && !is_in_receivables && !is_in_liabilities
+		if !cost_flow_rules {
 			ACCOUNTS[indexa].COST_FLOW_TYPE = ""
-		}
-		if !is_in_cost_flow_type && !a.IS_TEMPORARY && !is_in_receivables && !is_in_liabilities && a.is_low_level_account && !a.IS_CREDIT {
+		} else if !is_in_cost_flow_type {
 			ACCOUNTS[indexa].COST_FLOW_TYPE = "fifo"
 		}
 	}
@@ -117,7 +93,7 @@ func inventory_accounts() {
 	}
 }
 
-func SORT_THE_ACCOUNT_BY_ACCOUNT_NUMBER() {
+func sort_the_accounts_by_account_number() {
 	for index := range ACCOUNTS {
 		for indexb := range ACCOUNTS {
 			if index < indexb {
@@ -133,18 +109,51 @@ func SORT_THE_ACCOUNT_BY_ACCOUNT_NUMBER() {
 func print_formated_accounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	for _, a := range ACCOUNTS {
-		var account_number, account_levels string
-		for _, b := range a.ACCOUNT_NUMBER {
-			account_number += "{"
-			account_levels += strconv.Itoa(len(b)) + ","
-			for _, c := range b {
-				account_number += strconv.Itoa(int(c)) + ","
-			}
-			account_number += "}\t,"
-		}
-		fmt.Fprintln(p, "{", a.is_low_level_account, "\t", ",", a.IS_CREDIT, "\t", ",", a.IS_TEMPORARY, "\t", ",\""+a.COST_FLOW_TYPE+"\"", "\t", ",\""+a.ACCOUNT_NAME+"\"", "\t", ",\""+a.DESCRIPTION+"\"", "\t", ",[][]uint{", account_number, "}", "\t", ",[]uint{", account_levels, "}", "\t,\""+a.IMAGE+"\"", "},")
+		is_low_level_account := a.is_low_level_account
+		is_credit := "\t," + strconv.FormatBool(a.IS_CREDIT)
+		is_temporary := "\t," + strconv.FormatBool(a.IS_TEMPORARY)
+		cost_flow_type := "\t,\"" + a.COST_FLOW_TYPE + "\""
+		account_name := "\t,\"" + a.ACCOUNT_NAME + "\""
+		description := "\t,\"" + a.DESCRIPTION + "\""
+		account_number := "\t,[][]uint{" + format_account_number_to_string(a) + "}"
+		account_levels := "\t,[]uint{" + format_account_levels_to_string(a) + "}"
+		father_and_grandpa_accounts_name := "\t,[][]string{" + format_father_and_grandpa_accounts_name_to_string(a) + "}"
+		image := "\t,\"" + a.IMAGE + "\""
+		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, cost_flow_type, account_name, description, account_number, account_levels, father_and_grandpa_accounts_name, image, "},")
 	}
 	p.Flush()
+}
+
+func format_father_and_grandpa_accounts_name_to_string(a ACCOUNT) string {
+	var father_and_grandpa_accounts_name string
+	for _, b := range a.father_and_grandpa_accounts_name {
+		father_and_grandpa_accounts_name += "{"
+		for _, c := range b {
+			father_and_grandpa_accounts_name += "\"" + c + "\","
+		}
+		father_and_grandpa_accounts_name += "}\t,"
+	}
+	return father_and_grandpa_accounts_name
+}
+
+func format_account_levels_to_string(a ACCOUNT) string {
+	var account_levels string
+	for _, b := range a.ACCOUNT_NUMBER {
+		account_levels += strconv.Itoa(len(b)) + ","
+	}
+	return account_levels
+}
+
+func format_account_number_to_string(a ACCOUNT) string {
+	var account_number string
+	for _, b := range a.ACCOUNT_NUMBER {
+		account_number += "{"
+		for _, c := range b {
+			account_number += strconv.Itoa(int(c)) + ","
+		}
+		account_number += "}\t,"
+	}
+	return account_number
 }
 
 func is_it_high_than_by_order(account_number1, account_number2 []uint) bool {
@@ -172,11 +181,13 @@ func is_shorter_than(slice1, slice2 []uint) bool {
 	}
 }
 
-func check_if_all_have_same_len_account_numbers() {
+func init_account_numbers_and_father_and_grandpa_accounts_name() {
 	max_len := max_len_for_account_number()
 	for indexa, a := range ACCOUNTS {
-		if max_len > len(a.ACCOUNT_NUMBER) {
-			ACCOUNTS[indexa].ACCOUNT_NUMBER = append(ACCOUNTS[indexa].ACCOUNT_NUMBER, []uint{})
+		ACCOUNTS[indexa].father_and_grandpa_accounts_name = make([][]string, max_len)
+		ACCOUNTS[indexa].ACCOUNT_NUMBER = make([][]uint, max_len)
+		for indexb, b := range a.ACCOUNT_NUMBER {
+			ACCOUNTS[indexa].ACCOUNT_NUMBER[indexb] = b
 		}
 	}
 }
@@ -238,7 +249,7 @@ big_loop:
 
 func check_if_low_level_account_for_all() {
 	l := len(ACCOUNTS[0].ACCOUNT_NUMBER)
-	for i := 0; i < l; i++ {
+	for i := 1; i < l; i++ {
 	big_loop:
 		for indexa, a := range ACCOUNTS {
 			if len(a.ACCOUNT_NUMBER[i]) != 0 {
@@ -266,15 +277,27 @@ func set_account_levels() {
 	}
 }
 
-func initialize_accounts() {
-	check_if_all_have_same_len_account_numbers()
-	remove_duplicate_accounts_name()
-	remove_duplicate_accounts_number()
-	set_low_level_accounts()
-	check_if_low_level_account_for_all()
-	check_cost_flow_type()
-	set_account_levels()
-	check_if_the_tree_connected()
-	find_all_higher_level_accounts()
-	SORT_THE_ACCOUNT_BY_ACCOUNT_NUMBER()
+func set_father_and_grandpa_accounts_name() {
+	l := len(ACCOUNTS[0].ACCOUNT_NUMBER)
+	for i := 0; i < l; i++ {
+		for indexa, a := range ACCOUNTS {
+			if len(a.ACCOUNT_NUMBER[i]) > 1 {
+				for _, b := range ACCOUNTS {
+					if len(b.ACCOUNT_NUMBER[i]) > 0 {
+						if is_it_sub_account_using_number(b.ACCOUNT_NUMBER[i], a.ACCOUNT_NUMBER[i]) {
+							ACCOUNTS[indexa].father_and_grandpa_accounts_name[i] = append(ACCOUNTS[indexa].father_and_grandpa_accounts_name[i], b.ACCOUNT_NAME)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func set_high_level_account_to_permanent() {
+	for indexa, a := range ACCOUNTS {
+		if !a.is_low_level_account {
+			ACCOUNTS[indexa].IS_TEMPORARY = false
+		}
+	}
 }

@@ -1,6 +1,7 @@
 package anti_accountants
 
 import (
+	"log"
 	"math"
 	"reflect"
 	"time"
@@ -152,3 +153,9 @@ func check_dates(start_date, end_date time.Time) {
 // 	}
 // 	return journal
 // }
+
+func test_function(a, e interface{}) {
+	if !reflect.DeepEqual(a, e) {
+		log.Fatal("expected : ", e, " actual : ", a)
+	}
+}
