@@ -36,23 +36,24 @@ var (
 		INTEREST_EXPENSE:          []string{"INTEREST_EXPENSE"},
 	}
 	ACCOUNTS = []ACCOUNT{
-		{false, false, false, "", "ASSETS", "", [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}, ""},
-		{false, false, false, "", "CURRENT_ASSETS", "", [][]uint{{1, 1}, {2}}, []uint{2, 1}, [][]string{{"ASSETS"}, {}}, ""},
-		{true, false, false, "fifo", "CASH_AND_CASH_EQUIVALENTS", "", [][]uint{{1, 1, 1}, {2, 1}}, []uint{3, 2}, [][]string{{"ASSETS", "CURRENT_ASSETS"}, {"CURRENT_ASSETS"}}, ""},
-		{true, false, false, "fifo", "SHORT_TERM_INVESTMENTS", "", [][]uint{{1, 2}, {2, 2}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CURRENT_ASSETS"}}, ""},
-		{true, false, false, "", "RECEIVABLES", "", [][]uint{{1, 3}, {2, 3}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CURRENT_ASSETS"}}, ""},
-		{true, false, false, "wma", "INVENTORY", "", [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CURRENT_ASSETS"}}, ""},
-		{false, true, false, "", "LIABILITIES", "", [][]uint{{2}, {}}, []uint{1, 0}, [][]string{{}, {}}, ""},
-		{true, true, false, "", "CURRENT_LIABILITIES", "", [][]uint{{2, 1}, {4}}, []uint{2, 1}, [][]string{{"LIABILITIES"}, {}}, ""},
-		{false, true, false, "", "EQUITY", "", [][]uint{{3}, {5}}, []uint{1, 1}, [][]string{{}, {}}, ""},
-		{false, true, false, "", "RETAINED_EARNINGS", "", [][]uint{{3, 1}, {}}, []uint{2, 0}, [][]string{{"EQUITY"}, {}}, ""},
-		{true, false, true, "", "DIVIDENDS", "", [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"EQUITY"}}, ""},
-		{false, true, false, "", "INCOME_STATEMENT", "", [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"EQUITY"}}, ""},
-		{false, true, false, "", "EBITDA", "", [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT"}, {}}, ""},
-		{true, true, true, "", "SALES", "", [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"EQUITY", "INCOME_STATEMENT"}}, ""},
-		{true, false, true, "", "COST_OF_GOODS_SOLD", "", [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"EQUITY", "INCOME_STATEMENT"}}, ""},
-		{false, false, false, "", "DISCOUNTS", "", [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {}}, ""},
-		{true, false, true, "", "INVOICE_DISCOUNT", "", [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA", "DISCOUNTS"}, {}}, ""}}
+		{false, false, false, "", "ASSETS", "", "", []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}},
+		{false, false, false, "", "CURRENT_ASSETS", "", "", []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}},
+		{true, false, false, "fifo", "CASH_AND_CASH_EQUIVALENTS", "", "", []string{"888"}, [][]uint{{1, 1, 1}, {2}}, []uint{3, 1}, [][]string{{"ASSETS", "CURRENT_ASSETS"}, {}}},
+		{true, false, false, "fifo", "SHORT_TERM_INVESTMENTS", "", "", []string{}, [][]uint{{1, 2}, {5}}, []uint{2, 1}, [][]string{{"ASSETS"}, {}}},
+		{true, false, false, "", "RECEIVABLES", "", "", []string{}, [][]uint{{1, 3}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}},
+		{true, false, false, "wma", "INVENTORY", "", "", []string{}, [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CASH_AND_CASH_EQUIVALENTS"}}},
+		{false, true, false, "", "LIABILITIES", "", "", []string{}, [][]uint{{2}, {}}, []uint{1, 0}, [][]string{{}, {}}},
+		{true, true, false, "", "CURRENT_LIABILITIES", "", "", []string{}, [][]uint{{2, 1}, {4}}, []uint{2, 1}, [][]string{{"LIABILITIES"}, {}}},
+		{false, true, false, "", "EQUITY", "", "", []string{}, [][]uint{{3}, {}}, []uint{1, 0}, [][]string{{}, {}}},
+		{false, true, false, "", "RETAINED_EARNINGS", "", "", []string{}, [][]uint{{3, 1}, {}}, []uint{2, 0}, [][]string{{"EQUITY"}, {}}},
+		{true, false, true, "", "DIVIDENDS", "", "", []string{}, [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}},
+		{false, true, false, "", "INCOME_STATEMENT", "", "", []string{}, [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}},
+		{false, true, false, "", "EBITDA", "", "", []string{}, [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT"}, {}}},
+		{true, true, true, "", "SALES", "", "", []string{}, [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"SHORT_TERM_INVESTMENTS", "INCOME_STATEMENT"}}},
+		{true, false, true, "", "COST_OF_GOODS_SOLD", "", "", []string{}, [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"SHORT_TERM_INVESTMENTS", "INCOME_STATEMENT"}}},
+		{false, false, false, "", "DISCOUNTS", "", "", []string{}, [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {}}},
+		{true, false, true, "", "INVOICE_DISCOUNT", "", "", []string{}, [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA", "DISCOUNTS"}, {}}},
+	}
 	// var
 	inventory []string
 
@@ -61,16 +62,16 @@ var (
 	standard_days        = []string{"Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"}
 	adjusting_methods    = []string{"linear", "exponential", "logarithmic", "expire"}
 	depreciation_methods = []string{"linear", "exponential", "logarithmic"}
-	cost_flow_type       = []string{"fifo", "lifo", "wma", "barcode"}
+	cost_flow_type       = []string{"fifo", "lifo", "wma"}
 )
 
 type ACCOUNT struct {
-	is_low_level_account, IS_CREDIT, IS_TEMPORARY bool
-	COST_FLOW_TYPE, ACCOUNT_NAME, DESCRIPTION     string
-	ACCOUNT_NUMBER                                [][]uint
-	account_levels                                []uint
-	father_and_grandpa_accounts_name              [][]string
-	IMAGE                                         string
+	is_low_level_account, IS_CREDIT, IS_TEMPORARY    bool
+	COST_FLOW_TYPE, ACCOUNT_NAME, IMAGE, DESCRIPTION string
+	BARCODE                                          []string
+	ACCOUNT_NUMBER                                   [][]uint
+	account_levels                                   []uint
+	father_and_grandpa_accounts_name                 [][]string
 }
 
 type DAY_START_END struct {
@@ -129,8 +130,6 @@ type JOURNAL_TAG struct {
 	QUANTITY_CREDIT float64
 	ACCOUNT_DEBIT   string
 	ACCOUNT_CREDIT  string
-	BARCODE_DEBIT   string
-	BARCODE_CREDIT  string
 	DESCRIPTION     string
 	NAME            string
 	EMPLOYEE_NAME   string

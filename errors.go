@@ -9,8 +9,8 @@ func error_account_is_not_listed(account interface{}) {
 	log.Fatal(account, " is not listed")
 }
 
-func error_not_connected_tree(account ACCOUNT) {
-	log.Fatal("you can't use these account number ", account, " because there is no account with account number", account.ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER][:len(account.ACCOUNT_NUMBER)-1])
+func error_not_connected_tree(account ACCOUNT, index int) {
+	log.Fatal("you can't use these account number ", account, " because there is no account with account number", account.ACCOUNT_NUMBER[index][:len(account.ACCOUNT_NUMBER[index])-1])
 }
 
 func error_element_is_not_in_elements(element string, elements []string) {

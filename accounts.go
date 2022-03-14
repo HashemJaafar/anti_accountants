@@ -65,7 +65,7 @@ func check_if_the_tree_connected() {
 						continue big_loop
 					}
 				}
-				error_not_connected_tree(a)
+				error_not_connected_tree(a, i)
 			}
 		}
 	}
@@ -87,7 +87,7 @@ func set_cost_flow_type() {
 
 func inventory_accounts() {
 	for _, a := range ACCOUNTS {
-		if is_in(a.COST_FLOW_TYPE, cost_flow_type) {
+		if a.COST_FLOW_TYPE != "" {
 			inventory = append(inventory, a.ACCOUNT_NAME)
 		}
 	}
@@ -96,15 +96,20 @@ func inventory_accounts() {
 func sort_the_accounts_by_account_number() {
 	for index := range ACCOUNTS {
 		for indexb := range ACCOUNTS {
-			if index < indexb {
-				if !is_it_high_than_by_order(ACCOUNTS[index].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], ACCOUNTS[indexb].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER]) {
-					ACCOUNTS[index], ACCOUNTS[indexb] = ACCOUNTS[indexb], ACCOUNTS[index]
-				}
+			if index < indexb && !is_it_high_than_by_order(ACCOUNTS[index].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], ACCOUNTS[indexb].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER]) {
+				ACCOUNTS[index], ACCOUNTS[indexb] = ACCOUNTS[indexb], ACCOUNTS[index]
 			}
 		}
 	}
 	print_formated_accounts()
 }
+
+// is_low_level_account, IS_CREDIT, IS_TEMPORARY bool
+// COST_FLOW_TYPE, ACCOUNT_NAME ,IMAGE, DESCRIPTION    string
+// BARCODE []string
+// ACCOUNT_NUMBER                                [][]uint
+// account_levels                                []uint
+// father_and_grandpa_accounts_name              [][]string
 
 func print_formated_accounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
@@ -114,12 +119,13 @@ func print_formated_accounts() {
 		is_temporary := "\t," + strconv.FormatBool(a.IS_TEMPORARY)
 		cost_flow_type := "\t,\"" + a.COST_FLOW_TYPE + "\""
 		account_name := "\t,\"" + a.ACCOUNT_NAME + "\""
+		image := "\t,\"" + a.IMAGE + "\""
 		description := "\t,\"" + a.DESCRIPTION + "\""
+		barcodes := "\t,[]string{" + format_account_barcodes_to_string(a) + "}"
 		account_number := "\t,[][]uint{" + format_account_number_to_string(a) + "}"
 		account_levels := "\t,[]uint{" + format_account_levels_to_string(a) + "}"
 		father_and_grandpa_accounts_name := "\t,[][]string{" + format_father_and_grandpa_accounts_name_to_string(a) + "}"
-		image := "\t,\"" + a.IMAGE + "\""
-		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, cost_flow_type, account_name, description, account_number, account_levels, father_and_grandpa_accounts_name, image, "},")
+		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, cost_flow_type, account_name, image, description, barcodes, account_number, account_levels, father_and_grandpa_accounts_name, "},")
 	}
 	p.Flush()
 }
@@ -156,6 +162,13 @@ func format_account_number_to_string(a ACCOUNT) string {
 	return account_number
 }
 
+func format_account_barcodes_to_string(a ACCOUNT) string {
+	var account_barcodes string
+	for _, b := range a.BARCODE {
+		account_barcodes += "\"" + b + "\","
+	}
+	return account_barcodes
+}
 func is_it_high_than_by_order(account_number1, account_number2 []uint) bool {
 	var short_number int
 	if is_shorter_than(account_number1, account_number2) {
@@ -215,6 +228,21 @@ func remove_duplicate_accounts_name() {
 		}
 		indexb = 0
 		indexa++
+	}
+}
+
+func remove_duplicate_accounts_barcode() {
+	var barcodes []string
+	for indexa := range ACCOUNTS {
+		var indexb int
+		for indexb < len(ACCOUNTS[indexa].BARCODE) {
+			if is_in(ACCOUNTS[indexa].BARCODE[indexb], barcodes) {
+				ACCOUNTS[indexa].BARCODE = append(ACCOUNTS[indexa].BARCODE[:indexb], ACCOUNTS[indexa].BARCODE[indexb+1:]...)
+			} else {
+				barcodes = append(barcodes, ACCOUNTS[indexa].BARCODE[indexb])
+				indexb++
+			}
+		}
 	}
 }
 

@@ -110,8 +110,6 @@ func adjust_the_array(array_to_insert []JOURNAL_TAG, array_start_end_minutes []s
 				QUANTITY_CREDIT: value / entry.PRICE_CREDIT,
 				ACCOUNT_DEBIT:   entry.ACCOUNT_DEBIT,
 				ACCOUNT_CREDIT:  entry.ACCOUNT_CREDIT,
-				BARCODE_DEBIT:   entry.BARCODE_DEBIT,
-				BARCODE_CREDIT:  entry.BARCODE_CREDIT,
 				DESCRIPTION:     description,
 				NAME:            name,
 				EMPLOYEE_NAME:   employee_name,
