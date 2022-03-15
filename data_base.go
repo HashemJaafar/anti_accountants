@@ -1,26 +1,41 @@
 package anti_accountants
 
 import (
-	"database/sql"
+	"encoding/json"
+	"strconv"
+
+	badger "github.com/dgraph-io/badger/v3"
 )
 
-func open_and_create_database(driverName, dataSourceName, database_name string) {
-	DB, _ = sql.Open(driverName, dataSourceName)
-	err := DB.Ping()
-	error_fatal(err)
-	DB.Exec("create database if not exists " + database_name)
-	_, err = DB.Exec("USE " + database_name)
-	error_fatal(err)
-	DB.Exec("create table if not exists journal (date text,entry_number integer,account text,value real,price real,quantity real,barcode text,entry_expair text,description text,name text,employee_name text,entry_date text,reverse bool)")
-	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
+func db_open_accounts() {
+	var err error
+	db_accounts, err = badger.Open(badger.DefaultOptions("./db_accounts"))
+	error_fatal(1, err)
 }
 
-// func delete_not_double_entry(double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, previous_entry_number int) {
-// 	if len(double_entry) != 2 {
-// 		DB.Exec("delete from journal where entry_number=?", previous_entry_number)
-// 		fmt.Println("this entry is deleted ", double_entry)
-// 	}
-// }
+func db_open_journal() {
+	var err error
+	db_journal, err = badger.Open(badger.DefaultOptions("./db_journal"))
+	error_fatal(1, err)
+}
+
+func db_open_inventory() {
+	var err error
+	db_inventory, err = badger.Open(badger.DefaultOptions("./db_inventory"))
+	error_fatal(1, err)
+}
+
+func db_close_accounts() {
+	db_accounts.Close()
+}
+
+func db_close_journal() {
+	db_journal.Close()
+}
+
+func db_close_inventory() {
+	db_inventory.Close()
+}
 
 // func check_accounts(column, table, panic string, elements []string) {
 // 	results, err := DB.Query("select " + column + " from " + table)
@@ -45,10 +60,37 @@ func open_and_create_database(driverName, dataSourceName, database_name string) 
 // 	}
 // }
 
-// func JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER() []JOURNAL_TAG {
-// 	rows, _ := DB.Query("select * from journal order by date,entry_number")
-// 	return select_from_journal(rows)
-// }
+func JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER() []JOURNAL_TAG {
+	db_open_journal()
+	defer db_close_journal()
+	var journal_tag_array []JOURNAL_TAG
+	err := db_journal.View(func(txn *badger.Txn) error {
+		// item, err := txn.Get([]byte("40982"))
+		// error_fatal(5, err)
+		// item.Value(func(val []byte) error {
+		// 	err = json.Unmarshal(val, &journal_tag_array)
+		// 	error_fatal(6, err)
+		// 	return err
+		// })
+		// return err
+		opts := badger.DefaultIteratorOptions
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			err := item.Value(func(val []byte) error {
+				var journal_tag JOURNAL_TAG
+				err := json.Unmarshal(val, &journal_tag)
+				journal_tag_array = append(journal_tag_array, journal_tag)
+				return err
+			})
+			error_fatal(7, err)
+		}
+		return nil
+	})
+	error_fatal(5, err)
+	return journal_tag_array
+}
 
 // func account_balance(account string) float64 {
 // 	var account_balance float64
@@ -66,13 +108,20 @@ func open_and_create_database(driverName, dataSourceName, database_name string) 
 // 	}
 // }
 
-// func insert_into_journal_func(array_of_journal_tag []JOURNAL_TAG) {
-// 	for _, entry := range array_of_journal_tag {
-// 		DB.Exec("insert into journal(date,entry_number,account,value,price,quantity,barcode,entry_expair,description,name,employee_name,entry_date,reverse) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-// 			&entry.DATE, &entry.ENTRY_NUMBER, &entry.ACCOUNT, &entry.VALUE, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE,
-// 			&entry.ENTRY_EXPAIR, &entry.DESCRIPTION, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE, &entry.REVERSE)
-// 	}
-// }
+func insert_into_journal(array_of_journal_tag []JOURNAL_TAG) {
+	db_open_journal()
+	defer db_close_journal()
+	for _, entry := range array_of_journal_tag {
+		err := db_journal.Update(func(txn *badger.Txn) error {
+			json_entry, err := json.Marshal(entry)
+			error_fatal(3, err)
+			err = txn.Set([]byte(strconv.Itoa(entry.LINE_NUMBER)), []byte(json_entry))
+			error_fatal(4, err)
+			return nil
+		})
+		error_fatal(2, err)
+	}
+}
 
 // func entry_number() int {
 // 	var tag int

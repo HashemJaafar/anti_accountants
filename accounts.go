@@ -104,13 +104,6 @@ func sort_the_accounts_by_account_number() {
 	print_formated_accounts()
 }
 
-// is_low_level_account, IS_CREDIT, IS_TEMPORARY bool
-// COST_FLOW_TYPE, ACCOUNT_NAME ,IMAGE, DESCRIPTION    string
-// BARCODE []string
-// ACCOUNT_NUMBER                                [][]uint
-// account_levels                                []uint
-// father_and_grandpa_accounts_name              [][]string
-
 func print_formated_accounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	for _, a := range ACCOUNTS {
@@ -169,6 +162,7 @@ func format_account_barcodes_to_string(a ACCOUNT) string {
 	}
 	return account_barcodes
 }
+
 func is_it_high_than_by_order(account_number1, account_number2 []uint) bool {
 	var short_number int
 	if is_shorter_than(account_number1, account_number2) {
@@ -220,7 +214,7 @@ func remove_duplicate_accounts_name() {
 	var indexa, indexb int
 	for indexa < len(ACCOUNTS) {
 		for indexb < len(ACCOUNTS) {
-			if indexa < indexb && ACCOUNTS[indexa].ACCOUNT_NAME == ACCOUNTS[indexb].ACCOUNT_NAME {
+			if indexa < indexb && ACCOUNTS[indexa].ACCOUNT_NAME == ACCOUNTS[indexb].ACCOUNT_NAME || ACCOUNTS[indexb].ACCOUNT_NAME == "" {
 				ACCOUNTS = append(ACCOUNTS[:indexb], ACCOUNTS[indexb+1:]...)
 			} else {
 				indexb++
@@ -236,7 +230,7 @@ func remove_duplicate_accounts_barcode() {
 	for indexa := range ACCOUNTS {
 		var indexb int
 		for indexb < len(ACCOUNTS[indexa].BARCODE) {
-			if is_in(ACCOUNTS[indexa].BARCODE[indexb], barcodes) {
+			if is_in(ACCOUNTS[indexa].BARCODE[indexb], barcodes) || ACCOUNTS[indexa].BARCODE[indexb] == "" {
 				ACCOUNTS[indexa].BARCODE = append(ACCOUNTS[indexa].BARCODE[:indexb], ACCOUNTS[indexa].BARCODE[indexb+1:]...)
 			} else {
 				barcodes = append(barcodes, ACCOUNTS[indexa].BARCODE[indexb])

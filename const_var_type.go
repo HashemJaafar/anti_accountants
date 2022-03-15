@@ -1,16 +1,16 @@
 package anti_accountants
 
 import (
-	"database/sql"
 	"os"
 	"text/tabwriter"
 	"time"
+
+	badger "github.com/dgraph-io/badger/v3"
 )
 
 var (
 	// exportable
 	NOW                     = time.Now()
-	DB                      *sql.DB
 	INDEX_OF_ACCOUNT_NUMBER = 0
 	INVOICE_DISCOUNTS_LIST  [][2]float64
 	AUTO_COMPLETE_ENTRIES   []AUTO_COMPLETE_ENTRIE
@@ -58,6 +58,9 @@ var (
 	inventory []string
 
 	// const
+	db_accounts          *badger.DB
+	db_journal           *badger.DB
+	db_inventory         *badger.DB
 	print_table          = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	standard_days        = []string{"Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"}
 	adjusting_methods    = []string{"linear", "exponential", "logarithmic", "expire"}

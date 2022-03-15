@@ -65,9 +65,9 @@ func error_date_layout(string_date string) {
 	log.Fatal("you don't have layout for this date ", string_date)
 }
 
-func error_fatal(err error) {
+func error_fatal(error_number int, err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("error ", error_number, " : ", err)
 	}
 }
 
