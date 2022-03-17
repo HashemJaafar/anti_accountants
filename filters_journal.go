@@ -3,7 +3,7 @@ package anti_accountants
 // import "time"
 
 // func JOURNAL_FILTER(
-// 	JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG,
+// 	db_read_journal []JOURNAL_TAG,
 
 // 	filter_date, in_date bool,
 // 	min_date, max_date time.Time,
@@ -52,7 +52,7 @@ package anti_accountants
 
 // 	var filtered_journal []JOURNAL_TAG
 
-// 	for _, entry := range JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER {
+// 	for _, entry := range db_read_journal {
 
 // 		date := parse_date(entry.DATE, DATE_LAYOUT)
 // 		entry_expair := parse_date(entry.ENTRY_EXPAIR, DATE_LAYOUT)

@@ -40,12 +40,12 @@ package anti_accountants
 // 	return rows
 // }
 
-// func make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry []JOURNAL_TAG) []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
-// 	var entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
+// func make_VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE_from_JOURNAL_TAG(reverse_entry []JOURNAL_TAG) []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE {
+// 	var entries_use_VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE
 // 	for _, entry := range reverse_entry {
-// 		entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE = append(entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE})
+// 		entries_use_VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE = append(entries_use_VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE, VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE{entry.ACCOUNT, entry.VALUE, entry.PRICE, entry.QUANTITY, entry.BARCODE})
 // 	}
-// 	return entries_use_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
+// 	return entries_use_VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE
 // }
 
 // func make_the_reverse_entries(entries []JOURNAL_TAG, reverse_using_current_date bool, employee_name string) []JOURNAL_TAG {
@@ -85,7 +85,7 @@ package anti_accountants
 // 	}
 
 // 	reverse_entry := make_the_reverse_entries(entries, reverse_using_current_date, employee_name)
-// 	can_the_account_be_negative(make_ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE_from_JOURNAL_TAG(reverse_entry))
+// 	can_the_account_be_negative(make_VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE_from_JOURNAL_TAG(reverse_entry))
 
 // 	for _, entry := range entries {
 // 		if !entry.REVERSE {

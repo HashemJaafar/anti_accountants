@@ -7,14 +7,17 @@ import (
 func Test_account_struct_from_name(t *testing.T) {
 	a := account_struct_from_name("ASSETS")
 	e := ACCOUNT{
-		is_low_level_account: false,
-		IS_CREDIT:            false,
-		IS_TEMPORARY:         false,
-		COST_FLOW_TYPE:       "",
-		ACCOUNT_NAME:         "ASSETS",
-		DESCRIPTION:          "",
-		ACCOUNT_NUMBER:       [][]uint{{1}},
-		IMAGE:                "",
+		IS_LOW_LEVEL_ACCOUNT:             false,
+		IS_CREDIT:                        false,
+		IS_TEMPORARY:                     false,
+		COST_FLOW_TYPE:                   "",
+		ACCOUNT_NAME:                     "ASSETS",
+		NOTES:                            "",
+		IMAGE:                            []string{},
+		BARCODE:                          []string{},
+		ACCOUNT_NUMBER:                   [][]uint{},
+		ACCOUNT_LEVELS:                   []uint{},
+		FATHER_AND_GRANDPA_ACCOUNTS_NAME: [][]string{},
 	}
 	test_function(a, e)
 }
@@ -22,14 +25,17 @@ func Test_account_struct_from_name(t *testing.T) {
 func Test_account_struct_from_number(t *testing.T) {
 	a := account_struct_from_number([]uint{1})
 	e := ACCOUNT{
-		is_low_level_account: false,
-		IS_CREDIT:            false,
-		IS_TEMPORARY:         false,
-		COST_FLOW_TYPE:       "",
-		ACCOUNT_NAME:         "ASSETS",
-		DESCRIPTION:          "",
-		ACCOUNT_NUMBER:       [][]uint{{1}},
-		IMAGE:                "",
+		IS_LOW_LEVEL_ACCOUNT:             false,
+		IS_CREDIT:                        false,
+		IS_TEMPORARY:                     false,
+		COST_FLOW_TYPE:                   "",
+		ACCOUNT_NAME:                     "ASSETS",
+		NOTES:                            "",
+		IMAGE:                            []string{},
+		BARCODE:                          []string{},
+		ACCOUNT_NUMBER:                   [][]uint{},
+		ACCOUNT_LEVELS:                   []uint{},
+		FATHER_AND_GRANDPA_ACCOUNTS_NAME: [][]string{},
 	}
 	test_function(a, e)
 }

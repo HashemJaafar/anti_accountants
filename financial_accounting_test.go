@@ -5,5 +5,5 @@ import (
 )
 
 func Test_INITIALIZE(t *testing.T) {
-	INITIALIZE("", "", "")
+	INITIALIZE()
 }

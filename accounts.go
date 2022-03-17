@@ -19,6 +19,16 @@ func account_struct_from_name(account_name string) ACCOUNT {
 	return ACCOUNT{}
 }
 
+func account_struct_from_barcode(barcode string) ACCOUNT {
+	for _, a := range ACCOUNTS {
+		if is_in(barcode, a.BARCODE) {
+			return a
+		}
+	}
+	error_account_is_not_listed(barcode)
+	return ACCOUNT{}
+}
+
 func account_struct_from_number(account_number []uint) ACCOUNT {
 	for _, a := range ACCOUNTS {
 		if reflect.DeepEqual(a.ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], account_number) {
@@ -76,19 +86,11 @@ func set_cost_flow_type() {
 		is_in_cost_flow_type := is_in(a.COST_FLOW_TYPE, cost_flow_type)
 		is_in_receivables := is_in(a.ACCOUNT_NAME, PRIMARY_ACCOUNTS_NAMES.RECEIVABLES)
 		is_in_liabilities := is_in(a.ACCOUNT_NAME, PRIMARY_ACCOUNTS_NAMES.LIABILITIES)
-		cost_flow_rules := !a.IS_CREDIT && !a.IS_TEMPORARY && a.is_low_level_account && !is_in_receivables && !is_in_liabilities
+		cost_flow_rules := !a.IS_CREDIT && !a.IS_TEMPORARY && a.IS_LOW_LEVEL_ACCOUNT && !is_in_receivables && !is_in_liabilities
 		if !cost_flow_rules {
 			ACCOUNTS[indexa].COST_FLOW_TYPE = ""
 		} else if !is_in_cost_flow_type {
 			ACCOUNTS[indexa].COST_FLOW_TYPE = "fifo"
-		}
-	}
-}
-
-func inventory_accounts() {
-	for _, a := range ACCOUNTS {
-		if a.COST_FLOW_TYPE != "" {
-			inventory = append(inventory, a.ACCOUNT_NAME)
 		}
 	}
 }
@@ -101,66 +103,65 @@ func sort_the_accounts_by_account_number() {
 			}
 		}
 	}
-	print_formated_accounts()
 }
 
 func print_formated_accounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	for _, a := range ACCOUNTS {
-		is_low_level_account := a.is_low_level_account
+		is_low_level_account := a.IS_LOW_LEVEL_ACCOUNT
 		is_credit := "\t," + strconv.FormatBool(a.IS_CREDIT)
 		is_temporary := "\t," + strconv.FormatBool(a.IS_TEMPORARY)
 		cost_flow_type := "\t,\"" + a.COST_FLOW_TYPE + "\""
 		account_name := "\t,\"" + a.ACCOUNT_NAME + "\""
-		image := "\t,\"" + a.IMAGE + "\""
-		description := "\t,\"" + a.DESCRIPTION + "\""
-		barcodes := "\t,[]string{" + format_account_barcodes_to_string(a) + "}"
-		account_number := "\t,[][]uint{" + format_account_number_to_string(a) + "}"
-		account_levels := "\t,[]uint{" + format_account_levels_to_string(a) + "}"
-		father_and_grandpa_accounts_name := "\t,[][]string{" + format_father_and_grandpa_accounts_name_to_string(a) + "}"
-		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, cost_flow_type, account_name, image, description, barcodes, account_number, account_levels, father_and_grandpa_accounts_name, "},")
+		notes := "\t,\"" + a.NOTES + "\""
+		image := "\t," + format_string_slice_to_string(a.IMAGE)
+		barcodes := "\t," + format_string_slice_to_string(a.BARCODE)
+		account_number := "\t," + format_slice_of_slice_of_uint_to_string(a.ACCOUNT_NUMBER)
+		account_levels := "\t," + format_slice_of_uint_to_string(a.ACCOUNT_LEVELS)
+		father_and_grandpa_accounts_name := "\t," + format_slice_of_slice_of_string_to_string(a.FATHER_AND_GRANDPA_ACCOUNTS_NAME)
+		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, cost_flow_type, account_name, notes, image, barcodes, account_number, account_levels, father_and_grandpa_accounts_name, "},")
 	}
 	p.Flush()
 }
 
-func format_father_and_grandpa_accounts_name_to_string(a ACCOUNT) string {
-	var father_and_grandpa_accounts_name string
-	for _, b := range a.father_and_grandpa_accounts_name {
-		father_and_grandpa_accounts_name += "{"
+func format_slice_of_slice_of_string_to_string(a [][]string) string {
+	var str string
+	for _, b := range a {
+		str += "{"
 		for _, c := range b {
-			father_and_grandpa_accounts_name += "\"" + c + "\","
+			str += "\"" + c + "\","
 		}
-		father_and_grandpa_accounts_name += "}\t,"
+		str += "}\t,"
 	}
-	return father_and_grandpa_accounts_name
+	return "[][]string{" + str + "}"
 }
 
-func format_account_levels_to_string(a ACCOUNT) string {
-	var account_levels string
-	for _, b := range a.ACCOUNT_NUMBER {
-		account_levels += strconv.Itoa(len(b)) + ","
+func format_slice_of_uint_to_string(a []uint) string {
+	var str string
+	for _, b := range a {
+		str += strconv.Itoa(int(b)) + ","
 	}
-	return account_levels
+	return "[]uint{" + str + "}"
 }
 
-func format_account_number_to_string(a ACCOUNT) string {
-	var account_number string
-	for _, b := range a.ACCOUNT_NUMBER {
-		account_number += "{"
+func format_slice_of_slice_of_uint_to_string(a [][]uint) string {
+	var str string
+	for _, b := range a {
+		str += "{"
 		for _, c := range b {
-			account_number += strconv.Itoa(int(c)) + ","
+			str += strconv.Itoa(int(c)) + ","
 		}
-		account_number += "}\t,"
+		str += "}\t,"
 	}
-	return account_number
+	return "[][]uint{" + str + "}"
 }
 
-func format_account_barcodes_to_string(a ACCOUNT) string {
-	var account_barcodes string
-	for _, b := range a.BARCODE {
-		account_barcodes += "\"" + b + "\","
+func format_string_slice_to_string(a []string) string {
+	var str string
+	for _, b := range a {
+		str += "\"" + b + "\","
 	}
-	return account_barcodes
+	return "[]string{" + str + "}"
 }
 
 func is_it_high_than_by_order(account_number1, account_number2 []uint) bool {
@@ -191,7 +192,7 @@ func is_shorter_than(slice1, slice2 []uint) bool {
 func init_account_numbers_and_father_and_grandpa_accounts_name() {
 	max_len := max_len_for_account_number()
 	for indexa, a := range ACCOUNTS {
-		ACCOUNTS[indexa].father_and_grandpa_accounts_name = make([][]string, max_len)
+		ACCOUNTS[indexa].FATHER_AND_GRANDPA_ACCOUNTS_NAME = make([][]string, max_len)
 		ACCOUNTS[indexa].ACCOUNT_NUMBER = make([][]uint, max_len)
 		for indexb, b := range a.ACCOUNT_NUMBER {
 			ACCOUNTS[indexa].ACCOUNT_NUMBER[indexb] = b
@@ -265,7 +266,7 @@ big_loop:
 				continue big_loop
 			}
 		}
-		ACCOUNTS[indexa].is_low_level_account = true
+		ACCOUNTS[indexa].IS_LOW_LEVEL_ACCOUNT = true
 	}
 }
 
@@ -282,7 +283,7 @@ func check_if_low_level_account_for_all() {
 						}
 					}
 				}
-				if !ACCOUNTS[indexa].is_low_level_account {
+				if !ACCOUNTS[indexa].IS_LOW_LEVEL_ACCOUNT {
 					log.Fatal("should be low level or high level account in all account numbers ", ACCOUNTS[indexa])
 				}
 			}
@@ -292,9 +293,9 @@ func check_if_low_level_account_for_all() {
 
 func set_account_levels() {
 	for indexa, a := range ACCOUNTS {
-		ACCOUNTS[indexa].account_levels = []uint{}
+		ACCOUNTS[indexa].ACCOUNT_LEVELS = []uint{}
 		for _, b := range a.ACCOUNT_NUMBER {
-			ACCOUNTS[indexa].account_levels = append(ACCOUNTS[indexa].account_levels, uint(len(b)))
+			ACCOUNTS[indexa].ACCOUNT_LEVELS = append(ACCOUNTS[indexa].ACCOUNT_LEVELS, uint(len(b)))
 		}
 	}
 }
@@ -307,7 +308,7 @@ func set_father_and_grandpa_accounts_name() {
 				for _, b := range ACCOUNTS {
 					if len(b.ACCOUNT_NUMBER[i]) > 0 {
 						if is_it_sub_account_using_number(b.ACCOUNT_NUMBER[i], a.ACCOUNT_NUMBER[i]) {
-							ACCOUNTS[indexa].father_and_grandpa_accounts_name[i] = append(ACCOUNTS[indexa].father_and_grandpa_accounts_name[i], b.ACCOUNT_NAME)
+							ACCOUNTS[indexa].FATHER_AND_GRANDPA_ACCOUNTS_NAME[i] = append(ACCOUNTS[indexa].FATHER_AND_GRANDPA_ACCOUNTS_NAME[i], b.ACCOUNT_NAME)
 						}
 					}
 				}
@@ -318,8 +319,23 @@ func set_father_and_grandpa_accounts_name() {
 
 func set_high_level_account_to_permanent() {
 	for indexa, a := range ACCOUNTS {
-		if !a.is_low_level_account {
+		if !a.IS_LOW_LEVEL_ACCOUNT {
 			ACCOUNTS[indexa].IS_TEMPORARY = false
 		}
+	}
+}
+
+func check_if_inventory_accounts_still_used_as_inventory() {
+	for _, item := range db_read_inventory() {
+		if account_struct_from_name(item.ACCOUNT).COST_FLOW_TYPE == "" {
+			log.Fatal(item, " is not used as an inventory account")
+		}
+	}
+}
+
+func check_if_journal_accounts_is_listed_in_accounts() {
+	for _, entry := range db_read_journal() {
+		account_struct_from_name(entry.ACCOUNT_CREDIT)
+		account_struct_from_name(entry.ACCOUNT_DEBIT)
 	}
 }

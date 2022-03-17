@@ -2,7 +2,7 @@ package anti_accountants
 
 // import "log"
 
-// func check_debit_equal_credit(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+// func check_debit_equal_credit(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 // 	var zero float64
 // 	for _, entry := range entries {
 // 		switch account_struct_from_name(entry.ACCOUNT).IS_CREDIT {
@@ -17,8 +17,8 @@ package anti_accountants
 // 	}
 // }
 
-// func separate_debit_from_credit(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) ([]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-// 	var debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
+// func separate_debit_from_credit(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) ([]VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE, []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
+// 	var debit_entries, credit_entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE
 // 	for _, entry := range entries {
 // 		switch account_struct_from_name(entry.ACCOUNT).IS_CREDIT {
 // 		case false:
@@ -42,13 +42,13 @@ package anti_accountants
 // 	return debit_entries, credit_entries
 // }
 
-// func check_one_debit_or_one_credit(debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+// func check_one_debit_or_one_credit(debit_entries, credit_entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 // 	if (len(debit_entries) != 1) && (len(credit_entries) != 1) {
 // 		error_one_credit___one_debit("or", debit_entries, credit_entries)
 // 	}
 // }
 
-// func check_one_debit_and_one_credit(debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+// func check_one_debit_and_one_credit(debit_entries, credit_entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 // 	if !((len(debit_entries) == 1) && (len(credit_entries) == 1)) {
 // 		error_one_credit___one_debit("and", debit_entries, credit_entries)
 // 	}
@@ -83,8 +83,8 @@ package anti_accountants
 // 	return invoice
 // }
 
-func INITIALIZE(driverName, dataSourceName, database_name string) {
-	// open_and_create_database(driverName, dataSourceName, database_name)
+func INITIALIZE() {
+	ACCOUNTS = db_read_accounts()
 	init_account_numbers_and_father_and_grandpa_accounts_name()
 	remove_duplicate_accounts_name()
 	remove_duplicate_accounts_barcode()
@@ -96,54 +96,9 @@ func INITIALIZE(driverName, dataSourceName, database_name string) {
 	set_account_levels()
 	set_father_and_grandpa_accounts_name()
 	set_cost_flow_type()
-	inventory_accounts()
-	// check_accounts("account", "inventory", " is not have fifo lifo wma on cost_flow_type field", inventory)
 	sort_the_accounts_by_account_number()
-
-	// entry_number := entry_number()
-	// var array_to_insert []JOURNAL_TAG
-	// expair_expenses := JOURNAL_TAG{NOW.String(), entry_number, expair_expenses, 0, 0, 0, "", time.Time{}.String(), "to record the expiry of the goods automatically", "", "", NOW.String(), false}
-	// expair_goods, _ := DB.Query("select account,price*quantity*-1,price,quantity*-1,barcode from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
-	// for expair_goods.Next() {
-	// 	tag := expair_expenses
-	// 	expair_goods.Scan(&tag.ACCOUNT, &tag.value, &tag.price, &tag.quantity, &tag.barcode)
-	// 	expair_expenses.value -= tag.value
-	// 	expair_expenses.quantity -= tag.quantity
-	// 	array_to_insert = append(array_to_insert, tag)
-	// }
-	// expair_expenses.price = expair_expenses.value / expair_expenses.quantity
-	// array_to_insert = append(array_to_insert, expair_expenses)
-	// insert_to_database(array_to_insert, true, false)
-	// DB.Exec("delete from inventory where entry_expair<? and entry_expair!='0001-01-01 00:00:00 +0000 UTC'", NOW.String())
-	// DB.Exec("delete from inventory where quantity=0")
-
-	// check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER())
+	db_insert_into_accounts()
+	print_formated_accounts()
+	check_if_journal_accounts_is_listed_in_accounts()
+	check_if_inventory_accounts_still_used_as_inventory()
 }
-
-// func check_debit_equal_credit_and_check_one_debit_and_one_credit_in_the_journal(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG) {
-// 	var double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE
-// 	previous_entry_number := 1
-// 	for _, entry := range JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER {
-// 		if previous_entry_number != entry.ENTRY_NUMBER {
-// 			delete_not_double_entry(double_entry, previous_entry_number)
-// 			if len(double_entry) == 2 {
-// 				check_debit_equal_credit(double_entry)
-// 				debit_entries, credit_entries := separate_debit_from_credit(double_entry)
-// 				check_one_debit_and_one_credit(debit_entries, credit_entries)
-// 			}
-// 			double_entry = []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
-// 		}
-// 		double_entry = append(double_entry, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{
-// 			ACCOUNT:  entry.ACCOUNT,
-// 			VALUE:    entry.VALUE,
-// 			PRICE:    entry.PRICE,
-// 			QUANTITY: entry.QUANTITY,
-// 			BARCODE:  entry.BARCODE,
-// 		})
-// 		previous_entry_number = entry.ENTRY_NUMBER
-// 	}
-// 	delete_not_double_entry(double_entry, previous_entry_number)
-// 	check_debit_equal_credit(double_entry)
-// 	debit_entries, credit_entries := separate_debit_from_credit(double_entry)
-// 	check_one_debit_and_one_credit(debit_entries, credit_entries)
-// }

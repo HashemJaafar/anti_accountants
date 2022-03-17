@@ -33,11 +33,11 @@ func error_should_be_one_of_the_fathers(account_name, sub_account_name string) {
 	log.Fatal(account_name, " should be one of the fathers of ", sub_account_name)
 }
 
-func error_one_credit___one_debit(or_and string, entries ...[]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+func error_one_credit___one_debit(or_and string, entries ...[]VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 	log.Fatal("should be one credit ", or_and, " one debit in the entry ", entries)
 }
 
-func error_debit_not_equal_credit(difference float64, entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+func error_debit_not_equal_credit(difference float64, entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 	log.Fatal(difference, " not equal 0 if the number>0 it means debit overstated else credit overstated debit-credit should equal zero ", entries)
 }
 
@@ -45,7 +45,7 @@ func error_the_time_is_not_in_range(element DAY_START_END, min_max_time_number i
 	log.Fatal("error ", element.START_HOUR, " for ", element, " is < ", min_max_time_number)
 }
 
-func error_the_barcode_is_wrong(entry ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+func error_the_barcode_is_wrong(entry VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 	log.Fatal("the barcode is wrong for ", entry)
 }
 
@@ -83,16 +83,16 @@ func error_you_cant_use_depreciation_methods_with_inventory(account_name string)
 	log.Fatal("you just can use ", []string{"expire", ""}, " with ", account_name, " because it is inventory account")
 }
 
-func error_make_nagtive_balance(entry ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, account_balance float64) {
+func error_make_nagtive_balance(entry VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE, account_balance float64) {
 	log.Fatal("you can't enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
 }
 
-func error_the_price_should_be_positive(entry ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+func error_the_price_should_be_positive(entry VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 	log.Fatal("the price of ", entry, " should be positive")
 }
 
-func error_the_order_out_of_stock(quantity, quantity_count float64, account, barcode string) {
-	log.Fatal("you order ", quantity, " but you have ", quantity-quantity_count, " ", account, " with barcode ", barcode)
+func error_the_order_out_of_stock(quantity, quantity_count float64, account string) {
+	log.Fatal("you order ", quantity, " but you have ", quantity-quantity_count, " ", account)
 }
 
 func error_you_should_use_cost_flow_type(account_name string) {

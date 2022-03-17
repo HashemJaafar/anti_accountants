@@ -339,12 +339,12 @@ package anti_accountants
 // 	return flow_statement, nan_flow_statement
 // }
 
-// func FINANCIAL_STATEMENTS(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG, start_date, end_date time.Time, periods int, names []string, in_names bool) []map[string]map[string]map[string]map[string]map[string]float64 {
+// func FINANCIAL_STATEMENTS(db_read_journal []JOURNAL_TAG, start_date, end_date time.Time, periods int, names []string, in_names bool) []map[string]map[string]map[string]map[string]map[string]float64 {
 // 	check_dates(start_date, end_date)
 // 	days := int(end_date.Sub(start_date).Hours() / 24)
 // 	statements := []map[string]map[string]map[string]map[string]map[string]float64{}
 // 	for a := 0; a < periods; a++ {
-// 		flow_statement, nan_flow_statement := statement(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER, start_date.AddDate(0, 0, -days*a), end_date.AddDate(0, 0, -days*a))
+// 		flow_statement, nan_flow_statement := statement(db_read_journal, start_date.AddDate(0, 0, -days*a), end_date.AddDate(0, 0, -days*a))
 // 		statement := combine_statements(flow_statement, nan_flow_statement)
 // 		statement = sum_1st_column(statement)
 // 		statement = sum_2nd_column(statement)
