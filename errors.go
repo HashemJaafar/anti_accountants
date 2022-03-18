@@ -84,7 +84,7 @@ func error_you_cant_use_depreciation_methods_with_inventory(account_name string)
 }
 
 func error_make_nagtive_balance(entry VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE, account_balance float64) {
-	log.Fatal("you can't enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
+	log.Fatal("you can't enter ", entry, " because you have ", account_balance, " and that will make the balance of ", entry.ACCOUNT_NAME, " negative ", account_balance+entry.VALUE, " and that you just can do it in equity_normal accounts not other accounts")
 }
 
 func error_the_price_should_be_positive(entry VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {

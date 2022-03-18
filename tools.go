@@ -4,6 +4,7 @@ import (
 	"log"
 	"math"
 	"reflect"
+	"sort"
 	"time"
 )
 
@@ -148,4 +149,14 @@ func test_function(a, e interface{}) {
 	if !reflect.DeepEqual(a, e) {
 		log.Fatal("expected : ", e, " actual : ", a)
 	}
+}
+
+func sort_by_time(inventory []INVENTORY_TAG, is_ascending bool) {
+	sort.Slice(inventory, func(i, j int) bool {
+		return inventory[i].DATE_START.After(inventory[j].DATE_START) == is_ascending
+	})
+}
+
+func popup(slice []reflect.Type, index_to_popup uint) {
+	slice = append(slice[:index_to_popup], slice[index_to_popup+1:]...)
 }

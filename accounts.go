@@ -119,7 +119,13 @@ func print_formated_accounts() {
 		account_number := "\t," + format_slice_of_slice_of_uint_to_string(a.ACCOUNT_NUMBER)
 		account_levels := "\t," + format_slice_of_uint_to_string(a.ACCOUNT_LEVELS)
 		father_and_grandpa_accounts_name := "\t," + format_slice_of_slice_of_string_to_string(a.FATHER_AND_GRANDPA_ACCOUNTS_NAME)
-		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, cost_flow_type, account_name, notes, image, barcodes, account_number, account_levels, father_and_grandpa_accounts_name, "},")
+		alert_for_minimum_quantity_by_turnover_in_days := "\t" + strconv.FormatUint(uint64(a.ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS), 36)
+		alert_for_minimum_quantity_by_quintity := "\t" + strconv.FormatFloat(a.ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY, 'E', 64, 64)
+		target_balance := "\t" + strconv.FormatFloat(a.TARGET_BALANCE, 'E', 64, 64)
+		if_the_target_balance_is_less_is_good := "\t" + strconv.FormatBool(a.IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD)
+		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, cost_flow_type, account_name, notes,
+			image, barcodes, account_number, account_levels, father_and_grandpa_accounts_name,
+			alert_for_minimum_quantity_by_turnover_in_days, alert_for_minimum_quantity_by_quintity, target_balance, if_the_target_balance_is_less_is_good, "},")
 	}
 	p.Flush()
 }
@@ -211,7 +217,7 @@ func max_len_for_account_number() int {
 	return max_len
 }
 
-func remove_duplicate_accounts_name() {
+func remove_empty_and_duplicate_accounts_name() {
 	var indexa, indexb int
 	for indexa < len(ACCOUNTS) {
 		for indexb < len(ACCOUNTS) {
@@ -226,7 +232,7 @@ func remove_duplicate_accounts_name() {
 	}
 }
 
-func remove_duplicate_accounts_barcode() {
+func remove_empty_and_duplicate_accounts_barcode() {
 	var barcodes []string
 	for indexa := range ACCOUNTS {
 		var indexb int
@@ -241,7 +247,7 @@ func remove_duplicate_accounts_barcode() {
 	}
 }
 
-func remove_duplicate_accounts_number() {
+func empty_the_duplicate_accounts_number() {
 	l := len(ACCOUNTS[0].ACCOUNT_NUMBER)
 	for i := 0; i < l; i++ {
 		for indexa, a := range ACCOUNTS {
@@ -325,17 +331,25 @@ func set_high_level_account_to_permanent() {
 	}
 }
 
-func check_if_inventory_accounts_still_used_as_inventory() {
-	for _, item := range db_read_inventory() {
-		if account_struct_from_name(item.ACCOUNT).COST_FLOW_TYPE == "" {
-			log.Fatal(item, " is not used as an inventory account")
+func check_inventory() {
+	for _, a := range db_read_inventory() {
+		account := account_struct_from_name(a.ACCOUNT_NAME)
+		if account.COST_FLOW_TYPE == "" {
+			log.Fatal(a, " is not used as an inventory account")
+		}
+		if !account.IS_LOW_LEVEL_ACCOUNT {
+			log.Fatal("you can't use high level account in the inventory like ", a.ACCOUNT_NAME)
 		}
 	}
 }
 
-func check_if_journal_accounts_is_listed_in_accounts() {
-	for _, entry := range db_read_journal() {
-		account_struct_from_name(entry.ACCOUNT_CREDIT)
-		account_struct_from_name(entry.ACCOUNT_DEBIT)
+func check_journal() {
+	for _, a := range db_read_journal() {
+		if !account_struct_from_name(a.ACCOUNT_CREDIT).IS_LOW_LEVEL_ACCOUNT {
+			log.Fatal("you can't use high level account in the journal like ", a.ACCOUNT_CREDIT)
+		}
+		if !account_struct_from_name(a.ACCOUNT_DEBIT).IS_LOW_LEVEL_ACCOUNT {
+			log.Fatal("you can't use high level account in the journal like ", a.ACCOUNT_DEBIT)
+		}
 	}
 }

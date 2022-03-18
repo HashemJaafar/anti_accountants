@@ -16,18 +16,16 @@ func set_date_end_to_zero_if_smaller_than_date_start(date_start, date_end time.T
 }
 
 func set_adjusting_method(entry_expair time.Time, adjusting_method string, entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) string {
-	is_in_adjusting_methods := is_in(adjusting_method, adjusting_methods)
+	if !is_in(adjusting_method, adjusting_methods) {
+		return ""
+	}
+	if entry_expair.IsZero() {
+		return ""
+	}
 	is_in_depreciation_methods := is_in(adjusting_method, depreciation_methods)
-	is_entry_expair_zero := entry_expair.IsZero()
-	if !is_in_adjusting_methods {
-		adjusting_method = ""
-	}
-	if is_entry_expair_zero {
-		adjusting_method = ""
-	}
 	for _, entry := range entries {
-		if account_struct_from_name(entry.ACCOUNT).COST_FLOW_TYPE != "" && is_in_depreciation_methods {
-			adjusting_method = ""
+		if account_struct_from_name(entry.ACCOUNT_NAME).COST_FLOW_TYPE != "" && is_in_depreciation_methods {
+			return ""
 		}
 	}
 	return adjusting_method
@@ -39,7 +37,7 @@ func group_by_account_and_barcode(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE
 	}
 	g := map[account_barcode]*VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE{}
 	for _, v := range entries {
-		key := account_barcode{v.ACCOUNT, v.BARCODE}
+		key := account_barcode{v.ACCOUNT_NAME, v.BARCODE}
 		sums := g[key]
 		if sums == nil {
 			sums = &VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE{}
@@ -51,11 +49,11 @@ func group_by_account_and_barcode(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE
 	entries = []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE{}
 	for key, v := range g {
 		entries = append(entries, VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE{
-			VALUE:    v.VALUE,
-			PRICE:    v.VALUE / v.QUANTITY,
-			QUANTITY: v.QUANTITY,
-			ACCOUNT:  key.account,
-			BARCODE:  key.barcode,
+			VALUE:        v.VALUE,
+			PRICE:        v.VALUE / v.QUANTITY,
+			QUANTITY:     v.QUANTITY,
+			ACCOUNT_NAME: key.account,
+			BARCODE:      key.barcode,
 		})
 	}
 	return entries
@@ -74,7 +72,7 @@ func remove_zero_values(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 
 func find_cost(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 	for index, entry := range entries {
-		costs := cost_flow(entry.ACCOUNT, entry.QUANTITY, false)
+		costs := cost_flow(entry.ACCOUNT_NAME, entry.QUANTITY, false)
 		if costs != 0 {
 			entries[index].VALUE = -costs
 			entries[index].PRICE = -costs / entry.QUANTITY
@@ -119,11 +117,7 @@ func find_cost(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 
 func find_account_from_barcode(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
 	for indexa, a := range entries {
-		for _, b := range ACCOUNTS {
-			if is_in(a.BARCODE, b.BARCODE) {
-				entries[indexa].ACCOUNT = b.ACCOUNT_NAME
-			}
-		}
+		entries[indexa].ACCOUNT_NAME = account_struct_from_barcode(a.BARCODE).ACCOUNT_NAME
 	}
 }
 
@@ -167,6 +161,7 @@ func cost_flow(account string, quantity float64, insert bool) float64 {
 		return 0
 	}
 	inventory := db_read_inventory()
+	sort_by_time(inventory, is_ascending)
 	quantity = math.Abs(quantity)
 	quantity_count := quantity
 	var costs float64
@@ -203,7 +198,7 @@ func is_ascending(account string) (bool, error) {
 		weighted_average(account)
 		return true, nil
 	}
-	return false, errors.New("is not inventory")
+	return false, errors.New("is not inventory account")
 }
 
 // func insert_to_database(array_of_journal_tag []JOURNAL_TAG, db_insert_into_journal, insert_into_inventory bool) {
@@ -243,13 +238,16 @@ func insert_if_not_zero(m map[string]float64, str string, number float64) {
 	}
 }
 
-// func check_if_the_account_is_high_by_level(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
-// 	for _, entry := range entries {
-// 		if is_it_high_by_level(entry.ACCOUNT) {
-// 			error_is_high_level_account(entry.ACCOUNT)
-// 		}
-// 	}
-// }
+func remove_high_level_account(entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE) {
+	var indexa int
+	for indexa < len(entries) {
+		if !account_struct_from_name(entries[indexa].ACCOUNT_NAME).IS_LOW_LEVEL_ACCOUNT {
+			entries = append(entries[:indexa], entries[indexa+1:]...)
+		} else {
+			indexa++
+		}
+	}
+}
 
 func JOURNAL_ENTRY(
 	entries []VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE,
@@ -275,10 +273,10 @@ func JOURNAL_ENTRY(
 	// 	entries = auto_completion_the_invoice_discount(entries)
 	// }
 
-	// entries = group_by_account_and_barcode(entries)
-	// remove_zero_values(entries)
+	entries = group_by_account_and_barcode(entries)
+	remove_zero_values(entries)
 
-	// check_if_the_account_is_high_by_level(entries)
+	remove_high_level_account(entries)
 	// can_the_account_be_negative(entries)
 
 	// check_debit_equal_credit(entries)

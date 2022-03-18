@@ -54,11 +54,11 @@ func Test_db_insert_into_inventory(t *testing.T) {
 	_, _, es := entry_number()
 	for i := es; i < es+10000; i++ {
 		j = append(j, INVENTORY_TAG{
-			PRICE:      float64(i),
-			QUANTITY:   float64(i),
-			ACCOUNT:    "ACCOUNT",
-			DATE_START: time.Time{},
-			DATE_END:   time.Time{},
+			PRICE:        float64(i),
+			QUANTITY:     float64(i),
+			ACCOUNT_NAME: "ACCOUNT",
+			DATE_START:   time.Time{},
+			DATE_END:     time.Time{},
 		})
 	}
 	db_insert_into_inventory(j)

@@ -86,9 +86,9 @@ package anti_accountants
 func INITIALIZE() {
 	ACCOUNTS = db_read_accounts()
 	init_account_numbers_and_father_and_grandpa_accounts_name()
-	remove_duplicate_accounts_name()
-	remove_duplicate_accounts_barcode()
-	remove_duplicate_accounts_number()
+	remove_empty_and_duplicate_accounts_name()
+	remove_empty_and_duplicate_accounts_barcode()
+	empty_the_duplicate_accounts_number()
 	check_if_the_tree_connected()
 	set_low_level_accounts()
 	check_if_low_level_account_for_all()
@@ -99,6 +99,6 @@ func INITIALIZE() {
 	sort_the_accounts_by_account_number()
 	db_insert_into_accounts()
 	print_formated_accounts()
-	check_if_journal_accounts_is_listed_in_accounts()
-	check_if_inventory_accounts_still_used_as_inventory()
+	check_journal()
+	check_inventory()
 }

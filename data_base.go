@@ -170,10 +170,32 @@ func weighted_average(account string) {
 	inventory := db_read_inventory()
 	var total_value, total_quantity float64
 	for _, entry := range inventory {
-		if entry.ACCOUNT == account {
+		if entry.ACCOUNT_NAME == account {
 			total_value += entry.PRICE * entry.QUANTITY
 			total_quantity += entry.QUANTITY
 		}
 	}
-	// price:= total_value / total_quantity
+	price := total_value / total_quantity
+
+	db := db_open(db_inventory)
+	defer db.Close()
+	db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			item.Value(func(val []byte) error {
+				var tag INVENTORY_TAG
+				json.Unmarshal(val, &tag)
+				if tag.ACCOUNT_NAME == account {
+					tag.PRICE = price
+					json_entry, _ := json.Marshal(tag)
+					txn.Set([]byte(item.Key()), []byte(json_entry))
+				}
+				return nil
+			})
+		}
+		return nil
+	})
 }

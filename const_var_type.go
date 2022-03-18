@@ -43,23 +43,23 @@ var (
 		INTEREST_EXPENSE:          []string{"INTEREST_EXPENSE"},
 	}
 	ACCOUNTS = []ACCOUNT{
-		{false, false, false, "", "ASSETS", "", []string{}, []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}},
-		{false, false, false, "", "CURRENT_ASSETS", "", []string{}, []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}},
-		{true, false, false, "fifo", "CASH_AND_CASH_EQUIVALENTS", "", []string{}, []string{"888"}, [][]uint{{1, 1, 1}, {2}}, []uint{3, 1}, [][]string{{"ASSETS", "CURRENT_ASSETS"}, {}}},
-		{true, false, false, "fifo", "SHORT_TERM_INVESTMENTS", "", []string{}, []string{}, [][]uint{{1, 2}, {5}}, []uint{2, 1}, [][]string{{"ASSETS"}, {}}},
-		{true, false, false, "", "RECEIVABLES", "", []string{}, []string{}, [][]uint{{1, 3}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}},
-		{true, false, false, "wma", "INVENTORY", "", []string{}, []string{}, [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CASH_AND_CASH_EQUIVALENTS"}}},
-		{false, true, false, "", "LIABILITIES", "", []string{}, []string{}, [][]uint{{2}, {}}, []uint{1, 0}, [][]string{{}, {}}},
-		{true, true, false, "", "CURRENT_LIABILITIES", "", []string{}, []string{}, [][]uint{{2, 1}, {4}}, []uint{2, 1}, [][]string{{"LIABILITIES"}, {}}},
-		{false, true, false, "", "EQUITY", "", []string{}, []string{}, [][]uint{{3}, {}}, []uint{1, 0}, [][]string{{}, {}}},
-		{false, true, false, "", "RETAINED_EARNINGS", "", []string{}, []string{}, [][]uint{{3, 1}, {}}, []uint{2, 0}, [][]string{{"EQUITY"}, {}}},
-		{true, false, true, "", "DIVIDENDS", "", []string{}, []string{}, [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}},
-		{false, true, false, "", "INCOME_STATEMENT", "", []string{}, []string{}, [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}},
-		{false, true, false, "", "EBITDA", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT"}, {}}},
-		{true, true, true, "", "SALES", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"SHORT_TERM_INVESTMENTS", "INCOME_STATEMENT"}}},
-		{true, false, true, "", "COST_OF_GOODS_SOLD", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"SHORT_TERM_INVESTMENTS", "INCOME_STATEMENT"}}},
-		{false, false, false, "", "DISCOUNTS", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {}}},
-		{true, false, true, "", "INVOICE_DISCOUNT", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA", "DISCOUNTS"}, {}}},
+		{false, false, false, "", "ASSETS", "", []string{}, []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0, 0, false},
+		{false, false, false, "", "CURRENT_ASSETS", "", []string{}, []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}, 0, 0, 0, false},
+		{true, false, false, "fifo", "CASH_AND_CASH_EQUIVALENTS", "", []string{}, []string{"888"}, [][]uint{{1, 1, 1}, {2}}, []uint{3, 1}, [][]string{{"ASSETS", "CURRENT_ASSETS"}, {}}, 0, 0, 0, false},
+		{true, false, false, "fifo", "SHORT_TERM_INVESTMENTS", "", []string{}, []string{}, [][]uint{{1, 2}, {5}}, []uint{2, 1}, [][]string{{"ASSETS"}, {}}, 0, 0, 0, false},
+		{true, false, false, "", "RECEIVABLES", "", []string{}, []string{}, [][]uint{{1, 3}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}, 0, 0, 0, false},
+		{true, false, false, "wma", "INVENTORY", "", []string{}, []string{}, [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CASH_AND_CASH_EQUIVALENTS"}}, 0, 0, 0, false},
+		{false, true, false, "", "LIABILITIES", "", []string{}, []string{}, [][]uint{{2}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0, 0, false},
+		{true, true, false, "", "CURRENT_LIABILITIES", "", []string{}, []string{}, [][]uint{{2, 1}, {4}}, []uint{2, 1}, [][]string{{"LIABILITIES"}, {}}, 0, 0, 0, false},
+		{false, true, false, "", "EQUITY", "", []string{}, []string{}, [][]uint{{3}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0, 0, false},
+		{false, true, false, "", "RETAINED_EARNINGS", "", []string{}, []string{}, [][]uint{{3, 1}, {}}, []uint{2, 0}, [][]string{{"EQUITY"}, {}}, 0, 0, 0, false},
+		{true, false, true, "", "DIVIDENDS", "", []string{}, []string{}, [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}, 0, 0, 0, false},
+		{false, true, false, "", "INCOME_STATEMENT", "", []string{}, []string{}, [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}, 0, 0, 0, false},
+		{false, true, false, "", "EBITDA", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT"}, {}}, 0, 0, 0, false},
+		{true, true, true, "", "SALES", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"SHORT_TERM_INVESTMENTS", "INCOME_STATEMENT"}}, 0, 0, 0, false},
+		{true, false, true, "", "COST_OF_GOODS_SOLD", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"SHORT_TERM_INVESTMENTS", "INCOME_STATEMENT"}}, 0, 0, 0, false},
+		{false, false, false, "", "DISCOUNTS", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {}}, 0, 0, 0, false},
+		{true, false, true, "", "INVOICE_DISCOUNT", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA", "DISCOUNTS"}, {}}, 0, 0, 0, false},
 	}
 	// var
 
@@ -72,17 +72,21 @@ var (
 )
 
 type ACCOUNT struct {
-	IS_LOW_LEVEL_ACCOUNT             bool
-	IS_CREDIT                        bool
-	IS_TEMPORARY                     bool
-	COST_FLOW_TYPE                   string
-	ACCOUNT_NAME                     string
-	NOTES                            string
-	IMAGE                            []string
-	BARCODE                          []string
-	ACCOUNT_NUMBER                   [][]uint
-	ACCOUNT_LEVELS                   []uint
-	FATHER_AND_GRANDPA_ACCOUNTS_NAME [][]string
+	IS_LOW_LEVEL_ACCOUNT                           bool
+	IS_CREDIT                                      bool
+	IS_TEMPORARY                                   bool
+	COST_FLOW_TYPE                                 string
+	ACCOUNT_NAME                                   string
+	NOTES                                          string
+	IMAGE                                          []string
+	BARCODE                                        []string
+	ACCOUNT_NUMBER                                 [][]uint
+	ACCOUNT_LEVELS                                 []uint
+	FATHER_AND_GRANDPA_ACCOUNTS_NAME               [][]string
+	ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS uint
+	ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY         float64
+	TARGET_BALANCE                                 float64
+	IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD          bool
 }
 
 type DAY_START_END struct {
@@ -159,18 +163,18 @@ type JOURNAL_TAG struct {
 }
 
 type INVENTORY_TAG struct {
-	PRICE      float64
-	QUANTITY   float64
-	ACCOUNT    string
-	DATE_START time.Time
-	DATE_END   time.Time
+	PRICE        float64
+	QUANTITY     float64
+	ACCOUNT_NAME string
+	DATE_START   time.Time
+	DATE_END     time.Time
 }
 
 type INVOICE_STRUCT struct {
-	VALUE    float64
-	PRICE    float64
-	QUANTITY float64
-	ACCOUNT  string
+	VALUE        float64
+	PRICE        float64
+	QUANTITY     float64
+	ACCOUNT_NAME string
 }
 
 type FINANCIAL_ANALYSIS struct {
@@ -216,11 +220,11 @@ type FINANCIAL_ANALYSIS_STATEMENT struct {
 }
 
 type VALUE_PRICE_QUANTITY_ACCOUNT_BARCODE struct {
-	VALUE    float64
-	PRICE    float64
-	QUANTITY float64
-	ACCOUNT  string
-	BARCODE  string
+	VALUE        float64
+	PRICE        float64
+	QUANTITY     float64
+	ACCOUNT_NAME string
+	BARCODE      string
 }
 
 type ONE_STEP_DISTRIBUTION struct {
