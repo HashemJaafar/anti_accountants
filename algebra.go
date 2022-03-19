@@ -6,17 +6,18 @@ import (
 	"strconv"
 )
 
-func check_map_keys_for_equations(equations [][]string, m map[string]float64) {
+func check_map_keys_for_equations(equations [][]string, m map[string]float64) error {
 	var elements []string
 	for _, equation := range equations {
 		elements = append(elements, equation[0], equation[1], equation[3])
 	}
-	elements, _ = return_set_and_duplicates_string_slices(elements)
+	elements, _ = return_set_and_duplicates_slices(elements)
 	for keyb := range m {
 		if !is_in(keyb, elements) {
-			error_element_is_not_in_elements(keyb, elements)
+			return error_not_listed
 		}
 	}
+	return nil
 }
 
 func EQUATIONS_SOLVER(print, check_if_keys_in_the_equations bool, m map[string]float64, equations [][]string) {
@@ -48,10 +49,8 @@ func equation_solver(print bool, m map[string]float64, a, b, sign, c string) {
 		equations_generator(print, m, a, b, sign, c, pow(m[b], m[c]), root(m[a], m[c]), logarithm(m[a], m[b]))
 	case "root":
 		equations_generator(print, m, a, b, sign, c, root(m[b], m[c]), pow(m[a], m[c]), logarithm(m[b], m[a]))
-	case "log":
-		equations_generator(print, m, a, b, sign, c, logarithm(m[b], m[c]), pow(m[c], m[a]), root(m[b], m[a]))
 	default:
-		error_element_is_not_in_elements(sign, []string{"+", "-", "*", "/", "**", "root", "log"})
+		equations_generator(print, m, a, b, sign, c, logarithm(m[b], m[c]), pow(m[c], m[a]), root(m[b], m[a]))
 	}
 }
 
@@ -83,7 +82,7 @@ func equations_generator(print bool, m map[string]float64, a, b, sign, c string,
 		m[c] = c_value
 		print_equation(print, m, a, b, sign, c)
 	case oka && okb && okc && math.Round(la*1000)/1000 != math.Round(a_value*1000)/1000 && !check_if_inf(m, a, b, c):
-		error_not_equal(m, a, b, sign, c)
+		// fmt.Errorf(m, a, b, sign, c)
 	}
 }
 

@@ -1,22 +1,32 @@
 package anti_accountants
 
 import (
+	"errors"
 	"os"
 	"text/tabwriter"
 	"time"
 )
 
 const (
-	db_accounts           = "db_accounts"
-	db_journal            = "db_journal"
-	db_inventory          = "db_inventory"
-	db_last_key_accounts  = "db_last_key_accounts"
-	db_last_key_journal   = "db_last_key_journal"
-	db_last_key_inventory = "db_last_key_inventory"
+	FIFO        = "fifo"
+	LIFO        = "lifo"
+	WMA         = "wma"
+	LINEAR      = "linear"
+	EXPONENTIAL = "exponential"
+	LOGARITHMIC = "logarithmic"
+	EXPIRE      = "expire"
+	SATURDAY    = "Saturday"
+	SUNDAY      = "Sunday"
+	MONDAY      = "Monday"
+	TUESDAY     = "Tuesday"
+	WEDNESDAY   = "Wednesday"
+	THURSDAY    = "Thursday"
+	FRIDAY      = "Friday"
 )
 
 var (
 	// exportable
+	COMPANY_NAME            = "anti_accountants"
 	NOW                     = time.Now()
 	INDEX_OF_ACCOUNT_NUMBER = 0
 	INVOICE_DISCOUNTS_LIST  [][2]float64
@@ -43,32 +53,40 @@ var (
 		INTEREST_EXPENSE:          []string{"INTEREST_EXPENSE"},
 	}
 	ACCOUNTS = []ACCOUNT{
-		{false, false, false, "", "ASSETS", "", []string{}, []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0, 0, false},
-		{false, false, false, "", "CURRENT_ASSETS", "", []string{}, []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}, 0, 0, 0, false},
-		{true, false, false, "fifo", "CASH_AND_CASH_EQUIVALENTS", "", []string{}, []string{"888"}, [][]uint{{1, 1, 1}, {2}}, []uint{3, 1}, [][]string{{"ASSETS", "CURRENT_ASSETS"}, {}}, 0, 0, 0, false},
-		{true, false, false, "fifo", "SHORT_TERM_INVESTMENTS", "", []string{}, []string{}, [][]uint{{1, 2}, {5}}, []uint{2, 1}, [][]string{{"ASSETS"}, {}}, 0, 0, 0, false},
-		{true, false, false, "", "RECEIVABLES", "", []string{}, []string{}, [][]uint{{1, 3}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}, 0, 0, 0, false},
-		{true, false, false, "wma", "INVENTORY", "", []string{}, []string{}, [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CASH_AND_CASH_EQUIVALENTS"}}, 0, 0, 0, false},
-		{false, true, false, "", "LIABILITIES", "", []string{}, []string{}, [][]uint{{2}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0, 0, false},
-		{true, true, false, "", "CURRENT_LIABILITIES", "", []string{}, []string{}, [][]uint{{2, 1}, {4}}, []uint{2, 1}, [][]string{{"LIABILITIES"}, {}}, 0, 0, 0, false},
-		{false, true, false, "", "EQUITY", "", []string{}, []string{}, [][]uint{{3}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0, 0, false},
-		{false, true, false, "", "RETAINED_EARNINGS", "", []string{}, []string{}, [][]uint{{3, 1}, {}}, []uint{2, 0}, [][]string{{"EQUITY"}, {}}, 0, 0, 0, false},
-		{true, false, true, "", "DIVIDENDS", "", []string{}, []string{}, [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}, 0, 0, 0, false},
-		{false, true, false, "", "INCOME_STATEMENT", "", []string{}, []string{}, [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}, 0, 0, 0, false},
-		{false, true, false, "", "EBITDA", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT"}, {}}, 0, 0, 0, false},
-		{true, true, true, "", "SALES", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"SHORT_TERM_INVESTMENTS", "INCOME_STATEMENT"}}, 0, 0, 0, false},
-		{true, false, true, "", "COST_OF_GOODS_SOLD", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {"SHORT_TERM_INVESTMENTS", "INCOME_STATEMENT"}}, 0, 0, 0, false},
-		{false, false, false, "", "DISCOUNTS", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA"}, {}}, 0, 0, 0, false},
-		{true, false, true, "", "INVOICE_DISCOUNT", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, [][]string{{"EQUITY", "RETAINED_EARNINGS", "INCOME_STATEMENT", "EBITDA", "DISCOUNTS"}, {}}, 0, 0, 0, false},
+		{false, false, false, "", "ASSETS", "", []string{}, []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{false, false, false, "", "CURRENT_ASSETS", "", []string{}, []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, false, false, FIFO, "CASH_AND_CASH_EQUIVALENTS", "", []string{}, []string{"888"}, [][]uint{{1, 1, 1}, {2}}, []uint{3, 1}, [][]string{{"ASSETS", "CURRENT_ASSETS"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, false, false, FIFO, "SHORT_TERM_INVESTMENTS", "", []string{}, []string{}, [][]uint{{1, 2}, {5}}, []uint{2, 1}, [][]string{{"ASSETS"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, false, false, "", "RECEIVABLES", "", []string{}, []string{}, [][]uint{{1, 3}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, false, false, WMA, "INVENTORY", "", []string{}, []string{}, [][]uint{{1, 4}, {2, 4}}, []uint{2, 2}, [][]string{{"ASSETS"}, {"CASH_AND_CASH_EQUIVALENTS"}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{false, true, false, "", "LIABILITIES", "", []string{}, []string{}, [][]uint{{2}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, true, false, "", "CURRENT_LIABILITIES", "", []string{}, []string{}, [][]uint{{2, 1}, {4}}, []uint{2, 1}, [][]string{{"LIABILITIES"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{false, true, false, "", "EQUITY", "", []string{}, []string{}, [][]uint{{3}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{false, true, false, "", "RETAINED_EARNINGS", "", []string{}, []string{}, [][]uint{{3, 1}, {}}, []uint{2, 0}, [][]string{{"EQUITY"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, false, true, "", "DIVIDENDS", "", []string{}, []string{}, [][]uint{{3, 1, 1}, {5, 2}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{false, true, false, "", "INCOME_STATEMENT", "", []string{}, []string{}, [][]uint{{3, 1, 2}, {5, 3}}, []uint{3, 2}, [][]string{{"EQUITY", "RETAINED_EARNINGS"}, {"SHORT_TERM_INVESTMENTS"}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{false, true, false, "", "EBITDA", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1}, {}}, []uint{4, 0}, [][]string{{"EQUITY", "INCOME_STATEMENT", "RETAINED_EARNINGS"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, true, true, "", "SALES", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 1}, {5, 3, 2}}, []uint{5, 3}, [][]string{{"EBITDA", "EQUITY", "INCOME_STATEMENT", "RETAINED_EARNINGS"}, {"INCOME_STATEMENT", "SHORT_TERM_INVESTMENTS"}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, false, true, "", "COST_OF_GOODS_SOLD", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 2}, {5, 3, 6}}, []uint{5, 3}, [][]string{{"EBITDA", "EQUITY", "INCOME_STATEMENT", "RETAINED_EARNINGS"}, {"INCOME_STATEMENT", "SHORT_TERM_INVESTMENTS"}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{false, false, false, "", "DISCOUNTS", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 3}, {}}, []uint{5, 0}, [][]string{{"EBITDA", "EQUITY", "INCOME_STATEMENT", "RETAINED_EARNINGS"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
+		{true, false, true, "", "INVOICE_DISCOUNT", "", []string{}, []string{}, [][]uint{{3, 1, 2, 1, 3, 1}, {6}}, []uint{6, 1}, [][]string{{"DISCOUNTS", "EBITDA", "EQUITY", "INCOME_STATEMENT", "RETAINED_EARNINGS"}, {}}, 0, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, 0.0000000000000000000000000000000000000000000000000000000000000000e+00, false},
 	}
-	// var
 
 	// const
+	db_accounts          = "./db/" + COMPANY_NAME + "/accounts"
+	db_journal           = "./db/" + COMPANY_NAME + "/journal"
+	db_inventory         = "./db/" + COMPANY_NAME + "/inventory/"
 	print_table          = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	standard_days        = []string{"Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"}
-	adjusting_methods    = []string{"linear", "exponential", "logarithmic", "expire"}
-	depreciation_methods = []string{"linear", "exponential", "logarithmic"}
-	cost_flow_type       = []string{"fifo", "lifo", "wma"}
+	standard_days        = []string{SATURDAY, SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY}
+	adjusting_methods    = []string{LINEAR, EXPONENTIAL, LOGARITHMIC, EXPIRE}
+	depreciation_methods = []string{LINEAR, EXPONENTIAL, LOGARITHMIC}
+	cost_flow_type       = []string{FIFO, LIFO, WMA}
+
+	//errors
+	error_not_listed                        = errors.New("is not listed")
+	error_not_inventory_account             = errors.New("not inventory account")
+	error_should_be_negative                = errors.New("the quantity should be negative")
+	error_should_be_one_debit_or_one_credit = errors.New("should be one debit or one credit in the entry")
 )
 
 type ACCOUNT struct {
@@ -159,15 +177,13 @@ type JOURNAL_TAG struct {
 	NAME_EMPLOYEE         string
 	DATE_START            time.Time
 	DATE_END              time.Time
-	DATE_ENTRY            time.Time
 }
 
 type INVENTORY_TAG struct {
-	PRICE        float64
-	QUANTITY     float64
-	ACCOUNT_NAME string
-	DATE_START   time.Time
-	DATE_END     time.Time
+	PRICE      float64
+	QUANTITY   float64
+	DATE_START time.Time
+	DATE_END   time.Time
 }
 
 type INVOICE_STRUCT struct {

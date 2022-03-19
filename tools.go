@@ -5,7 +5,6 @@ import (
 	"math"
 	"reflect"
 	"sort"
-	"time"
 )
 
 func is_in(element string, elements []string) bool {
@@ -15,6 +14,14 @@ func is_in(element string, elements []string) bool {
 		}
 	}
 	return false
+}
+
+func smallest(a, b float64) float64 {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
 }
 
 func transpose(slice [][]JOURNAL_TAG) [][]JOURNAL_TAG {
@@ -49,34 +56,19 @@ func return_same_sign_of_number_sign(number_sign, number float64) float64 {
 	return number
 }
 
-func parse_date(string_date string, date_layouts []string) time.Time {
-	for _, i := range date_layouts {
-		date, err := time.Parse(i, string_date)
-		if err == nil {
-			return date
-		}
-	}
-	error_date_layout(string_date)
-	return time.Time{}
-}
+// func parse_date(string_date string, date_layouts []string) time.Time {
+// 	for _, i := range date_layouts {
+// 		date, err := time.Parse(i, string_date)
+// 		if err == nil {
+// 			return date
+// 		}
+// 	}
+// 	error_date_layout(string_date)
+// 	return time.Time{}
+// }
 
-func return_set_and_duplicates_string_slices(slice_of_elements []string) ([]string, []string) {
-	var set_of_elems, duplicated_element []string
-big_loop:
-	for _, element := range slice_of_elements {
-		for _, b := range set_of_elems {
-			if b == element {
-				duplicated_element = append(duplicated_element, element)
-				continue big_loop
-			}
-		}
-		set_of_elems = append(set_of_elems, element)
-	}
-	return set_of_elems, duplicated_element
-}
-
-func return_set_and_duplicates_uint_slices(accounts_numbers [][]uint) ([][]uint, [][]uint) {
-	var set_of_elems, duplicated_element [][]uint
+func return_set_and_duplicates_slices[t any](accounts_numbers []t) ([]t, []t) {
+	var set_of_elems, duplicated_element []t
 big_loop:
 	for _, element := range accounts_numbers {
 		for _, b := range set_of_elems {
@@ -139,24 +131,24 @@ func initialize_map_3(m map[string]map[string]map[string]map[string]float64, a, 
 	return m[a][b][c]
 }
 
-func check_dates(start_date, end_date time.Time) {
-	if !start_date.Before(end_date) {
-		error_smaller_than_or_equal(start_date, end_date)
-	}
-}
-
 func test_function(a, e interface{}) {
 	if !reflect.DeepEqual(a, e) {
 		log.Fatal("expected : ", e, " actual : ", a)
 	}
 }
 
-func sort_by_time(inventory []INVENTORY_TAG, is_ascending bool) {
-	sort.Slice(inventory, func(i, j int) bool {
-		return inventory[i].DATE_START.After(inventory[j].DATE_START) == is_ascending
+func sort_by_time_inventory(slice []INVENTORY_TAG, is_ascending bool) {
+	sort.Slice(slice, func(i, j int) bool {
+		return slice[i].DATE_START.After(slice[j].DATE_START) == is_ascending
 	})
 }
 
-func popup(slice []reflect.Type, index_to_popup uint) {
+func sort_by_time_journal(slice []JOURNAL_TAG, is_ascending bool) {
+	sort.Slice(slice, func(i, j int) bool {
+		return slice[i].DATE_START.After(slice[j].DATE_START) == is_ascending
+	})
+}
+
+func popup[type_slice any, type_index int | uint](slice []type_slice, index_to_popup type_index) {
 	slice = append(slice[:index_to_popup], slice[index_to_popup+1:]...)
 }

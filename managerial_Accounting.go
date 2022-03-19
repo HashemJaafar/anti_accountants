@@ -22,8 +22,6 @@ func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_st
 				total_overhead_cost_to_sum = cvp[key_portions_to]["units_gap"] * cvp[key_portions_to]["variable_cost_per_units"]
 				cvp[key_portions_to]["units"] -= cvp[key_portions_to]["units_gap"]
 				cvp[key_portions_to]["units_gap"] = 0
-			case "1":
-				total_overhead_cost_to_sum = total_mixed_cost
 			case "equally":
 				total_overhead_cost_to_sum = float64(len(step.TO)) * total_mixed_cost
 			case "portions":
@@ -55,17 +53,15 @@ func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_st
 			case "percent_from_contribution_margin":
 				total_overhead_cost_to_sum = cvp[key_portions_to]["contribution_margin"] * portions_to
 			default:
-				error_element_is_not_in_elements(step.DISTRIBUTION_METHOD, []string{"units_gap", "1", "equally", "portions", "units", "variable_cost", "fixed_cost", "mixed_cost", "sales", "profit", "contribution_margin", "percent_from_variable_cost", "percent_from_fixed_cost", "percent_from_mixed_cost", "percent_from_sales", "percent_from_profit", "percent_from_contribution_margin"})
+				total_overhead_cost_to_sum = total_mixed_cost
 			}
 			switch step.SALES_OR_VARIABLE_OR_FIXED {
-			case "sales":
-				cvp[key_portions_to]["sales_per_units"] = ((cvp[key_portions_to]["sales_per_units"] * cvp[key_portions_to]["units"]) - total_overhead_cost_to_sum) / cvp[key_portions_to]["units"]
 			case "variable_cost":
 				cvp[key_portions_to]["variable_cost_per_units"] = ((cvp[key_portions_to]["variable_cost_per_units"] * cvp[key_portions_to]["units"]) + total_overhead_cost_to_sum) / cvp[key_portions_to]["units"]
 			case "fixed_cost":
 				cvp[key_portions_to]["fixed_cost"] += total_overhead_cost_to_sum
 			default:
-				error_element_is_not_in_elements(step.SALES_OR_VARIABLE_OR_FIXED, []string{"sales", "variable_cost", "fixed_cost"})
+				cvp[key_portions_to]["sales_per_units"] = ((cvp[key_portions_to]["sales_per_units"] * cvp[key_portions_to]["units"]) - total_overhead_cost_to_sum) / cvp[key_portions_to]["units"]
 			}
 			for key_name, map_cvp := range cvp {
 				cvp[key_name] = map[string]float64{"units_gap": map_cvp["units_gap"], "units": map_cvp["units"],

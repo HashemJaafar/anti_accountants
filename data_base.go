@@ -11,7 +11,7 @@ func db_open(path string) *badger.DB {
 	var db *badger.DB
 	for {
 		var err error
-		db, err = badger.Open(badger.DefaultOptions("./" + path))
+		db, err = badger.Open(badger.DefaultOptions(path))
 		if err == nil {
 			return db
 		}
@@ -31,20 +31,8 @@ func db_insert_into_accounts() {
 	}
 }
 
-func db_insert_into_journal(array []JOURNAL_TAG) {
-	db := db_open(db_journal)
-	defer db.Close()
-	for _, entry := range array {
-		db.Update(func(txn *badger.Txn) error {
-			json_entry, _ := json.Marshal(entry)
-			txn.Set([]byte(time.Now().String()), []byte(json_entry))
-			return nil
-		})
-	}
-}
-
-func db_insert_into_inventory(array []INVENTORY_TAG) {
-	db := db_open(db_inventory)
+func db_insert_into_journal_or_inventory[t JOURNAL_TAG | INVENTORY_TAG](path string, array []t) {
+	db := db_open(path)
 	defer db.Close()
 	for _, entry := range array {
 		db.Update(func(txn *badger.Txn) error {
@@ -99,8 +87,8 @@ func db_read_journal() []JOURNAL_TAG {
 	return array
 }
 
-func db_read_inventory() []INVENTORY_TAG {
-	db := db_open(db_inventory)
+func db_read_inventory(account_name string) []INVENTORY_TAG {
+	db := db_open(db_inventory + account_name)
 	defer db.Close()
 	var array []INVENTORY_TAG
 	db.View(func(txn *badger.Txn) error {
@@ -132,11 +120,23 @@ func db_read_inventory() []INVENTORY_TAG {
 // 	}
 // }
 
-// func account_balance(account string) float64 {
-// 	var account_balance float64
-// 	DB.QueryRow("select sum(value) from journal where account=?", account).Scan(&account_balance)
-// 	return account_balance
-// }
+func account_balance(account string) float64 {
+	journal := db_read_journal()
+	var value_debit, value_credit float64
+	for _, entry := range journal {
+		if account == entry.ACCOUNT_CREDIT {
+			value_credit += entry.VALUE
+		}
+		if account == entry.ACCOUNT_DEBIT {
+			value_debit += entry.VALUE
+		}
+	}
+	account_struct, _, _ := account_struct_from_name(account)
+	if account_struct.IS_CREDIT {
+		return value_credit - value_debit
+	}
+	return value_debit - value_credit
+}
 
 func last_line_in_db() JOURNAL_TAG {
 	db := db_open(db_journal)
@@ -167,17 +167,15 @@ func entry_number() (uint, uint, uint) {
 }
 
 func weighted_average(account string) {
-	inventory := db_read_inventory()
+	inventory := db_read_inventory(account)
 	var total_value, total_quantity float64
 	for _, entry := range inventory {
-		if entry.ACCOUNT_NAME == account {
-			total_value += entry.PRICE * entry.QUANTITY
-			total_quantity += entry.QUANTITY
-		}
+		total_value += entry.PRICE * entry.QUANTITY
+		total_quantity += entry.QUANTITY
 	}
 	price := total_value / total_quantity
 
-	db := db_open(db_inventory)
+	db := db_open(db_inventory + account)
 	defer db.Close()
 	db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
@@ -188,11 +186,9 @@ func weighted_average(account string) {
 			item.Value(func(val []byte) error {
 				var tag INVENTORY_TAG
 				json.Unmarshal(val, &tag)
-				if tag.ACCOUNT_NAME == account {
-					tag.PRICE = price
-					json_entry, _ := json.Marshal(tag)
-					txn.Set([]byte(item.Key()), []byte(json_entry))
-				}
+				tag.PRICE = price
+				json_entry, _ := json.Marshal(tag)
+				txn.Set([]byte(item.Key()), []byte(json_entry))
 				return nil
 			})
 		}

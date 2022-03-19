@@ -10,13 +10,13 @@ import (
 func initialize_array_day_start_end(array_day_start_end []DAY_START_END) []DAY_START_END {
 	if len(array_day_start_end) == 0 {
 		array_day_start_end = []DAY_START_END{
-			{"saturday", 0, 0, 23, 59},
-			{"sunday", 0, 0, 23, 59},
-			{"monday", 0, 0, 23, 59},
-			{"tuesday", 0, 0, 23, 59},
-			{"wednesday", 0, 0, 23, 59},
-			{"thursday", 0, 0, 23, 59},
-			{"friday", 0, 0, 23, 59}}
+			{SATURDAY, 0, 0, 23, 59},
+			{SUNDAY, 0, 0, 23, 59},
+			{MONDAY, 0, 0, 23, 59},
+			{TUESDAY, 0, 0, 23, 59},
+			{WEDNESDAY, 0, 0, 23, 59},
+			{THURSDAY, 0, 0, 23, 59},
+			{FRIDAY, 0, 0, 23, 59}}
 	}
 	return array_day_start_end
 }
@@ -26,23 +26,23 @@ func check_array_day_start_end(array_day_start_end []DAY_START_END) {
 		array_day_start_end[index].DAY = strings.Title(element.DAY)
 		switch {
 		case !is_in(array_day_start_end[index].DAY, standard_days):
-			error_element_is_not_in_elements(element.DAY, standard_days)
+			array_day_start_end[index].DAY = SUNDAY
 		case element.START_HOUR < 0:
-			error_the_time_is_not_in_range(element, 0)
+			array_day_start_end[index].START_HOUR = 0
 		case element.START_HOUR > 23:
-			error_the_time_is_not_in_range(element, 23)
+			array_day_start_end[index].START_HOUR = 23
 		case element.START_MINUTE < 0:
-			error_the_time_is_not_in_range(element, 0)
+			array_day_start_end[index].START_MINUTE = 0
 		case element.START_MINUTE > 59:
-			error_the_time_is_not_in_range(element, 59)
+			array_day_start_end[index].START_MINUTE = 59
 		case element.END_HOUR < 0:
-			error_the_time_is_not_in_range(element, 0)
+			array_day_start_end[index].END_HOUR = 0
 		case element.END_HOUR > 23:
-			error_the_time_is_not_in_range(element, 23)
+			array_day_start_end[index].END_HOUR = 23
 		case element.END_MINUTE < 0:
-			error_the_time_is_not_in_range(element, 0)
+			array_day_start_end[index].END_MINUTE = 0
 		case element.END_MINUTE > 59:
-			error_the_time_is_not_in_range(element, 59)
+			array_day_start_end[index].END_MINUTE = 59
 		}
 	}
 }
@@ -116,7 +116,6 @@ func adjust_the_array(array_to_insert []JOURNAL_TAG, array_start_end_minutes []s
 				NAME_EMPLOYEE:         name,
 				DATE_START:            time.Time{},
 				DATE_END:              time.Time{},
-				DATE_ENTRY:            time.Time{},
 			})
 		}
 		adjusted_array_to_insert = append(adjusted_array_to_insert, one_account_adjusted_list)
@@ -127,11 +126,11 @@ func adjust_the_array(array_to_insert []JOURNAL_TAG, array_start_end_minutes []s
 func value_after_adjust_using_adjusting_methods(adjusting_method string, element start_end_minutes, total_minutes, time_unit_counter, total_value float64) float64 {
 	percent := root(total_value, total_minutes)
 	switch adjusting_method {
-	case "linear":
+	case LINEAR:
 		return element.minutes * (total_value / total_minutes)
-	case "exponential":
+	case EXPONENTIAL:
 		return math.Pow(percent, time_unit_counter+element.minutes) - math.Pow(percent, time_unit_counter)
-	case "logarithmic":
+	case LOGARITHMIC:
 		return (total_value / math.Pow(percent, time_unit_counter)) - (total_value / math.Pow(percent, time_unit_counter+element.minutes))
 	}
 	return 0
