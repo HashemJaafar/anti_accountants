@@ -1,0 +1,11 @@
+every file is lower snake_case
+every thing global should be exportable
+every exportable all leters should be upper snake_case
+every local all lower snake_case
+every thing snake_case
+every const var type in const_var_type.go
+every func should test and start with Test_NAME_OF_THE_FUNCTION
+every value that will be used in all the code should be const
+every error return as error var as type error
+dont use log.Fatal or log.Panic or any error that stop the code
+dont use method just use func
