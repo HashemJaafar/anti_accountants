@@ -1,94 +1,159 @@
 package anti_accountants
 
 import (
-	"database/sql"
-	"fmt"
-	"log"
+	"encoding/json"
+	"time"
+
+	badger "github.com/dgraph-io/badger/v3"
 )
 
-func open_and_create_database(driverName, dataSourceName, database_name string) {
-	DB, _ = sql.Open(driverName, dataSourceName)
-	err := DB.Ping()
-	error_panic(err)
-	DB.Exec("create database if not exists " + database_name)
-	_, err = DB.Exec("USE " + database_name)
-	error_panic(err)
-	DB.Exec("create table if not exists journal (date text,entry_number integer,account text,value real,price real,quantity real,barcode text,entry_expair text,description text,name text,employee_name text,entry_date text,reverse bool)")
-	DB.Exec("create table if not exists inventory (date text,account text,price real,quantity real,barcode text,entry_expair text,name text,employee_name text,entry_date text)")
-}
-
-func delete_not_double_entry(double_entry []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, previous_entry_number int) {
-	if len(double_entry) != 2 {
-		DB.Exec("delete from journal where entry_number=?", previous_entry_number)
-		fmt.Println("this entry is deleted ", double_entry)
-	}
-}
-
-func check_accounts(column, table, panic string, elements []string) {
-	results, err := DB.Query("select " + column + " from " + table)
-	error_panic(err)
-	for results.Next() {
-		var tag string
-		results.Scan(&tag)
-		if !is_in(tag, elements) {
-			log.Panic(tag + panic)
+func DB_OPEN(path string) *badger.DB {
+	for {
+		db, err := badger.Open(badger.DefaultOptions(path))
+		if err == nil {
+			return db
 		}
 	}
 }
 
-func CHANGE_ACCOUNT_NAME(name, new_name string) {
-	var tag string
-	err := DB.QueryRow("select account from journal where account=? limit 1", new_name).Scan(&tag)
-	if err == nil {
-		error_you_cant_change_the_name(name, new_name)
-	} else {
-		DB.Exec("update journal set account=? where account=?", new_name, name)
-		DB.Exec("update inventory set account=? where account=?", new_name, name)
+func DB_CLOSE() {
+	DB_ACCOUNTS.Close()
+	DB_JOURNAL.Close()
+	DB_JOURNAL_DRAFT.Close()
+	DB_INVENTORY.Close()
+}
+
+func DB_UPDATE[t any](db *badger.DB, key []byte, value t) {
+	db.Update(func(txn *badger.Txn) error {
+		json_value, _ := json.Marshal(value)
+		txn.Set(key, json_value)
+		return nil
+	})
+}
+
+func DB_INSERT_INTO_ACCOUNTS() {
+	DB_ACCOUNTS.DropAll()
+	for _, a := range ACCOUNTS {
+		DB_UPDATE(DB_ACCOUNTS, []byte(a.ACCOUNT_NAME), a)
 	}
 }
 
-func JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER() []JOURNAL_TAG {
-	rows, _ := DB.Query("select * from journal order by date,entry_number")
-	return select_from_journal(rows)
+func DB_INSERT[t any](db *badger.DB, slice []t) {
+	for _, a := range slice {
+		DB_UPDATE(db, []byte(time.Now().String()), a)
+	}
 }
 
-func account_balance(account string) float64 {
-	var account_balance float64
-	DB.QueryRow("select sum(value) from journal where account=?", account).Scan(&account_balance)
-	return account_balance
+func DB_READ[t any](db *badger.DB) ([][]byte, []t) {
+	var values []t
+	var keys [][]byte
+	db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			item.Value(func(val []byte) error {
+				var value t
+				json.Unmarshal(val, &value)
+				values = append(values, value)
+				keys = append(keys, item.Key())
+				return nil
+			})
+		}
+		return nil
+	})
+	return keys, values
 }
 
-func insert_into_inventory_func(array_of_journal_tag []JOURNAL_TAG) {
-	for _, entry := range array_of_journal_tag {
-		costs := cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, true)
-		if asc_or_desc(entry.ACCOUNT) != "" && costs == 0 {
-			DB.Exec("insert into inventory(date,account,price,quantity,barcode,entry_expair,name,employee_name,entry_date)values (?,?,?,?,?,?,?,?,?)",
-				&entry.DATE, &entry.ACCOUNT, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE, &entry.ENTRY_EXPAIR, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE)
+func DB_UPDATE_ACCOUNT_NAME_IN_JOURNAL(old_name, new_name string) {
+	DB_JOURNAL.Update(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			item.Value(func(val []byte) error {
+				var tag JOURNAL_TAG
+				json.Unmarshal(val, &tag)
+				if tag.ACCOUNT_CREDIT == old_name {
+					tag.ACCOUNT_CREDIT = new_name
+				}
+				if tag.ACCOUNT_DEBIT == old_name {
+					tag.ACCOUNT_DEBIT = new_name
+				}
+				json_entry, _ := json.Marshal(tag)
+				txn.Set([]byte(item.Key()), []byte(json_entry))
+				return nil
+			})
+		}
+		return nil
+	})
+}
+
+func ACCOUNT_BALANCE(account string) float64 {
+	_, journal := DB_READ[JOURNAL_TAG](DB_JOURNAL)
+	var value_debit, value_credit float64
+	for _, entry := range journal {
+		if account == entry.ACCOUNT_CREDIT {
+			value_credit += entry.VALUE
+		}
+		if account == entry.ACCOUNT_DEBIT {
+			value_debit += entry.VALUE
 		}
 	}
-}
-
-func insert_into_journal_func(array_of_journal_tag []JOURNAL_TAG) {
-	for _, entry := range array_of_journal_tag {
-		DB.Exec("insert into journal(date,entry_number,account,value,price,quantity,barcode,entry_expair,description,name,employee_name,entry_date,reverse) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-			&entry.DATE, &entry.ENTRY_NUMBER, &entry.ACCOUNT, &entry.VALUE, &entry.PRICE, &entry.QUANTITY, &entry.BARCODE,
-			&entry.ENTRY_EXPAIR, &entry.DESCRIPTION, &entry.NAME, &entry.EMPLOYEE_NAME, &entry.ENTRY_DATE, &entry.REVERSE)
+	account_struct, _, _ := ACCOUNT_STRUCT_FROM_NAME(account)
+	if account_struct.IS_CREDIT {
+		return value_credit - value_debit
 	}
+	return value_debit - value_credit
 }
 
-func entry_number() int {
-	var tag int
-	err := DB.QueryRow("select max(entry_number) from journal").Scan(&tag)
-	if err != nil {
-		tag = 0
+func DB_LAST_LINE[t any](db *badger.DB) t {
+	var tag t
+	db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		var str []byte
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			item.Value(func(val []byte) error {
+				str = val
+				return nil
+			})
+		}
+		var tag t
+		json.Unmarshal(str, &tag)
+		return nil
+	})
+	return tag
+}
+
+func WEIGHTED_AVERAGE(account string) {
+	_, inventory := DB_READ[INVENTORY_TAG](DB_INVENTORY)
+	var total_value, total_quantity float64
+	for _, entry := range inventory {
+		total_value += entry.PRICE * entry.QUANTITY
+		total_quantity += entry.QUANTITY
 	}
-	return tag + 1
-}
+	price := total_value / total_quantity
 
-func weighted_average(account string) {
-	DB.Exec("update inventory set price=(select sum(price*quantity)/sum(quantity) from inventory where account=?) where account=?", account, account)
-}
-
-func weighted_average_for_barcode(account string) {
-	// DB.Exec("update inventory set price=(select sum(price*quantity)/sum(quantity) from inventory where account=? and barcode=?) where account=? and barcode=?", account, barcode, account, barcode)
+	DB_INVENTORY.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			item.Value(func(val []byte) error {
+				var tag INVENTORY_TAG
+				json.Unmarshal(val, &tag)
+				tag.PRICE = price
+				json_entry, _ := json.Marshal(tag)
+				txn.Set([]byte(item.Key()), []byte(json_entry))
+				return nil
+			})
+		}
+		return nil
+	})
 }

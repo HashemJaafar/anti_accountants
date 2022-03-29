@@ -3,13 +3,13 @@ package anti_accountants
 import "log"
 
 func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_steps []ONE_STEP_DISTRIBUTION, print, simple bool) {
-	calculate_cvp_map(cvp, print, true)
+	CALCULATE_CVP_MAP(cvp, print, true)
 	for _, step := range distribution_steps {
 		var total_mixed_cost, total_portions_to, total_column_to_distribute float64
 		if simple {
 			total_mixed_cost = step.AMOUNT
 		} else {
-			total_mixed_cost = total_mixed_cost_in_complicated_and_multi_level_step(cvp, step, total_mixed_cost)
+			total_mixed_cost = TOTAL_MIXED_COST_IN_COMPLICATED_AND_MULTI_LEVEL_STEP(cvp, step, total_mixed_cost)
 		}
 		for key_portions_to, portions_to := range step.TO {
 			total_portions_to += portions_to
@@ -24,8 +24,6 @@ func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_st
 				cvp[key_portions_to]["units_gap"] = 0
 			case "1":
 				total_overhead_cost_to_sum = total_mixed_cost
-			case "equally":
-				total_overhead_cost_to_sum = float64(len(step.TO)) * total_mixed_cost
 			case "portions":
 				total_overhead_cost_to_sum = portions_to / total_portions_to * total_mixed_cost
 			case "units":
@@ -55,29 +53,27 @@ func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_st
 			case "percent_from_contribution_margin":
 				total_overhead_cost_to_sum = cvp[key_portions_to]["contribution_margin"] * portions_to
 			default:
-				error_element_is_not_in_elements(step.DISTRIBUTION_METHOD, []string{"units_gap", "1", "equally", "portions", "units", "variable_cost", "fixed_cost", "mixed_cost", "sales", "profit", "contribution_margin", "percent_from_variable_cost", "percent_from_fixed_cost", "percent_from_mixed_cost", "percent_from_sales", "percent_from_profit", "percent_from_contribution_margin"})
+				total_overhead_cost_to_sum = float64(len(step.TO)) * total_mixed_cost
 			}
 			switch step.SALES_OR_VARIABLE_OR_FIXED {
-			case "sales":
-				cvp[key_portions_to]["sales_per_units"] = ((cvp[key_portions_to]["sales_per_units"] * cvp[key_portions_to]["units"]) - total_overhead_cost_to_sum) / cvp[key_portions_to]["units"]
 			case "variable_cost":
 				cvp[key_portions_to]["variable_cost_per_units"] = ((cvp[key_portions_to]["variable_cost_per_units"] * cvp[key_portions_to]["units"]) + total_overhead_cost_to_sum) / cvp[key_portions_to]["units"]
 			case "fixed_cost":
 				cvp[key_portions_to]["fixed_cost"] += total_overhead_cost_to_sum
 			default:
-				error_element_is_not_in_elements(step.SALES_OR_VARIABLE_OR_FIXED, []string{"sales", "variable_cost", "fixed_cost"})
+				cvp[key_portions_to]["sales_per_units"] = ((cvp[key_portions_to]["sales_per_units"] * cvp[key_portions_to]["units"]) - total_overhead_cost_to_sum) / cvp[key_portions_to]["units"]
 			}
 			for key_name, map_cvp := range cvp {
 				cvp[key_name] = map[string]float64{"units_gap": map_cvp["units_gap"], "units": map_cvp["units"],
 					"sales_per_units": map_cvp["sales_per_units"], "variable_cost_per_units": map_cvp["variable_cost_per_units"], "fixed_cost": map_cvp["fixed_cost"]}
 			}
-			calculate_cvp_map(cvp, print, false)
+			CALCULATE_CVP_MAP(cvp, print, false)
 		}
 	}
-	total_cost_volume_profit(cvp, print)
+	TOTAL_COST_VOLUME_PROFIT(cvp, print)
 }
 
-func total_mixed_cost_in_complicated_and_multi_level_step(cvp map[string]map[string]float64, step ONE_STEP_DISTRIBUTION, total_mixed_cost float64) float64 {
+func TOTAL_MIXED_COST_IN_COMPLICATED_AND_MULTI_LEVEL_STEP(cvp map[string]map[string]float64, step ONE_STEP_DISTRIBUTION, total_mixed_cost float64) float64 {
 	for key_portions_from, portions := range step.FROM {
 		if cvp[key_portions_from]["units"] < portions {
 			log.Panic(portions, " for ", key_portions_from, " in ", step.FROM, " is more than ", cvp[key_portions_from]["units"])
@@ -92,7 +88,7 @@ func total_mixed_cost_in_complicated_and_multi_level_step(cvp map[string]map[str
 	return total_mixed_cost
 }
 
-func calculate_cvp_map(cvp map[string]map[string]float64, print, check_if_keys_in_the_equations bool) {
+func CALCULATE_CVP_MAP(cvp map[string]map[string]float64, print, check_if_keys_in_the_equations bool) {
 	for _, i := range cvp {
 		COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations, i)
 		_, ok_variable_cost_per_units := i["variable_cost_per_units"]
@@ -118,7 +114,7 @@ func calculate_cvp_map(cvp map[string]map[string]float64, print, check_if_keys_i
 	}
 }
 
-func total_cost_volume_profit(cvp map[string]map[string]float64, print bool) {
+func TOTAL_COST_VOLUME_PROFIT(cvp map[string]map[string]float64, print bool) {
 	var units, sales, variable_cost, fixed_cost float64
 	for key_name, map_name := range cvp {
 		if key_name != "total" {

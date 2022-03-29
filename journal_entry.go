@@ -1,313 +1,406 @@
 package anti_accountants
 
 import (
+	"fmt"
 	"math"
+	"strings"
 	"time"
 )
 
-func check_the_adjusting_method_and_date(entry_expair time.Time, date time.Time, adjusting_method string, entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-
-	is_in_adjusting_methods := is_in(adjusting_method, adjusting_methods)
-	is_entry_expair_zero := entry_expair.IsZero()
-
-	if !is_entry_expair_zero {
-		check_dates(date, entry_expair)
-	}
-
-	if !is_in_adjusting_methods && adjusting_method != "" {
-		error_element_is_not_in_elements(adjusting_method, adjusting_methods)
-	}
-	if is_entry_expair_zero == is_in_adjusting_methods {
-		error_you_cant_use_entry_expire()
-	}
-	for _, entry := range entries {
-		if is_in(entry.ACCOUNT, inventory) && is_in(adjusting_method, depreciation_methods) {
-			error_you_cant_use_depreciation_methods_with_inventory(entry.ACCOUNT)
+func SET_DATE_END_TO_ZERO_IF_SMALLER_THAN_DATE_START(date_start, date_end time.Time) time.Time {
+	if !date_end.IsZero() {
+		if !date_start.Before(date_end) {
+			return time.Time{}
 		}
 	}
+	return date_end
 }
 
-func group_by_account_and_barcode(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
-	type account_barcode struct {
-		account, barcode string
+func SET_ADJUSTING_METHOD(entry_expair time.Time, adjusting_method string, entries []PRICE_QUANTITY_ACCOUNT_BARCODE) string {
+	if entry_expair.IsZero() {
+		return ""
 	}
-	g := map[account_barcode]*ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
-	for _, v := range entries {
-		key := account_barcode{v.ACCOUNT, v.BARCODE}
-		sums := g[key]
-		if sums == nil {
-			sums = &ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
-			g[key] = sums
+	if !IS_IN(adjusting_method, ADJUSTING_METHODS) {
+		adjusting_method = LINEAR
+	}
+	if IS_IN(adjusting_method, DEPRECIATION_METHODS) {
+		for _, entry := range entries {
+			account_struct, _, _ := ACCOUNT_STRUCT_FROM_NAME(entry.ACCOUNT_NAME)
+			if account_struct.COST_FLOW_TYPE != "" {
+				adjusting_method = EXPIRE
+			}
 		}
-		sums.VALUE += v.VALUE
+	}
+	return adjusting_method
+}
+
+func GROUP_BY_ACCOUNT(entries []PRICE_QUANTITY_ACCOUNT_BARCODE) []PRICE_QUANTITY_ACCOUNT_BARCODE {
+	m := map[string]*PRICE_QUANTITY_ACCOUNT_BARCODE{}
+	for _, v := range entries {
+		key := v.ACCOUNT_NAME
+		sums := m[key]
+		if sums == nil {
+			sums = &PRICE_QUANTITY_ACCOUNT_BARCODE{}
+			m[key] = sums
+		}
+		sums.PRICE += v.PRICE * v.QUANTITY // i make this to store the value and then devide it by the quantity to get the price
 		sums.QUANTITY += v.QUANTITY
 	}
-	entries = []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
-	for key, v := range g {
-		entries = append(entries, ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{
-			ACCOUNT:  key.account,
-			VALUE:    v.VALUE,
-			PRICE:    v.VALUE / v.QUANTITY,
-			QUANTITY: v.QUANTITY,
-			BARCODE:  key.barcode,
+	entries = []PRICE_QUANTITY_ACCOUNT_BARCODE{}
+	for key, v := range m {
+		entries = append(entries, PRICE_QUANTITY_ACCOUNT_BARCODE{
+			PRICE:        v.PRICE / v.QUANTITY,
+			QUANTITY:     v.QUANTITY,
+			ACCOUNT_NAME: key,
 		})
 	}
 	return entries
 }
 
-func remove_zero_values(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	var index int
-	for index < len(entries) {
-		if entries[index].VALUE == 0 || entries[index].QUANTITY == 0 {
-			entries = append(entries[:index], entries[index+1:]...)
-		} else {
-			index++
-		}
-	}
-}
-
-func find_cost(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
+func FIND_COST(entries []PRICE_QUANTITY_ACCOUNT_BARCODE) {
 	for index, entry := range entries {
-		costs := cost_flow(entry.ACCOUNT, entry.QUANTITY, entry.BARCODE, false)
-		if costs != 0 {
-			entries[index].VALUE = -costs
+		costs, _, err := COST_FLOW(entry.ACCOUNT_NAME, entry.QUANTITY, false)
+		if err == nil {
 			entries[index].PRICE = -costs / entry.QUANTITY
 		}
 	}
 }
 
-func convert_to_simple_entry(debit_entries, credit_entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) [][]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE {
-	simple_entries := [][]ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{}
+func INSERT_TO_JOURNAL_TAG(debit_entries, credit_entries []PRICE_QUANTITY_ACCOUNT_BARCODE, date_start, date_end time.Time, notes, name, name_employee string) []JOURNAL_TAG {
+	var simple_entries []JOURNAL_TAG
 	for _, debit_entry := range debit_entries {
 		for _, credit_entry := range credit_entries {
-			simple_entries = append(simple_entries, []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE{debit_entry, credit_entry})
-		}
-	}
-	for _, a := range simple_entries {
-		switch math.Abs(a[0].VALUE) >= math.Abs(a[1].VALUE) {
-		case true:
-			sign := a[0].VALUE / a[1].VALUE
-			price := a[0].VALUE / a[0].QUANTITY
-			a[0].VALUE = a[1].VALUE * sign / math.Abs(sign)
-			a[0].QUANTITY = a[0].VALUE / price
-		case false:
-			sign := a[0].VALUE / a[1].VALUE
-			price := a[1].VALUE / a[1].QUANTITY
-			a[1].VALUE = a[0].VALUE * sign / math.Abs(sign)
-			a[1].QUANTITY = a[1].VALUE / price
+			simple_entries = append(simple_entries, JOURNAL_TAG{
+				VALUE:           math.Abs(SMALLEST(debit_entry.PRICE/debit_entry.QUANTITY, credit_entry.PRICE/credit_entry.QUANTITY)),
+				PRICE_DEBIT:     debit_entry.PRICE,
+				PRICE_CREDIT:    credit_entry.PRICE,
+				QUANTITY_DEBIT:  debit_entry.QUANTITY,
+				QUANTITY_CREDIT: credit_entry.QUANTITY,
+				ACCOUNT_DEBIT:   debit_entry.ACCOUNT_NAME,
+				ACCOUNT_CREDIT:  credit_entry.ACCOUNT_NAME,
+				NOTES:           notes,
+				NAME:            name,
+				NAME_EMPLOYEE:   name_employee,
+				DATE_START:      date_start,
+				DATE_END:        date_end,
+			})
 		}
 	}
 	return simple_entries
 }
 
-func can_the_account_be_negative(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	for _, entry := range entries {
-		if !(is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EQUITY, entry.ACCOUNT) && is_credit(entry.ACCOUNT)) {
-			account_balance := account_balance(entry.ACCOUNT)
-			if account_balance+entry.VALUE < 0 {
-				error_make_nagtive_balance(entry, account_balance)
-			}
+func INCREASE_THE_VALUE_TO_MAKE_THE_NEW_BALANCE_FOR_THE_ACCOUNT_POSITIVE(entries []PRICE_QUANTITY_ACCOUNT_BARCODE) {
+	for indexa, a := range entries {
+		new_balance := ACCOUNT_BALANCE(a.ACCOUNT_NAME) + a.PRICE*a.QUANTITY
+		if new_balance < 0 {
+			entries[indexa].QUANTITY -= new_balance / entries[indexa].PRICE
 		}
 	}
 }
 
-func find_account_from_barcode(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	for index, entry := range entries {
-		if entry.QUANTITY < 0 && entry.BARCODE != "" {
-			err := DB.QueryRow("select account from journal where barcode=? limit 1", entry.BARCODE).Scan(&entries[index].ACCOUNT)
-			if err != nil {
-				error_the_barcode_is_wrong(entry)
-			}
-		}
-	}
-}
-
-func insert_to_JOURNAL_TAG(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE, date time.Time, entry_expair time.Time, description string, name string, employee_name string) []JOURNAL_TAG {
-	var array_to_insert []JOURNAL_TAG
-	for _, entry := range entries {
-		array_to_insert = append(array_to_insert, JOURNAL_TAG{
-			DATE:          date.String(),
-			ENTRY_NUMBER:  0,
-			ACCOUNT:       entry.ACCOUNT,
-			VALUE:         entry.VALUE,
-			PRICE:         entry.VALUE / entry.QUANTITY,
-			QUANTITY:      entry.QUANTITY,
-			BARCODE:       entry.BARCODE,
-			ENTRY_EXPAIR:  entry_expair.String(),
-			DESCRIPTION:   description,
-			NAME:          name,
-			EMPLOYEE_NAME: employee_name,
-			ENTRY_DATE:    NOW.String(),
-			REVERSE:       false,
-		})
-	}
-	return array_to_insert
-}
-
-func check_if_the_price_is_negative(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	for index, entry := range entries {
-		entries[index].PRICE = entry.VALUE / entry.QUANTITY
-		if entries[index].PRICE < 0 {
-			error_the_price_should_be_positive(entries[index])
-		}
-	}
-}
-
-func cost_flow(account string, quantity float64, barcode string, insert bool) float64 {
+func COST_FLOW(account string, quantity float64, is_update bool) (float64, float64, error) {
 	if quantity > 0 {
-		return 0
+		return 0, quantity, ERROR_SHOULD_BE_NEGATIVE
 	}
-	order_by_date_asc_or_desc := asc_or_desc(account)
-	if order_by_date_asc_or_desc == "" {
-		return 0
+	flow_type, is_ascending := FLOW_TYPE(account)
+	if flow_type == "" {
+		return 0, quantity, ERROR_NOT_INVENTORY_ACCOUNT
 	}
-	rows, _ := DB.Query("select price,quantity from inventory where quantity>0 and account=? and barcode=? order by date "+order_by_date_asc_or_desc, account, barcode)
-	var inventory []JOURNAL_TAG
-	for rows.Next() {
-		var tag JOURNAL_TAG
-		rows.Scan(&tag.PRICE, &tag.QUANTITY)
-		inventory = append(inventory, tag)
-	}
-	quantity = math.Abs(quantity)
-	quantity_count := quantity
+	keys, inventory := DB_READ[INVENTORY_TAG](DB_INVENTORY)
+	SORT_BY_TIME_INVENTORY(inventory, keys, is_ascending)
+	quantity_count := math.Abs(quantity)
 	var costs float64
-	for _, item := range inventory {
-		if item.QUANTITY > quantity_count {
-			costs += item.PRICE * quantity_count
-			if insert {
-				DB.Exec("update inventory set quantity=quantity-? where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", quantity_count, account, item.PRICE, item.QUANTITY, barcode)
+	for indexa, a := range inventory {
+		if a.ACCOUNT_NAME == account {
+			if quantity_count <= a.QUANTITY {
+				costs += a.PRICE * quantity_count
+				if is_update {
+					a.QUANTITY -= quantity_count
+					DB_UPDATE(DB_INVENTORY, keys[indexa], a)
+				}
+				quantity_count -= quantity_count
+				break
 			}
-			quantity_count = 0
-			break
-		}
-		if item.QUANTITY <= quantity_count {
-			costs += item.PRICE * item.QUANTITY
-			if insert {
-				DB.Exec("delete from inventory where account=? and price=? and quantity=? and barcode=? order by date "+order_by_date_asc_or_desc+" limit 1", account, item.PRICE, item.QUANTITY, barcode)
+			if quantity_count > a.QUANTITY {
+				costs += a.PRICE * a.QUANTITY
+				if is_update {
+					a.QUANTITY -= a.QUANTITY
+					DB_UPDATE(DB_INVENTORY, keys[indexa], a)
+				}
+				quantity_count -= a.QUANTITY
 			}
-			quantity_count -= item.QUANTITY
 		}
 	}
-	if quantity_count != 0 {
-		error_the_order_out_of_stock(quantity, quantity_count, account, barcode)
-	}
-	return costs
+	quantity += quantity_count
+	return costs, quantity, nil
 }
 
-func asc_or_desc(account string) string {
-	switch return_cost_flow_type(account) {
-	case "lifo":
-		return "desc"
-	case "fifo":
-		return "asc"
-	case "wma":
-		weighted_average(account)
-		return "asc"
-	case "barcode":
-		weighted_average_for_barcode(account)
-		return "asc"
+func FLOW_TYPE(account string) (string, bool) {
+	account_struct, _, _ := ACCOUNT_STRUCT_FROM_NAME(account)
+	switch account_struct.COST_FLOW_TYPE {
+	case SPECIFIC_IDENTIFICATION:
+		return SPECIFIC_IDENTIFICATION, true
+	case LIFO:
+		return LIFO, false
+	case FIFO:
+		return FIFO, true
+	case WMA:
+		WEIGHTED_AVERAGE(account)
+		return FIFO, true
 	}
-	return ""
+	return "", true
 }
 
-func insert_to_database(array_of_journal_tag []JOURNAL_TAG, insert_into_journal, insert_into_inventory bool) {
-	insert_entry_number(array_of_journal_tag)
-	if insert_into_journal {
-		insert_into_journal_func(array_of_journal_tag)
-	}
-	if insert_into_inventory {
-		insert_into_inventory_func(array_of_journal_tag)
-	}
+func INSERT_TO_DATABASE(array_of_journal_tag []JOURNAL_TAG) {
+	INSERT_ENTRY_NUMBER(array_of_journal_tag)
+	DB_INSERT(DB_JOURNAL, array_of_journal_tag)
+	// for _, entry := range array_of_journal_tag {
+	// 	cost,err:=COST_FLOW(entry.ACCOUNT_DEBIT, entry.QUANTITY_DEBIT, true)
+	// 	if err!=nil{ {
+	// 		DB_INSERT_INTO_JOURNAL_OR_INVENTORY(DB_PATH_INVENTORY+entry.ACCOUNT_DEBIT, array_of_journal_tag)
+	// 	}
+	// }
 }
 
-func insert_entry_number(array_of_journal_tag []JOURNAL_TAG) {
-	entry_number := float64(entry_number())
+func INSERT_ENTRY_NUMBER(array_of_journal_tag []JOURNAL_TAG) {
+	journal_tag := DB_LAST_LINE[JOURNAL_TAG](DB_JOURNAL)
 	for indexa := range array_of_journal_tag {
-		array_of_journal_tag[indexa].ENTRY_NUMBER = int(entry_number)
-		entry_number += 0.5
+		array_of_journal_tag[indexa].ENTRY_NUMBER = journal_tag.ENTRY_NUMBER + 1
+		array_of_journal_tag[indexa].ENTRY_NUMBER_COMPOUND += journal_tag.ENTRY_NUMBER_COMPOUND + 1
+		array_of_journal_tag[indexa].ENTRY_NUMBER_SIMPLE = journal_tag.ENTRY_NUMBER_SIMPLE + indexa + 1
 	}
 }
 
-func calculate_and_insert_value_price_quantity(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	for index, entry := range entries {
-		m := map[string]float64{}
-		insert_if_not_zero(m, "VALUE", entry.VALUE)
-		insert_if_not_zero(m, "PRICE", entry.PRICE)
-		insert_if_not_zero(m, "QUANTITY", entry.QUANTITY)
-		EQUATIONS_SOLVER(false, false, m, [][]string{{"VALUE", "PRICE", "*", "QUANTITY"}})
-		entries[index].VALUE = m["VALUE"]
-		entries[index].PRICE = m["PRICE"]
-		entries[index].QUANTITY = m["QUANTITY"]
-	}
-}
-
-func insert_if_not_zero(m map[string]float64, str string, number float64) {
-	if number != 0 {
-		m[str] = number
-	}
-}
-
-func check_if_the_account_is_high_by_level(entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE) {
-	for _, entry := range entries {
-		if is_it_high_by_level(account_number(entry.ACCOUNT)) {
-			error_is_high_level_account(entry.ACCOUNT)
+func STAGE_1(entries []PRICE_QUANTITY_ACCOUNT_BARCODE) {
+	var indexa int
+	for indexa < len(entries) {
+		// set the price to abs
+		entries[indexa].PRICE = math.Abs(entries[indexa].PRICE)
+		// find account name from barcode
+		account_struct, _, err := ACCOUNT_STRUCT_FROM_BARCODE(entries[indexa].BARCODE)
+		if err == nil {
+			entries[indexa].ACCOUNT_NAME = account_struct.ACCOUNT_NAME
 		}
+		// search for the account name
+		account_struct, _, err = ACCOUNT_STRUCT_FROM_NAME(entries[indexa].ACCOUNT_NAME)
+		// delete the entry
+		if err != nil || !account_struct.IS_LOW_LEVEL_ACCOUNT || entries[indexa].QUANTITY == 0 {
+			entries = POPUP(entries, indexa)
+		} else {
+			indexa++
+		}
+	}
+}
+
+func CHECK_DEBIT_EQUAL_CREDIT(entries []PRICE_QUANTITY_ACCOUNT_BARCODE) ([]PRICE_QUANTITY_ACCOUNT_BARCODE, []PRICE_QUANTITY_ACCOUNT_BARCODE, error) {
+	var debit_entries, credit_entries []PRICE_QUANTITY_ACCOUNT_BARCODE
+	var zero float64
+	for _, entry := range entries {
+		account_struct, _, _ := ACCOUNT_STRUCT_FROM_NAME(entry.ACCOUNT_NAME)
+		value := entry.PRICE * entry.QUANTITY
+		switch account_struct.IS_CREDIT {
+		case false:
+			zero += value
+			if value > 0 {
+				debit_entries = append(debit_entries, entry)
+			} else if value < 0 {
+				credit_entries = append(credit_entries, entry)
+			}
+		case true:
+			zero -= value
+			if value < 0 {
+				debit_entries = append(debit_entries, entry)
+			} else if value > 0 {
+				credit_entries = append(credit_entries, entry)
+			}
+		}
+	}
+	if zero != 0 {
+		return []PRICE_QUANTITY_ACCOUNT_BARCODE{}, []PRICE_QUANTITY_ACCOUNT_BARCODE{},
+			fmt.Errorf("the debit and credit should be equal and the deffrence is %f", zero)
+	}
+	if len(debit_entries) != 1 && len(credit_entries) != 1 {
+		return []PRICE_QUANTITY_ACCOUNT_BARCODE{}, []PRICE_QUANTITY_ACCOUNT_BARCODE{}, ERROR_SHOULD_BE_ONE_DEBIT_OR_ONE_CREDIT
+	}
+	return debit_entries, credit_entries, nil
+}
+
+func SET_SLICE_DAY_START_END(array_day_start_end []DAY_START_END) {
+	if len(array_day_start_end) == 0 {
+		array_day_start_end = []DAY_START_END{
+			{SATURDAY, 0, 0, 23, 59},
+			{SUNDAY, 0, 0, 23, 59},
+			{MONDAY, 0, 0, 23, 59},
+			{TUESDAY, 0, 0, 23, 59},
+			{WEDNESDAY, 0, 0, 23, 59},
+			{THURSDAY, 0, 0, 23, 59},
+			{FRIDAY, 0, 0, 23, 59}}
+	}
+	for index := range array_day_start_end {
+		array_day_start_end[index].DAY = strings.Title(array_day_start_end[index].DAY)
+
+		if !IS_IN(array_day_start_end[index].DAY, STANDARD_DAYS) {
+			array_day_start_end[index].DAY = SUNDAY
+		}
+
+		if array_day_start_end[index].START_HOUR < 0 {
+			array_day_start_end[index].START_HOUR = 0
+		}
+		if array_day_start_end[index].START_HOUR > 23 {
+			array_day_start_end[index].START_HOUR = 23
+		}
+		if array_day_start_end[index].START_MINUTE < 0 {
+			array_day_start_end[index].START_MINUTE = 0
+		}
+		if array_day_start_end[index].START_MINUTE > 59 {
+			array_day_start_end[index].START_MINUTE = 59
+		}
+		if array_day_start_end[index].END_HOUR < 0 {
+			array_day_start_end[index].END_HOUR = 0
+		}
+		if array_day_start_end[index].END_HOUR > 23 {
+			array_day_start_end[index].END_HOUR = 23
+		}
+		if array_day_start_end[index].END_MINUTE < 0 {
+			array_day_start_end[index].END_MINUTE = 0
+		}
+		if array_day_start_end[index].END_MINUTE > 59 {
+			array_day_start_end[index].END_MINUTE = 59
+		}
+
+		if array_day_start_end[index].START_HOUR > array_day_start_end[index].END_HOUR {
+			array_day_start_end[index].START_HOUR = 0
+		}
+		if array_day_start_end[index].START_HOUR == array_day_start_end[index].END_HOUR && array_day_start_end[index].START_MINUTE > array_day_start_end[index].END_MINUTE {
+			array_day_start_end[index].START_MINUTE = 0
+		}
+	}
+}
+
+func CREATE_ARRAY_START_END_MINUTES(date_end, date_start time.Time, array_day_start_end []DAY_START_END) []start_end_minutes {
+	var array_start_end_minutes []start_end_minutes
+	var previous_date_end time.Time
+	delta_days := int(date_end.Sub(date_start).Hours()/24 + 1)
+	year, month, day := date_start.Date()
+	for day_counter := 0; day_counter < delta_days; day_counter++ {
+		for _, element := range array_day_start_end {
+			start := time.Date(year, month, day+day_counter, element.START_HOUR, element.START_MINUTE, 0, 0, time.Local)
+			if start.Weekday().String() == element.DAY {
+				end := time.Date(year, month, day+day_counter, element.END_HOUR, element.END_MINUTE, 0, 0, time.Local)
+				start, end = SHIFT_AND_ARRANGE_THE_TIME_SERIES(previous_date_end, start, end)
+				array_start_end_minutes = append(array_start_end_minutes, start_end_minutes{start, end, end.Sub(start).Minutes()})
+				previous_date_end = end
+			}
+		}
+	}
+	return array_start_end_minutes
+}
+
+func SHIFT_AND_ARRANGE_THE_TIME_SERIES(previous_date_end, date_start, date_end time.Time) (time.Time, time.Time) {
+	if previous_date_end.After(date_start) {
+		date_start = previous_date_end
+	}
+	if date_start.After(date_end) {
+		date_end = date_start
+	}
+	return date_start, date_end
+}
+
+func TOTAL_MINUTES(array_start_end_minutes []start_end_minutes) float64 {
+	var total_minutes float64
+	for _, element := range array_start_end_minutes {
+		total_minutes += element.minutes
+	}
+	return total_minutes
+}
+
+func ADJUST_THE_ARRAY(array_to_insert []JOURNAL_TAG, array_start_end_minutes []start_end_minutes, adjusting_method string) [][]JOURNAL_TAG {
+	var adjusted_array_to_insert [][]JOURNAL_TAG
+	total_minutes := TOTAL_MINUTES(array_start_end_minutes)
+	array_len_start_end_minutes := len(array_start_end_minutes) - 1
+	for _, entry := range array_to_insert {
+		var value_counter, time_unit_counter float64
+		var one_account_adjusted_list []JOURNAL_TAG
+		for index, element := range array_start_end_minutes {
+			value := VALUE_AFTER_ADJUST_USING_ADJUSTING_METHODS(adjusting_method, element.minutes, total_minutes, time_unit_counter, entry.VALUE)
+
+			if index == array_len_start_end_minutes {
+				value = entry.VALUE - value_counter
+			}
+
+			time_unit_counter += element.minutes
+			value_counter += value
+			one_account_adjusted_list = append(one_account_adjusted_list, JOURNAL_TAG{
+				REVERSE:               false,
+				ENTRY_NUMBER:          0,
+				ENTRY_NUMBER_COMPOUND: index,
+				ENTRY_NUMBER_SIMPLE:   0,
+				VALUE:                 value,
+				PRICE_DEBIT:           entry.PRICE_DEBIT,
+				PRICE_CREDIT:          entry.PRICE_CREDIT,
+				QUANTITY_DEBIT:        RETURN_SAME_SIGN_OF_NUMBER_SIGN(value/entry.PRICE_DEBIT, entry.QUANTITY_DEBIT),
+				QUANTITY_CREDIT:       RETURN_SAME_SIGN_OF_NUMBER_SIGN(value/entry.PRICE_CREDIT, entry.QUANTITY_CREDIT),
+				ACCOUNT_DEBIT:         entry.ACCOUNT_DEBIT,
+				ACCOUNT_CREDIT:        entry.ACCOUNT_CREDIT,
+				NOTES:                 entry.NOTES,
+				NAME:                  entry.NAME,
+				NAME_EMPLOYEE:         entry.NAME_EMPLOYEE,
+				DATE_START:            element.date_start,
+				DATE_END:              element.date_end,
+			})
+		}
+		adjusted_array_to_insert = append(adjusted_array_to_insert, one_account_adjusted_list)
+	}
+	return adjusted_array_to_insert
+}
+
+func VALUE_AFTER_ADJUST_USING_ADJUSTING_METHODS(adjusting_method string, minutes, TOTAL_MINUTES, time_unit_counter, total_value float64) float64 {
+	percent := ROOT(total_value, TOTAL_MINUTES)
+	switch adjusting_method {
+	case EXPONENTIAL:
+		return math.Pow(percent, time_unit_counter+minutes) - math.Pow(percent, time_unit_counter)
+	case LOGARITHMIC:
+		return (total_value / math.Pow(percent, time_unit_counter)) - (total_value / math.Pow(percent, time_unit_counter+minutes))
+	default:
+		return minutes * (total_value / TOTAL_MINUTES)
 	}
 }
 
 func JOURNAL_ENTRY(
-	entries []ACCOUNT_VALUE_PRICE_QUANTITY_BARCODE,
+	entries []PRICE_QUANTITY_ACCOUNT_BARCODE,
 	insert, auto_completion, invoice_discount bool,
-	date time.Time, entry_expair time.Time,
-	adjusting_method, description, name, employee_name string,
+	date_start, date_end time.Time,
+	adjusting_method, notes, name, name_employee string,
 	array_day_start_end []DAY_START_END) []JOURNAL_TAG {
 
-	find_account_from_barcode(entries)
-	check_the_adjusting_method_and_date(entry_expair, date, adjusting_method, entries)
-	calculate_and_insert_value_price_quantity(entries)
+	STAGE_1(entries)
+	SET_SLICE_DAY_START_END(array_day_start_end)
+	date_end = SET_DATE_END_TO_ZERO_IF_SMALLER_THAN_DATE_START(date_start, date_end)
+	adjusting_method = SET_ADJUSTING_METHOD(date_end, adjusting_method, entries)
+	entries = GROUP_BY_ACCOUNT(entries)
+	FIND_COST(entries)
 
-	entries = group_by_account_and_barcode(entries)
-	remove_zero_values(entries)
+	// if auto_completion {
+	// 	entries = auto_completion_the_entry(entries)
+	// }
+	// if invoice_discount {
+	// 	entries = auto_completion_the_invoice_discount(entries)
+	// }
 
-	find_cost(entries)
+	entries = GROUP_BY_ACCOUNT(entries)
 
-	if auto_completion {
-		entries = auto_completion_the_entry(entries)
-	}
-	if invoice_discount {
-		entries = auto_completion_the_invoice_discount(entries)
-	}
+	INCREASE_THE_VALUE_TO_MAKE_THE_NEW_BALANCE_FOR_THE_ACCOUNT_POSITIVE(entries)
 
-	entries = group_by_account_and_barcode(entries)
-	remove_zero_values(entries)
+	debit_entries, credit_entries, _ := CHECK_DEBIT_EQUAL_CREDIT(entries)
+	simple_entries := INSERT_TO_JOURNAL_TAG(debit_entries, credit_entries, date_start, date_end, notes, name, name_employee)
 
-	check_if_the_account_is_high_by_level(entries)
-	can_the_account_be_negative(entries)
-
-	check_debit_equal_credit(entries)
-	debit_entries, credit_entries := separate_debit_from_credit(entries)
-	check_one_debit_or_one_credit(debit_entries, credit_entries)
-	simple_entries := convert_to_simple_entry(debit_entries, credit_entries)
-
-	var all_array_to_insert []JOURNAL_TAG
-	for _, simple_entry := range simple_entries {
-
-		check_if_the_price_is_negative(simple_entry)
-		array_to_insert := insert_to_JOURNAL_TAG(simple_entry, date, entry_expair, description, name, employee_name)
-
-		if is_in(adjusting_method, depreciation_methods) {
-			array_day_start_end = initialize_array_day_start_end(array_day_start_end)
-			check_array_day_start_end(array_day_start_end)
-			array_start_end_minutes := create_array_start_end_minutes(entry_expair, date, array_day_start_end)
-			total_minutes := total_minutes(array_start_end_minutes)
-			adjusted_array_to_insert := adjust_the_array(array_to_insert, array_start_end_minutes, total_minutes, adjusting_method, description, name, employee_name)
-			adjusted_array_to_insert = transpose(adjusted_array_to_insert)
-			array_to_insert = unpack_the_array(adjusted_array_to_insert)
-		}
-
-		all_array_to_insert = append(all_array_to_insert, array_to_insert...)
+	if IS_IN(adjusting_method, DEPRECIATION_METHODS) {
+		array_start_end_minutes := CREATE_ARRAY_START_END_MINUTES(date_end, date_start, array_day_start_end)
+		adjusted_array_to_insert := ADJUST_THE_ARRAY(simple_entries, array_start_end_minutes, adjusting_method)
+		adjusted_array_to_insert = TRANSPOSE(adjusted_array_to_insert)
+		simple_entries = UNPACK(adjusted_array_to_insert)
 	}
 
-	insert_to_database(all_array_to_insert, insert, insert)
-	return all_array_to_insert
+	INSERT_TO_DATABASE(simple_entries)
+	return simple_entries
 }

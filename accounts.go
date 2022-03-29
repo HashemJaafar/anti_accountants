@@ -2,51 +2,38 @@ package anti_accountants
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"reflect"
-	"strconv"
 	"text/tabwriter"
 )
 
-func is_credit(account_name string) bool {
-	for _, a := range ACCOUNTS {
+func ACCOUNT_STRUCT_FROM_NAME(account_name string) (ACCOUNT, int, error) {
+	for indexa, a := range ACCOUNTS {
 		if a.ACCOUNT_NAME == account_name {
-			return a.IS_CREDIT
+			return a, indexa, nil
 		}
 	}
-	error_account_name_is_not_listed(account_name)
-	return false
+	return ACCOUNT{}, 0, ERROR_NOT_LISTED
 }
 
-func return_cost_flow_type(account_name string) string {
-	for _, a := range ACCOUNTS {
-		if a.ACCOUNT_NAME == account_name {
-			return a.COST_FLOW_TYPE
+func ACCOUNT_STRUCT_FROM_BARCODE(barcode string) (ACCOUNT, int, error) {
+	for indexa, a := range ACCOUNTS {
+		if IS_IN(barcode, a.BARCODE) {
+			return a, indexa, nil
 		}
 	}
-	error_account_name_is_not_listed(account_name)
-	return ""
+	return ACCOUNT{}, 0, ERROR_NOT_LISTED
 }
 
-func account_number(account_name string) []uint {
-	for _, a := range ACCOUNTS {
-		if a.ACCOUNT_NAME == account_name {
-			return a.ACCOUNT_NUMBER
-		}
-	}
-	error_account_name_is_not_listed(account_name)
-	return []uint{}
+func IS_IT_SUB_ACCOUNT_USING_NAME(higher_level_account, lower_level_account string) bool {
+	a1, _, _ := ACCOUNT_STRUCT_FROM_NAME(higher_level_account)
+	a2, _, _ := ACCOUNT_STRUCT_FROM_NAME(lower_level_account)
+	return IS_IT_SUB_ACCOUNT_USING_NUMBER(a1.ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], a2.ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER])
 }
 
-func is_it_sub_account_using_name(higher_level_account, lower_level_account string) bool {
-	return is_it_sub_account_using_number(account_number(higher_level_account), account_number(lower_level_account))
-}
-
-func is_it_sub_account_using_number(higher_level_account_number, lower_level_account_number []uint) bool {
-	if reflect.DeepEqual(higher_level_account_number, lower_level_account_number) {
-		return false
-	}
-	if !is_shorter_than(higher_level_account_number, lower_level_account_number) {
+func IS_IT_SUB_ACCOUNT_USING_NUMBER(higher_level_account_number, lower_level_account_number []uint) bool {
+	if !IS_IT_POSSIBLE_TO_BE_SUB_ACCOUNT(higher_level_account_number, lower_level_account_number) {
 		return false
 	}
 	for i, h := range higher_level_account_number {
@@ -57,192 +44,351 @@ func is_it_sub_account_using_number(higher_level_account_number, lower_level_acc
 	return true
 }
 
-func is_it_high_by_level(account_number []uint) bool {
-	for _, a := range ACCOUNTS {
-		if is_it_sub_account_using_number(account_number, a.ACCOUNT_NUMBER) {
-			return true
-		}
-	}
-	return false
-}
-
-func find_all_higher_level_accounts(account_name string) []string {
-	account_number := account_number(account_name)
-	var higher_level_accounts []string
-	for _, a := range ACCOUNTS {
-		if is_it_sub_account_using_number(a.ACCOUNT_NUMBER, account_number) {
-			higher_level_accounts = append(higher_level_accounts, a.ACCOUNT_NAME)
-		}
-	}
-	return higher_level_accounts
-}
-
-func is_it_first_sub_level_account_using_number(higher_level_account_number, lower_level_account_number []uint) bool {
-	if len(higher_level_account_number)+1 != len(lower_level_account_number) {
+func IS_IT_POSSIBLE_TO_BE_SUB_ACCOUNT(higher_level_account_number, lower_level_account_number []uint) bool {
+	len_higher_level_account_number := len(higher_level_account_number)
+	len_lower_level_account_number := len(lower_level_account_number)
+	if len_higher_level_account_number == 0 || len_lower_level_account_number == 0 {
 		return false
 	}
-	return is_it_sub_account_using_number(higher_level_account_number, lower_level_account_number)
-}
-
-func check_if_the_tree_connected() {
-big_loop:
-	for _, a := range ACCOUNTS {
-		if len(a.ACCOUNT_NUMBER) > 1 {
-			for _, b := range ACCOUNTS {
-				if is_it_first_sub_level_account_using_number(b.ACCOUNT_NUMBER, a.ACCOUNT_NUMBER) {
-					continue big_loop
-				}
-			}
-			error_not_connected_tree(a)
-		}
+	if len_higher_level_account_number >= len_lower_level_account_number {
+		return false
 	}
-}
-
-func check_cost_flow_type() {
-	retained_earnings := account_number(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS)
-	receivables := account_number(PRIMARY_ACCOUNTS_NAMES.RECEIVABLES)
-	liabilities := account_number(PRIMARY_ACCOUNTS_NAMES.LIABILITIES)
-	for _, a := range ACCOUNTS {
-		is_in_cost_flow_type := is_in(a.COST_FLOW_TYPE, cost_flow_type)
-		is_it_sub_from_retained_earnings := is_it_sub_account_using_number(retained_earnings, a.ACCOUNT_NUMBER) || reflect.DeepEqual(retained_earnings, a.ACCOUNT_NUMBER)
-		is_it_sub_from_receivables := is_it_sub_account_using_number(receivables, a.ACCOUNT_NUMBER) || reflect.DeepEqual(receivables, a.ACCOUNT_NUMBER)
-		is_it_sub_from_liabilities := is_it_sub_account_using_number(liabilities, a.ACCOUNT_NUMBER) || reflect.DeepEqual(liabilities, a.ACCOUNT_NUMBER)
-		is_it_high_by_level := is_it_high_by_level(a.ACCOUNT_NUMBER) && len(a.ACCOUNT_NUMBER) != 0
-		if is_in_cost_flow_type {
-			if a.IS_CREDIT {
-				error_cost_flow_type_used_with___account(a, "credit")
-			}
-			if is_it_sub_from_retained_earnings {
-				error_cost_flow_type_used_with___account(a, "temporary")
-			}
-			if is_it_sub_from_receivables {
-				error_cost_flow_type_used_with___account(a, "receivables")
-			}
-			if is_it_sub_from_liabilities {
-				error_cost_flow_type_used_with___account(a, "liabilities")
-			}
-			if is_it_high_by_level {
-				error_cost_flow_type_used_with___account(a, "high level")
-			}
-		} else if a.COST_FLOW_TYPE != "" {
-			error_element_is_not_in_elements(a.COST_FLOW_TYPE, cost_flow_type)
-		}
-		if !is_in_cost_flow_type && !is_it_sub_from_retained_earnings && !is_it_sub_from_receivables && !is_it_sub_from_liabilities && !is_it_high_by_level && !a.IS_CREDIT {
-			error_you_should_use_cost_flow_type(a.ACCOUNT_NAME)
-		}
+	if reflect.DeepEqual(higher_level_account_number, lower_level_account_number) {
+		return false
 	}
+	return true
 }
 
-func check_if_duplicated() {
-	for indexa, a := range ACCOUNTS {
-		not_empty_account_number := len(a.ACCOUNT_NUMBER) != 0
-		for indexb, b := range ACCOUNTS {
-			if indexa != indexb {
-				if reflect.DeepEqual(a, b) {
-					error_duplicate_value(a)
-				}
-				if not_empty_account_number && reflect.DeepEqual(a.ACCOUNT_NUMBER, b.ACCOUNT_NUMBER) {
-					error_duplicate_value(a.ACCOUNT_NUMBER)
-				}
-				if a.ACCOUNT_NAME == b.ACCOUNT_NAME {
-					error_duplicate_value(a.ACCOUNT_NAME)
-				}
-			}
-		}
+func IS_IT_THE_FATHER(higher_level_account_number, lower_level_account_number []uint) bool {
+	if !IS_IT_POSSIBLE_TO_BE_SUB_ACCOUNT(higher_level_account_number, lower_level_account_number) {
+		return false
 	}
+	return reflect.DeepEqual(higher_level_account_number, CUT_THE_SLICE(lower_level_account_number, 1))
 }
 
-func check_if_the_tree_ordered() {
-	switch {
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.ASSETS, PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.ASSETS, PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.SHORT_TERM_INVESTMENTS):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.SHORT_TERM_INVESTMENTS)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.RECEIVABLES):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.RECEIVABLES)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.INVENTORY):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS, PRIMARY_ACCOUNTS_NAMES.INVENTORY)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.LIABILITIES, PRIMARY_ACCOUNTS_NAMES.CURRENT_LIABILITIES):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.LIABILITIES, PRIMARY_ACCOUNTS_NAMES.CURRENT_LIABILITIES)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EQUITY, PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.EQUITY, PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, PRIMARY_ACCOUNTS_NAMES.DIVIDENDS):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, PRIMARY_ACCOUNTS_NAMES.DIVIDENDS)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, PRIMARY_ACCOUNTS_NAMES.EBITDA):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, PRIMARY_ACCOUNTS_NAMES.EBITDA)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, PRIMARY_ACCOUNTS_NAMES.INTEREST_EXPENSE):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, PRIMARY_ACCOUNTS_NAMES.INTEREST_EXPENSE)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.SALES):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.SALES)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.DISCOUNTS):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.EBITDA, PRIMARY_ACCOUNTS_NAMES.DISCOUNTS)
-	case !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.DISCOUNTS, PRIMARY_ACCOUNTS_NAMES.INVOICE_DISCOUNT):
-		error_should_be_one_of_the_fathers(PRIMARY_ACCOUNTS_NAMES.DISCOUNTS, PRIMARY_ACCOUNTS_NAMES.INVOICE_DISCOUNT)
-	}
-}
-
-func inventory_accounts() []string {
-	var inventory []string
-	for _, a := range ACCOUNTS {
-		if is_in(a.COST_FLOW_TYPE, cost_flow_type) {
-			inventory = append(inventory, a.ACCOUNT_NAME)
-		}
-	}
-	return inventory
-}
-
-func SORT_THE_ACCOUNT_BY_ACCOUNT_NUMBER() {
-	for index := range ACCOUNTS {
+func SORT_THE_ACCOUNTS_BY_ACCOUNT_NUMBER() {
+	for indexa := range ACCOUNTS {
 		for indexb := range ACCOUNTS {
-			if index < indexb {
-				if !is_it_high_than_by_order(ACCOUNTS[index].ACCOUNT_NUMBER, ACCOUNTS[indexb].ACCOUNT_NUMBER) {
-					ACCOUNTS[index], ACCOUNTS[indexb] = ACCOUNTS[indexb], ACCOUNTS[index]
-				}
+			if indexa < indexb && !IS_IT_HIGH_THAN_BY_ORDER(ACCOUNTS[indexa].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], ACCOUNTS[indexb].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER]) {
+				SWAP(ACCOUNTS, indexa, indexb)
 			}
 		}
 	}
-	print_formated_accounts()
 }
 
-func print_formated_accounts() {
+func PRINT_FORMATED_ACCOUNTS() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	for _, a := range ACCOUNTS {
-		var account_number string
-		for _, b := range a.ACCOUNT_NUMBER {
-			account_number += strconv.Itoa(int(b)) + ","
-		}
-		fmt.Fprintln(p, "{", a.IS_CREDIT, "\t", ",\""+a.COST_FLOW_TYPE+"\"", "\t", ",\""+a.ACCOUNT_NAME+"\"", "\t", ",[]uint{", account_number, "}", "\t", "},")
+		is_low_level_account := a.IS_LOW_LEVEL_ACCOUNT
+		is_credit := "\t," + fmt.Sprint(a.IS_CREDIT)
+		is_temporary := "\t," + fmt.Sprint(a.IS_TEMPORARY)
+		COST_FLOW_TYPE := "\t,\"" + a.COST_FLOW_TYPE + "\""
+		account_name := "\t,\"" + a.ACCOUNT_NAME + "\""
+		notes := "\t,\"" + a.NOTES + "\""
+		image := "\t," + FORMAT_STRING_SLICE_TO_STRING(a.IMAGE)
+		barcodes := "\t," + FORMAT_STRING_SLICE_TO_STRING(a.BARCODE)
+		account_number := "\t," + FORMAT_SLICE_OF_SLICE_OF_UINT_TO_STRING(a.ACCOUNT_NUMBER)
+		account_levels := "\t," + FORMAT_SLICE_OF_UINT_TO_STRING(a.ACCOUNT_LEVELS)
+		father_and_grandpa_accounts_name := "\t," + FORMAT_SLICE_OF_SLICE_OF_STRING_TO_STRING(a.FATHER_AND_GRANDPA_ACCOUNTS_NAME)
+		alert_for_minimum_quantity_by_turnover_in_days := "\t," + fmt.Sprint(a.ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS)
+		alert_for_minimum_quantity_by_quintity := "\t," + fmt.Sprint(a.ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY)
+		target_balance := "\t," + fmt.Sprint(a.TARGET_BALANCE)
+		if_the_target_balance_is_less_is_good := "\t," + fmt.Sprint(a.IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD)
+		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, COST_FLOW_TYPE, account_name, notes,
+			image, barcodes, account_number, account_levels, father_and_grandpa_accounts_name,
+			alert_for_minimum_quantity_by_turnover_in_days, alert_for_minimum_quantity_by_quintity, target_balance, if_the_target_balance_is_less_is_good, "},")
 	}
 	p.Flush()
 }
 
-func is_it_high_than_by_order(account_number1, account_number2 []uint) bool {
-	var short_number int
-	if is_shorter_than(account_number1, account_number2) {
-		short_number = len(account_number1)
-	} else {
-		short_number = len(account_number2)
+func FORMAT_SLICE_OF_SLICE_OF_STRING_TO_STRING(a [][]string) string {
+	var str string
+	for _, b := range a {
+		str += "{"
+		for _, c := range b {
+			str += "\"" + c + "\","
+		}
+		str += "}\t,"
 	}
-	for index := 0; index < short_number; index++ {
+	return "[][]string{" + str + "}"
+}
+
+func FORMAT_SLICE_OF_UINT_TO_STRING(a []uint) string {
+	var str string
+	for _, b := range a {
+		str += fmt.Sprint(b) + ","
+	}
+	return "[]uint{" + str + "}"
+}
+
+func FORMAT_SLICE_OF_SLICE_OF_UINT_TO_STRING(a [][]uint) string {
+	var str string
+	for _, b := range a {
+		str += "{"
+		for _, c := range b {
+			str += fmt.Sprint(c) + ","
+		}
+		str += "}\t,"
+	}
+	return "[][]uint{" + str + "}"
+}
+
+func FORMAT_STRING_SLICE_TO_STRING(a []string) string {
+	var str string
+	for _, b := range a {
+		str += "\"" + b + "\","
+	}
+	return "[]string{" + str + "}"
+}
+
+func IS_IT_HIGH_THAN_BY_ORDER(account_number1, account_number2 []uint) bool {
+	l1 := len(account_number1)
+	l2 := len(account_number2)
+	for index := 0; index < SMALLEST(l1, l2); index++ {
 		if account_number1[index] < account_number2[index] {
 			return true
 		} else if account_number1[index] > account_number2[index] {
 			return false
 		}
 	}
-	return is_shorter_than(account_number1, account_number2)
+	return l2 > l1
 }
 
-func is_shorter_than(slice1, slice2 []uint) bool {
-	if len(slice1) < len(slice2) {
-		return true
-	} else {
-		return false
+func MAX_LEN_FOR_ACCOUNT_NUMBER() int {
+	var max_len int
+	for _, a := range ACCOUNTS {
+		var length int
+		for _, b := range a.ACCOUNT_NUMBER {
+			if len(b) > 0 {
+				length++
+			}
+		}
+		if length > max_len {
+			max_len = length
+		}
 	}
+	return max_len
+}
+
+func SET_FATHER_AND_GRANDPA_ACCOUNTS_NAME() {
+	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
+	for i := 0; i < max_len; i++ {
+		for indexa, a := range ACCOUNTS {
+			if len(a.ACCOUNT_NUMBER[i]) > 1 {
+				for _, b := range ACCOUNTS {
+					if len(b.ACCOUNT_NUMBER[i]) > 0 {
+						if IS_IT_SUB_ACCOUNT_USING_NUMBER(b.ACCOUNT_NUMBER[i], a.ACCOUNT_NUMBER[i]) {
+							ACCOUNTS[indexa].FATHER_AND_GRANDPA_ACCOUNTS_NAME[i] = append(ACCOUNTS[indexa].FATHER_AND_GRANDPA_ACCOUNTS_NAME[i], b.ACCOUNT_NAME)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func FIND_ALL_INVENTORY_FILES() []string {
+	files, _ := ioutil.ReadDir(DB_PATH_INVENTORY)
+	var inventory_files_name []string
+	for _, f := range files {
+		inventory_files_name = append(inventory_files_name, f.Name())
+	}
+	return inventory_files_name
+}
+
+func IS_BARCODES_USED(barcode []string) bool {
+	for _, a := range ACCOUNTS {
+		for _, b := range barcode {
+			if IS_IN(b, a.BARCODE) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func UPDATE_INVENTORY_FILE_NAME(old_name, new_name string) {
+	for _, inventory_account := range FIND_ALL_INVENTORY_FILES() {
+		if inventory_account == old_name {
+			os.Rename(DB_PATH_INVENTORY+old_name, DB_PATH_INVENTORY+new_name)
+		}
+	}
+}
+
+func SET_THE_ACCOUNTS() {
+	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
+	for indexa, a := range ACCOUNTS {
+		// init the slices
+		ACCOUNTS[indexa].FATHER_AND_GRANDPA_ACCOUNTS_NAME = make([][]string, max_len)
+		ACCOUNTS[indexa].ACCOUNT_NUMBER = make([][]uint, max_len)
+		ACCOUNTS[indexa].ACCOUNT_LEVELS = make([]uint, max_len)
+		for indexb, b := range a.ACCOUNT_NUMBER {
+			if indexb < max_len {
+				ACCOUNTS[indexa].ACCOUNT_NUMBER[indexb] = b
+				ACCOUNTS[indexa].ACCOUNT_LEVELS[indexb] = uint(len(b))
+			}
+		}
+
+		// set high level account to permanent
+		if !a.IS_LOW_LEVEL_ACCOUNT {
+			ACCOUNTS[indexa].IS_TEMPORARY = false
+		}
+
+		// set cost flow type
+		is_in_cost_flow_type := IS_IN(a.COST_FLOW_TYPE, COST_FLOW_TYPE)
+		is_in_receivables := IS_IN(a.ACCOUNT_NAME, PRIMARY_ACCOUNTS_NAMES.RECEIVABLES)
+		is_in_liabilities := IS_IN(a.ACCOUNT_NAME, PRIMARY_ACCOUNTS_NAMES.LIABILITIES)
+		cost_flow_rules := !a.IS_CREDIT && !ACCOUNTS[indexa].IS_TEMPORARY && a.IS_LOW_LEVEL_ACCOUNT && !is_in_receivables && !is_in_liabilities
+		if !cost_flow_rules {
+			ACCOUNTS[indexa].COST_FLOW_TYPE = ""
+		} else if !is_in_cost_flow_type {
+			ACCOUNTS[indexa].COST_FLOW_TYPE = FIFO
+		}
+	}
+	SET_FATHER_AND_GRANDPA_ACCOUNTS_NAME()
+	SORT_THE_ACCOUNTS_BY_ACCOUNT_NUMBER()
+}
+
+func CHECK_IF_LOW_LEVEL_ACCOUNT_FOR_ALL() []error {
+	var errors []error
+	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
+	for i := 1; i < max_len; i++ {
+	big_loop:
+		for indexa, a := range ACCOUNTS {
+			if len(a.ACCOUNT_NUMBER[i]) > 0 {
+				for _, b := range ACCOUNTS {
+					if len(b.ACCOUNT_NUMBER[i]) > 0 {
+						if IS_IT_SUB_ACCOUNT_USING_NUMBER(a.ACCOUNT_NUMBER[i], b.ACCOUNT_NUMBER[i]) {
+							continue big_loop
+						}
+					}
+				}
+				if !ACCOUNTS[indexa].IS_LOW_LEVEL_ACCOUNT {
+					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", ACCOUNTS[indexa]))
+				}
+			}
+		}
+	}
+	return errors
+}
+
+func CHECK_IF_THE_TREE_CONNECTED() []error {
+	var errors []error
+	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
+	for i := 0; i < max_len; i++ {
+	big_loop:
+		for _, a := range ACCOUNTS {
+			if len(a.ACCOUNT_NUMBER[i]) > 1 {
+				for _, b := range ACCOUNTS {
+					if IS_IT_THE_FATHER(b.ACCOUNT_NUMBER[i], a.ACCOUNT_NUMBER[i]) {
+						continue big_loop
+					}
+				}
+				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", a.ACCOUNT_NUMBER[i], a))
+			}
+		}
+	}
+	return errors
+}
+
+func CHECK_IF_ACCOUNT_NUMBER_DUPLICATED() []error {
+	var errors []error
+	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
+	for i := 0; i < max_len; i++ {
+	big_loop:
+		for indexa, a := range ACCOUNTS {
+			if len(a.ACCOUNT_NUMBER[i]) > 0 {
+				for indexb, b := range ACCOUNTS {
+					if indexa != indexb && reflect.DeepEqual(a.ACCOUNT_NUMBER[i], b.ACCOUNT_NUMBER[i]) {
+						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", a.ACCOUNT_NUMBER[i], a))
+						continue big_loop
+					}
+				}
+			}
+		}
+	}
+	errors, _ = RETURN_SET_AND_DUPLICATES_SLICES(errors)
+	return errors
+}
+
+func CHECK_THE_TREE() []error {
+	var errors_messages []error
+	errors_messages = append(errors_messages, CHECK_IF_LOW_LEVEL_ACCOUNT_FOR_ALL()...)
+	errors_messages = append(errors_messages, CHECK_IF_ACCOUNT_NUMBER_DUPLICATED()...)
+	errors_messages = append(errors_messages, CHECK_IF_THE_TREE_CONNECTED()...)
+	return errors_messages
+}
+
+func IS_USED_IN_JOURNAL(account_name string) bool {
+	_, journal := DB_READ[JOURNAL_TAG](DB_JOURNAL)
+	for _, i := range journal {
+		if account_name == i.ACCOUNT_CREDIT || account_name == i.ACCOUNT_DEBIT {
+			return true
+		}
+	}
+	return false
+}
+
+// Account functions interface
+func ADD_ACCOUNT(account ACCOUNT) error {
+	account.ACCOUNT_NAME = FORMAT_THE_STRING(account.ACCOUNT_NAME)
+	if account.ACCOUNT_NAME == "" {
+		return ERROR_ACCOUNT_NAME_IS_EMPTY
+	}
+	_, _, err := ACCOUNT_STRUCT_FROM_NAME(account.ACCOUNT_NAME)
+	if err == nil {
+		return ERROR_ACCOUNT_NAME_IS_USED
+	}
+	if IS_BARCODES_USED(account.BARCODE) {
+		return ERROR_BARCODE_IS_USED
+	}
+
+	ACCOUNTS = append(ACCOUNTS, account)
+	SET_THE_ACCOUNTS()
+	DB_INSERT_INTO_ACCOUNTS()
+	return nil
+}
+
+func EDIT_ACCOUNT(is_delete bool, index int, account ACCOUNT) {
+	if !IS_USED_IN_JOURNAL(account.ACCOUNT_NAME) {
+		if is_delete {
+			ACCOUNTS = POPUP(ACCOUNTS, index)
+			SET_THE_ACCOUNTS()
+			DB_INSERT_INTO_ACCOUNTS()
+			return
+		}
+
+		ACCOUNTS[index].IS_LOW_LEVEL_ACCOUNT = account.IS_LOW_LEVEL_ACCOUNT
+		ACCOUNTS[index].IS_CREDIT = account.IS_CREDIT
+		ACCOUNTS[index].IS_TEMPORARY = account.IS_TEMPORARY
+
+		old_name := ACCOUNTS[index].ACCOUNT_NAME
+		if old_name != account.ACCOUNT_NAME {
+			_, _, err := ACCOUNT_STRUCT_FROM_NAME(account.ACCOUNT_NAME)
+			if err != nil {
+				account.ACCOUNT_NAME = FORMAT_THE_STRING(account.ACCOUNT_NAME)
+				if account.ACCOUNT_NAME != "" {
+					ACCOUNTS[index].ACCOUNT_NAME = account.ACCOUNT_NAME
+					DB_UPDATE_ACCOUNT_NAME_IN_JOURNAL(old_name, account.ACCOUNT_NAME)
+					UPDATE_INVENTORY_FILE_NAME(old_name, account.ACCOUNT_NAME)
+				}
+			}
+		}
+	}
+
+	if !IS_BARCODES_USED(account.BARCODE) {
+		ACCOUNTS[index].BARCODE = account.BARCODE
+	}
+
+	ACCOUNTS[index].COST_FLOW_TYPE = account.COST_FLOW_TYPE
+	ACCOUNTS[index].NOTES = account.NOTES
+	ACCOUNTS[index].IMAGE = account.IMAGE
+	ACCOUNTS[index].ACCOUNT_NUMBER = account.ACCOUNT_NUMBER
+	ACCOUNTS[index].ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS = account.ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS
+	ACCOUNTS[index].ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY = account.ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY
+	ACCOUNTS[index].TARGET_BALANCE = account.TARGET_BALANCE
+	ACCOUNTS[index].IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD = account.IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD
+
+	SET_THE_ACCOUNTS()
+	DB_INSERT_INTO_ACCOUNTS()
 }

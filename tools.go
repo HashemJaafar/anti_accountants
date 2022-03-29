@@ -1,83 +1,73 @@
 package anti_accountants
 
 import (
-	"database/sql"
+	"fmt"
+	"log"
 	"math"
 	"reflect"
-	"time"
+	"sort"
+	"strconv"
+	"strings"
 )
 
-func is_in(element string, elements []string) bool {
+func IS_IN[t any](element t, elements []t) bool {
 	for _, a := range elements {
-		if a == element {
+		if reflect.DeepEqual(a, element) {
 			return true
 		}
 	}
 	return false
 }
 
-func transpose(slice [][]JOURNAL_TAG) [][]JOURNAL_TAG {
+func SMALLEST[t NUMBER](a, b t) t {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func TRANSPOSE[t any](slice [][]t) [][]t {
 	xl := len(slice[0])
 	yl := len(slice)
-	result := make([][]JOURNAL_TAG, xl)
-	for i := range result {
-		result[i] = make([]JOURNAL_TAG, yl)
+	result := make([][]t, xl)
+	for a := range result {
+		result[a] = make([]t, yl)
 	}
-	for i := 0; i < xl; i++ {
-		for j := 0; j < yl; j++ {
-			result[i][j] = slice[j][i]
+	for a := 0; a < xl; a++ {
+		for b := 0; b < yl; b++ {
+			result[a][b] = slice[b][a]
 		}
 	}
 	return result
 }
 
-func unpack_the_array(adjusted_array_to_insert [][]JOURNAL_TAG) []JOURNAL_TAG {
-	array_to_insert := []JOURNAL_TAG{}
-	for _, element := range adjusted_array_to_insert {
-		array_to_insert = append(array_to_insert, element...)
+func UNPACK[t any](slice [][]t) []t {
+	var result []t
+	for _, element := range slice {
+		result = append(result, element...)
 	}
-	return array_to_insert
+	return result
 }
 
-func return_same_sign_of_number_sign(number_sign, number float64) float64 {
+func PACK[t any](len_new_slice int, slice []t) []t {
+	new_slice := make([]t, len_new_slice)
+	for indexa, a := range slice {
+		new_slice[indexa] = a
+	}
+	return new_slice
+}
+
+func RETURN_SAME_SIGN_OF_NUMBER_SIGN(number_sign, number float64) float64 {
 	if number_sign < 0 {
-		number = -math.Abs(number)
-	} else {
-		number = math.Abs(number)
+		return -math.Abs(number)
 	}
-	return number
+	return math.Abs(number)
 }
 
-func parse_date(string_date string, date_layouts []string) time.Time {
-	for _, i := range date_layouts {
-		date, err := time.Parse(i, string_date)
-		if err == nil {
-			return date
-		}
-	}
-	error_date_layout(string_date)
-	return time.Time{}
-}
-
-func return_set_and_duplicates_string_slices(slice_of_elements []string) ([]string, []string) {
-	var set_of_elems, duplicated_element []string
+func RETURN_SET_AND_DUPLICATES_SLICES[t any](slice []t) ([]t, []t) {
+	var set_of_elems, duplicated_element []t
 big_loop:
-	for _, element := range slice_of_elements {
-		for _, b := range set_of_elems {
-			if b == element {
-				duplicated_element = append(duplicated_element, element)
-				continue big_loop
-			}
-		}
-		set_of_elems = append(set_of_elems, element)
-	}
-	return set_of_elems, duplicated_element
-}
-
-func return_set_and_duplicates_uint_slices(accounts_numbers [][]uint) ([][]uint, [][]uint) {
-	var set_of_elems, duplicated_element [][]uint
-big_loop:
-	for _, element := range accounts_numbers {
+	for _, element := range slice {
 		for _, b := range set_of_elems {
 			if reflect.DeepEqual(b, element) {
 				duplicated_element = append(duplicated_element, element)
@@ -89,27 +79,13 @@ big_loop:
 	return set_of_elems, duplicated_element
 }
 
-func concat(args ...interface{}) interface{} {
-	n := 0
-	for _, arg := range args {
-		n += reflect.ValueOf(arg).Len()
-	}
-	v := reflect.MakeSlice(reflect.TypeOf(args[0]), 0, n)
-	for _, arg := range args {
-		v = reflect.AppendSlice(v, reflect.ValueOf(arg))
-	}
-	return v.Interface()
-}
-
-func reverse_slice(s interface{}) {
-	n := reflect.ValueOf(s).Len()
-	swap := reflect.Swapper(s)
-	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
-		swap(i, j)
+func REVERSE_SLICE[t any](s []t) {
+	for a, b := 0, len(s)-1; a < b; a, b = a+1, b-1 {
+		SWAP(s, a, b)
 	}
 }
 
-func initialize_map_4(m map[string]map[string]map[string]map[string]map[string]float64, a, b, c, d string) map[string]float64 {
+func INITIALIZE_MAP_4(m map[string]map[string]map[string]map[string]map[string]float64, a, b, c, d string) map[string]float64 {
 	if m[a] == nil {
 		m[a] = map[string]map[string]map[string]map[string]float64{}
 	}
@@ -125,7 +101,7 @@ func initialize_map_4(m map[string]map[string]map[string]map[string]map[string]f
 	return m[a][b][c][d]
 }
 
-func initialize_map_3(m map[string]map[string]map[string]map[string]float64, a, b, c string) map[string]float64 {
+func INITIALIZE_MAP_3(m map[string]map[string]map[string]map[string]float64, a, b, c string) map[string]float64 {
 	if m[a] == nil {
 		m[a] = map[string]map[string]map[string]float64{}
 	}
@@ -138,18 +114,61 @@ func initialize_map_3(m map[string]map[string]map[string]map[string]float64, a, 
 	return m[a][b][c]
 }
 
-func check_dates(start_date, end_date time.Time) {
-	if !start_date.Before(end_date) {
-		error_smaller_than_or_equal(start_date, end_date)
+func TEST[t any](should_equal bool, actual, expected t) {
+	if !reflect.DeepEqual(actual, expected) == should_equal {
+		fmt.Fprintln(PRINT_TABLE, "\033[35m", "should_equal\t:", should_equal) //purple
+		fmt.Fprintln(PRINT_TABLE, "\033[34m", "actual\t:", actual)             //blue
+		fmt.Fprintln(PRINT_TABLE, "\033[33m", "expected\t:", expected)         //yellow
+		PRINT_TABLE.Flush()
+		fmt.Println("\033[31m") //red
+		log.Panic()
 	}
 }
 
-func select_from_journal(rows *sql.Rows) []JOURNAL_TAG {
-	var journal []JOURNAL_TAG
-	for rows.Next() {
-		var tag JOURNAL_TAG
-		rows.Scan(&tag.DATE, &tag.ENTRY_NUMBER, &tag.ACCOUNT, &tag.VALUE, &tag.PRICE, &tag.QUANTITY, &tag.BARCODE, &tag.ENTRY_EXPAIR, &tag.DESCRIPTION, &tag.NAME, &tag.EMPLOYEE_NAME, &tag.ENTRY_DATE, &tag.REVERSE)
-		journal = append(journal, tag)
+func SORT_BY_TIME_INVENTORY(slice1 []INVENTORY_TAG, slice2 [][]byte, is_ascending bool) {
+	for indexa := range slice1 {
+		for indexb := range slice1 {
+			if indexa < indexb && slice1[indexa].DATE_START.After(slice1[indexb].DATE_START) == is_ascending {
+				SWAP(slice1, indexa, indexb)
+				SWAP(slice2, indexa, indexb)
+			}
+		}
 	}
-	return journal
+}
+
+func SORT_BY_TIME_JOURNAL(slice []JOURNAL_TAG, is_ascending bool) {
+	sort.Slice(slice, func(i, j int) bool {
+		return slice[i].DATE_START.Before(slice[j].DATE_START) == is_ascending
+	})
+}
+
+func CUT_THE_SLICE[t any](s []t, a int) []t { return s[:len(s)-a] }
+func POPUP[t any](s []t, a int) []t         { return append(s[:a], s[a+1:]...) }
+func SWAP[t any](s []t, a, b int)           { s[a], s[b] = s[b], s[a] }
+
+func FORMAT_THE_STRING(str string) string {
+	return strings.ToLower(strings.Join(strings.Fields(str), " "))
+}
+
+func ASSIGN_NUMBER_IF_NUMBER(m map[string]float64, str string) {
+	number, err := strconv.ParseFloat(str, 64)
+	if err == nil {
+		m[str] = number
+	}
+}
+
+func CONVERT_NAN_TO_ZERO(value float64) float64 {
+	if math.IsNaN(value) {
+		return 0
+	}
+	return value
+}
+
+func IS_INF_IN(numbers ...float64) bool {
+	for _, a := range numbers {
+		if math.IsInf(a, 0) {
+			return true
+		}
+	}
+	return false
 }
