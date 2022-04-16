@@ -2,7 +2,10 @@ module anti_accountants
 
 go 1.18
 
-require github.com/dgraph-io/badger/v3 v3.2103.2
+require (
+	github.com/davecgh/go-spew v1.1.1
+	github.com/dgraph-io/badger/v3 v3.2103.2
+)
 
 require (
 	github.com/cespare/xxhash v1.1.0 // indirect

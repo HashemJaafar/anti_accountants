@@ -1,5 +1,5 @@
-package anti_accountants
 
+package anti_accountants
 // func INVOICE(array_of_journal_tag []JOURNAL_TAG) []INVOICE_STRUCT {
 // 	m := map[string]*INVOICE_STRUCT{}
 // 	for _, entry := range array_of_journal_tag {

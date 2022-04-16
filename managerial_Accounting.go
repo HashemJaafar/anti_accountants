@@ -1,6 +1,52 @@
-package anti_accountants
 
+package anti_accountants
 import "log"
+
+func CALCULATE_CVP_MAP(cvp map[string]map[string]float64, print, check_if_keys_in_the_equations bool) {
+	for _, i := range cvp {
+		COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations, i)
+		_, ok_variable_cost_per_units := i["variable_cost_per_units"]
+		if !ok_variable_cost_per_units {
+			i["variable_cost_per_units"] = 0
+			COST_VOLUME_PROFIT(print, false, i)
+		}
+		_, ok_fixed_cost := i["fixed_cost"]
+		if !ok_fixed_cost {
+			i["fixed_cost"] = 0
+			COST_VOLUME_PROFIT(print, false, i)
+		}
+		_, ok_sales_per_units := i["sales_per_units"]
+		if !ok_sales_per_units {
+			i["sales_per_units"] = 0
+			COST_VOLUME_PROFIT(print, false, i)
+		}
+		_, ok_units := i["units"]
+		if !ok_units {
+			i["units"] = 0
+			COST_VOLUME_PROFIT(print, false, i)
+		}
+	}
+}
+
+func COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations bool, m map[string]float64) {
+	equations := [][]string{
+		{"variable_cost", "variable_cost_per_units", "*", "units"},
+		{"fixed_cost", "fixed_cost_per_units", "*", "units"},
+		{"mixed_cost", "mixed_cost_per_units", "*", "units"},
+		{"sales", "sales_per_units", "*", "units"},
+		{"profit", "profit_per_units", "*", "units"},
+		{"contribution_margin", "contribution_margin_per_units", "*", "units"},
+		{"mixed_cost", "fixed_cost", "+", "variable_cost"},
+		{"sales", "profit", "+", "mixed_cost"},
+		{"contribution_margin", "sales", "-", "variable_cost"},
+		{"break_even_in_sales", "break_even_in_units", "*", "sales_per_units"},
+		{"break_even_in_units", "contribution_margin_per_units", "/", "fixed_cost"},
+		{"contribution_margin_per_units", "contribution_margin_ratio", "*", "sales_per_units"},
+		{"contribution_margin", "degree_of_operating_leverage", "*", "profit"},
+		{"units_gap", "units", "-", "actual_units"},
+	}
+	EQUATIONS_SOLVER(print, check_if_keys_in_the_equations, m, equations)
+}
 
 func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_steps []ONE_STEP_DISTRIBUTION, print, simple bool) {
 	CALCULATE_CVP_MAP(cvp, print, true)
@@ -73,77 +119,16 @@ func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_st
 	TOTAL_COST_VOLUME_PROFIT(cvp, print)
 }
 
-func TOTAL_MIXED_COST_IN_COMPLICATED_AND_MULTI_LEVEL_STEP(cvp map[string]map[string]float64, step ONE_STEP_DISTRIBUTION, total_mixed_cost float64) float64 {
-	for key_portions_from, portions := range step.FROM {
-		if cvp[key_portions_from]["units"] < portions {
-			log.Panic(portions, " for ", key_portions_from, " in ", step.FROM, " is more than ", cvp[key_portions_from]["units"])
-		}
-		total_mixed_cost += portions * cvp[key_portions_from]["mixed_cost_per_units"]
-		cvp[key_portions_from]["fixed_cost"] -= (cvp[key_portions_from]["fixed_cost"] / cvp[key_portions_from]["units"]) * portions
-		cvp[key_portions_from]["units"] -= portions
-		if cvp[key_portions_from]["units"] == 0 {
-			cvp[key_portions_from]["variable_cost_per_units"] = 0
-		}
-	}
-	return total_mixed_cost
-}
-
-func CALCULATE_CVP_MAP(cvp map[string]map[string]float64, print, check_if_keys_in_the_equations bool) {
-	for _, i := range cvp {
-		COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations, i)
-		_, ok_variable_cost_per_units := i["variable_cost_per_units"]
-		if !ok_variable_cost_per_units {
-			i["variable_cost_per_units"] = 0
-			COST_VOLUME_PROFIT(print, false, i)
-		}
-		_, ok_fixed_cost := i["fixed_cost"]
-		if !ok_fixed_cost {
-			i["fixed_cost"] = 0
-			COST_VOLUME_PROFIT(print, false, i)
-		}
-		_, ok_sales_per_units := i["sales_per_units"]
-		if !ok_sales_per_units {
-			i["sales_per_units"] = 0
-			COST_VOLUME_PROFIT(print, false, i)
-		}
-		_, ok_units := i["units"]
-		if !ok_units {
-			i["units"] = 0
-			COST_VOLUME_PROFIT(print, false, i)
-		}
-	}
-}
-
-func TOTAL_COST_VOLUME_PROFIT(cvp map[string]map[string]float64, print bool) {
-	var units, sales, variable_cost, fixed_cost float64
-	for key_name, map_name := range cvp {
-		if key_name != "total" {
-			units += map_name["units"]
-			sales += map_name["sales"]
-			variable_cost += map_name["variable_cost"]
-			fixed_cost += map_name["fixed_cost"]
-		}
-	}
-	cvp["total"] = map[string]float64{"units": units, "sales": sales, "variable_cost": variable_cost, "fixed_cost": fixed_cost}
-	COST_VOLUME_PROFIT(print, false, cvp["total"])
-}
-
-func COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations bool, m map[string]float64) {
+func LABOR_COST(print, check_if_keys_in_the_equations bool, m map[string]float64) {
 	equations := [][]string{
-		{"variable_cost", "variable_cost_per_units", "*", "units"},
-		{"fixed_cost", "fixed_cost_per_units", "*", "units"},
-		{"mixed_cost", "mixed_cost_per_units", "*", "units"},
-		{"sales", "sales_per_units", "*", "units"},
-		{"profit", "profit_per_units", "*", "units"},
-		{"contribution_margin", "contribution_margin_per_units", "*", "units"},
-		{"mixed_cost", "fixed_cost", "+", "variable_cost"},
-		{"sales", "profit", "+", "mixed_cost"},
-		{"contribution_margin", "sales", "-", "variable_cost"},
-		{"break_even_in_sales", "break_even_in_units", "*", "sales_per_units"},
-		{"break_even_in_units", "contribution_margin_per_units", "/", "fixed_cost"},
-		{"contribution_margin_per_units", "contribution_margin_ratio", "*", "sales_per_units"},
-		{"contribution_margin", "degree_of_operating_leverage", "*", "profit"},
-		{"units_gap", "units", "-", "actual_units"},
+		{"overtime_wage_rate", "bonus_percentage", "*", "hourly_wage_rate"},
+
+		{"overtime_wage", "overtime_hours", "*", "overtime_wage_rate"},
+		{"work_time_wage", "work_time_hours", "*", "hourly_wage_rate"},
+		{"holiday_wage", "holiday_hours", "*", "hourly_wage_rate"},
+		{"vacations_wage", "vacations_hours", "*", "hourly_wage_rate"},
+		{"normal_lost_time_wage", "normal_lost_time_hours", "*", "hourly_wage_rate"},
+		{"abnormal_lost_time_wage", "abnormal_lost_time_hours", "*", "hourly_wage_rate"},
 	}
 	EQUATIONS_SOLVER(print, check_if_keys_in_the_equations, m, equations)
 }
@@ -165,16 +150,31 @@ func PROCESS_COSTING(print, check_if_keys_in_the_equations bool, m map[string]fl
 	EQUATIONS_SOLVER(print, check_if_keys_in_the_equations, m, equations)
 }
 
-func LABOR_COST(print, check_if_keys_in_the_equations bool, m map[string]float64) {
-	equations := [][]string{
-		{"overtime_wage_rate", "bonus_percentage", "*", "hourly_wage_rate"},
-
-		{"overtime_wage", "overtime_hours", "*", "overtime_wage_rate"},
-		{"work_time_wage", "work_time_hours", "*", "hourly_wage_rate"},
-		{"holiday_wage", "holiday_hours", "*", "hourly_wage_rate"},
-		{"vacations_wage", "vacations_hours", "*", "hourly_wage_rate"},
-		{"normal_lost_time_wage", "normal_lost_time_hours", "*", "hourly_wage_rate"},
-		{"abnormal_lost_time_wage", "abnormal_lost_time_hours", "*", "hourly_wage_rate"},
+func TOTAL_COST_VOLUME_PROFIT(cvp map[string]map[string]float64, print bool) {
+	var units, sales, variable_cost, fixed_cost float64
+	for key_name, map_name := range cvp {
+		if key_name != "total" {
+			units += map_name["units"]
+			sales += map_name["sales"]
+			variable_cost += map_name["variable_cost"]
+			fixed_cost += map_name["fixed_cost"]
+		}
 	}
-	EQUATIONS_SOLVER(print, check_if_keys_in_the_equations, m, equations)
+	cvp["total"] = map[string]float64{"units": units, "sales": sales, "variable_cost": variable_cost, "fixed_cost": fixed_cost}
+	COST_VOLUME_PROFIT(print, false, cvp["total"])
+}
+
+func TOTAL_MIXED_COST_IN_COMPLICATED_AND_MULTI_LEVEL_STEP(cvp map[string]map[string]float64, step ONE_STEP_DISTRIBUTION, total_mixed_cost float64) float64 {
+	for key_portions_from, portions := range step.FROM {
+		if cvp[key_portions_from]["units"] < portions {
+			log.Panic(portions, " for ", key_portions_from, " in ", step.FROM, " is more than ", cvp[key_portions_from]["units"])
+		}
+		total_mixed_cost += portions * cvp[key_portions_from]["mixed_cost_per_units"]
+		cvp[key_portions_from]["fixed_cost"] -= (cvp[key_portions_from]["fixed_cost"] / cvp[key_portions_from]["units"]) * portions
+		cvp[key_portions_from]["units"] -= portions
+		if cvp[key_portions_from]["units"] == 0 {
+			cvp[key_portions_from]["variable_cost_per_units"] = 0
+		}
+	}
+	return total_mixed_cost
 }

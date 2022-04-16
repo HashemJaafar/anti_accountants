@@ -1,10 +1,9 @@
-package anti_accountants
 
+package anti_accountants
 // import (
 // 	"sort"
 // 	"strings"
 // )
-
 // func STATEMENT_FILTER(
 // 	all_financial_statements []map[string]map[string]map[string]map[string]map[string]float64,
 // 	account_flow_slice, account_slice, name_slice, vpq_slice, number_slice []string,
@@ -43,7 +42,6 @@ package anti_accountants
 // 	}
 // 	return all_statements_struct
 // }
-
 // func SORT_THE_STATMENT(all_statements_struct [][]FILTERED_STATEMENT, sort_by string, is_reverse bool) {
 // 	for _, one_statement_struct := range all_statements_struct {
 // 		switch sort_by {
@@ -64,7 +62,6 @@ package anti_accountants
 // 		make_space_before_account_in_statement_struct(one_statement_struct)
 // 	}
 // }
-
 // func column1_sort_statement_by_account_number(one_statement_struct []FILTERED_STATEMENT) {
 // 	for indexa := range one_statement_struct {
 // 		for indexb := range one_statement_struct {
@@ -82,7 +79,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func column2_sort_statement_by_account_number(one_statement_struct []FILTERED_STATEMENT) {
 // 	for indexa := range one_statement_struct {
 // 		for indexb := range one_statement_struct {
@@ -94,7 +90,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func column3_sort_statement_by_alphabet(one_statement_struct []FILTERED_STATEMENT) {
 // 	for indexa := range one_statement_struct {
 // 		for indexb := range one_statement_struct {
@@ -110,7 +105,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func column4_sort_statement_by_alphabet(one_statement_struct []FILTERED_STATEMENT) {
 // 	for indexa := range one_statement_struct {
 // 		for indexb := range one_statement_struct {
@@ -128,7 +122,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func column5_sort_statement_by_alphabet(one_statement_struct []FILTERED_STATEMENT) {
 // 	for indexa := range one_statement_struct {
 // 		for indexb := range one_statement_struct {
@@ -148,17 +141,14 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func compare_the_numbers_and_swap(one_statement_struct []FILTERED_STATEMENT, indexa, indexb int, account_number1, account_number2 []uint) {
 // 	if !IS_IT_HIGH_THAN_BY_ORDER(account_number1, account_number2) {
 // 		one_statement_struct[indexa], one_statement_struct[indexb] = one_statement_struct[indexb], one_statement_struct[indexa]
 // 	}
 // }
-
 // func sort_by_number(one_statement_struct []FILTERED_STATEMENT) {
 // 	sort.Slice(one_statement_struct, func(p, q int) bool { return one_statement_struct[p].NUMBER < one_statement_struct[q].NUMBER })
 // }
-
 // func make_space_before_account_in_statement_struct(one_statement_struct []FILTERED_STATEMENT) {
 // 	for indexa, a := range one_statement_struct {
 // 		if a.KEY_ACCOUNT_FLOW != "financial_statement" {
@@ -167,11 +157,9 @@ package anti_accountants
 // 		one_statement_struct[indexa].KEY_ACCOUNT = make_space_before_account_name(a.KEY_ACCOUNT)
 // 	}
 // }
-
 // func make_space_before_account_name(account_name string) string {
 // 	return strings.Repeat("  ", len(account_number(account_name))) + account_name
 // }
-
 // func accept_level_using_name(account_name string, levels []uint, in_levels bool) bool {
 // 	var len_account_number int
 // 	if account_name != "financial_statement" {
@@ -184,7 +172,6 @@ package anti_accountants
 // 	}
 // 	return false
 // }
-
 // func sort_statement_by_pre_order_in_insertion_sort(one_statement_struct []FILTERED_STATEMENT) {
 // 	var indexa int
 // 	for _, a := range ACCOUNTS {

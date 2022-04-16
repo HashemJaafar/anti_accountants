@@ -4,11 +4,67 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"reflect"
-	"sort"
+	"runtime/debug"
 	"strconv"
 	"strings"
+	"text/tabwriter"
+	"time"
 )
+
+func NOW() []byte {
+	// i use this function to get the current time in the format of TIME_LAYOUT to make the error less likely
+	return []byte(time.Now().Format(TIME_LAYOUT))
+}
+func ASSIGN_NUMBER_IF_NUMBER(m map[string]float64, str string) {
+	number, err := strconv.ParseFloat(str, 64)
+	if err == nil {
+		m[str] = number
+	}
+}
+
+func CONVERT_NAN_TO_ZERO(value float64) float64 {
+	if math.IsNaN(value) {
+		return 0
+	}
+	return value
+}
+
+func CUT_THE_SLICE[t any](s []t, a int) []t { return s[:len(s)-a] }
+
+func FORMAT_THE_STRING(str string) string {
+	return strings.ToLower(strings.Join(strings.Fields(str), " "))
+}
+
+func INITIALIZE_MAP_3(m map[string]map[string]map[string]map[string]float64, a, b, c string) map[string]float64 {
+	if m[a] == nil {
+		m[a] = map[string]map[string]map[string]float64{}
+	}
+	if m[a][b] == nil {
+		m[a][b] = map[string]map[string]float64{}
+	}
+	if m[a][b][c] == nil {
+		m[a][b][c] = map[string]float64{}
+	}
+	return m[a][b][c]
+}
+
+func INITIALIZE_MAP_4(m map[string]map[string]map[string]map[string]map[string]float64, a, b, c, d string) map[string]float64 {
+	if m[a] == nil {
+		m[a] = map[string]map[string]map[string]map[string]float64{}
+	}
+	if m[a][b] == nil {
+		m[a][b] = map[string]map[string]map[string]float64{}
+	}
+	if m[a][b][c] == nil {
+		m[a][b][c] = map[string]map[string]float64{}
+	}
+	if m[a][b][c][d] == nil {
+		m[a][b][c][d] = map[string]float64{}
+	}
+	return m[a][b][c][d]
+}
 
 func IS_IN[t any](element t, elements []t) bool {
 	for _, a := range elements {
@@ -19,34 +75,13 @@ func IS_IN[t any](element t, elements []t) bool {
 	return false
 }
 
-func SMALLEST[t NUMBER](a, b t) t {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func TRANSPOSE[t any](slice [][]t) [][]t {
-	xl := len(slice[0])
-	yl := len(slice)
-	result := make([][]t, xl)
-	for a := range result {
-		result[a] = make([]t, yl)
-	}
-	for a := 0; a < xl; a++ {
-		for b := 0; b < yl; b++ {
-			result[a][b] = slice[b][a]
+func IS_INF_IN(numbers ...float64) bool {
+	for _, a := range numbers {
+		if math.IsInf(a, 0) {
+			return true
 		}
 	}
-	return result
-}
-
-func UNPACK[t any](slice [][]t) []t {
-	var result []t
-	for _, element := range slice {
-		result = append(result, element...)
-	}
-	return result
+	return false
 }
 
 func PACK[t any](len_new_slice int, slice []t) []t {
@@ -56,6 +91,8 @@ func PACK[t any](len_new_slice int, slice []t) []t {
 	}
 	return new_slice
 }
+
+func REMOVE[t any](s []t, a int) []t { return append(s[:a], s[a+1:]...) }
 
 func RETURN_SAME_SIGN_OF_NUMBER_SIGN(number_sign, number float64) float64 {
 	if number_sign < 0 {
@@ -85,90 +122,88 @@ func REVERSE_SLICE[t any](s []t) {
 	}
 }
 
-func INITIALIZE_MAP_4(m map[string]map[string]map[string]map[string]map[string]float64, a, b, c, d string) map[string]float64 {
-	if m[a] == nil {
-		m[a] = map[string]map[string]map[string]map[string]float64{}
+func SMALLEST[t NUMBER](a, b t) t {
+	if a < b {
+		return a
 	}
-	if m[a][b] == nil {
-		m[a][b] = map[string]map[string]map[string]float64{}
-	}
-	if m[a][b][c] == nil {
-		m[a][b][c] = map[string]map[string]float64{}
-	}
-	if m[a][b][c][d] == nil {
-		m[a][b][c][d] = map[string]float64{}
-	}
-	return m[a][b][c][d]
+	return b
 }
 
-func INITIALIZE_MAP_3(m map[string]map[string]map[string]map[string]float64, a, b, c string) map[string]float64 {
-	if m[a] == nil {
-		m[a] = map[string]map[string]map[string]float64{}
-	}
-	if m[a][b] == nil {
-		m[a][b] = map[string]map[string]float64{}
-	}
-	if m[a][b][c] == nil {
-		m[a][b][c] = map[string]float64{}
-	}
-	return m[a][b][c]
-}
-
-func TEST[t any](should_equal bool, actual, expected t) {
-	if !reflect.DeepEqual(actual, expected) == should_equal {
-		fmt.Fprintln(PRINT_TABLE, "\033[35m", "should_equal\t:", should_equal) //purple
-		fmt.Fprintln(PRINT_TABLE, "\033[34m", "actual\t:", actual)             //blue
-		fmt.Fprintln(PRINT_TABLE, "\033[33m", "expected\t:", expected)         //yellow
-		PRINT_TABLE.Flush()
-		fmt.Println("\033[31m") //red
-		log.Panic()
-	}
-}
-
-func SORT_BY_TIME_INVENTORY(slice1 []INVENTORY_TAG, slice2 [][]byte, is_ascending bool) {
-	for indexa := range slice1 {
-		for indexb := range slice1 {
-			if indexa < indexb && slice1[indexa].DATE_START.After(slice1[indexb].DATE_START) == is_ascending {
-				SWAP(slice1, indexa, indexb)
-				SWAP(slice2, indexa, indexb)
+func SORT_BY_TIME_INVENTORY[t any](slice1 []time.Time, slice2 []t, is_ascending bool) {
+	for k1 := range slice1 {
+		for k2 := range slice1 {
+			if k1 < k2 && (slice1[k1]).After((slice1[k2])) == is_ascending {
+				SWAP(slice1, k1, k2)
+				SWAP(slice2, k1, k2)
 			}
 		}
 	}
 }
-
-func SORT_BY_TIME_JOURNAL(slice []JOURNAL_TAG, is_ascending bool) {
-	sort.Slice(slice, func(i, j int) bool {
-		return slice[i].DATE_START.Before(slice[j].DATE_START) == is_ascending
-	})
+func CONVERT_BYTE_SLICE_TO_TIME(slice [][]byte) []time.Time {
+	var slice_of_time []time.Time
+	for _, v1 := range slice {
+		slice_of_time = append(slice_of_time, PARSE_BYTE_TO_TIME(v1))
+	}
+	return slice_of_time
 }
 
-func CUT_THE_SLICE[t any](s []t, a int) []t { return s[:len(s)-a] }
-func POPUP[t any](s []t, a int) []t         { return append(s[:a], s[a+1:]...) }
-func SWAP[t any](s []t, a, b int)           { s[a], s[b] = s[b], s[a] }
-
-func FORMAT_THE_STRING(str string) string {
-	return strings.ToLower(strings.Join(strings.Fields(str), " "))
+func PARSE_BYTE_TO_TIME(v1 []byte) time.Time {
+	// i use this function convert slice of byte to time.Time in format of TIME_LAYOUT
+	date, _ := time.Parse(TIME_LAYOUT, string(v1))
+	return date
 }
 
-func ASSIGN_NUMBER_IF_NUMBER(m map[string]float64, str string) {
-	number, err := strconv.ParseFloat(str, 64)
-	if err == nil {
-		m[str] = number
+func SWAP[t any](s []t, a, b int) { s[a], s[b] = s[b], s[a] }
+
+func TEST[t any](should_equal bool, actual, expected t) {
+	if reflect.DeepEqual(actual, expected) != should_equal {
+		fail_test_number++
+		p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+		fmt.Fprintln(p, "\033[32m", "fail_test_number\t:", fail_test_number) //green
+		fmt.Fprintln(p, "\033[35m", "should_equal\t:", should_equal)         //purple
+		fmt.Fprintln(p, "\033[34m", "actual\t:", actual)                     //blue
+		fmt.Fprintln(p, "\033[33m", "expected\t:", expected)                 //yellow
+		p.Flush()
+
+		// fmt.Println("\033[34m") //blue
+		// spew.Dump(actual)
+		// fmt.Println("\033[33m") //yellow
+		// spew.Dump(expected)
+
+		fmt.Println("\033[31m") //red
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println(string(debug.Stack()), "\033[0m") //reset
+			}
+		}()
+		log.Panic()
+	}
+}
+func PRINT_SLICE[t any](a1 []t) {
+	for _, v1 := range a1 {
+		fmt.Println(v1)
 	}
 }
 
-func CONVERT_NAN_TO_ZERO(value float64) float64 {
-	if math.IsNaN(value) {
-		return 0
+func TRANSPOSE[t any](slice [][]t) [][]t {
+	xl := len(slice[0])
+	yl := len(slice)
+	result := make([][]t, xl)
+	for a := range result {
+		result[a] = make([]t, yl)
 	}
-	return value
-}
-
-func IS_INF_IN(numbers ...float64) bool {
-	for _, a := range numbers {
-		if math.IsInf(a, 0) {
-			return true
+	for a := 0; a < xl; a++ {
+		for b := 0; b < yl; b++ {
+			result[a][b] = slice[b][a]
 		}
 	}
-	return false
+	return result
+}
+
+func UNPACK[t any](slice [][]t) []t {
+	var result []t
+	for _, element := range slice {
+		result = append(result, element...)
+	}
+	return result
 }

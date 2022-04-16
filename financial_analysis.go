@@ -1,5 +1,5 @@
-package anti_accountants
 
+package anti_accountants
 // func FINANCIAL_ANALYSIS_STATEMENT_func(s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT {
 // 	CURRENT_RATIO := s.CURRENT_ASSETS / s.CURRENT_LIABILITIES
 // 	ACID_TEST := (s.CASH + s.SHORT_TERM_INVESTMENTS + s.NET_RECEIVABLES) / s.CURRENT_LIABILITIES
@@ -31,7 +31,6 @@ package anti_accountants
 // 		EARNINGS_PER_SHARE:                   EARNINGS_PER_SHARE,
 // 		PRICE_EARNINGS_RATIO:                 PRICE_EARNINGS_RATIO}
 // }
-
 // func ANALYSIS(statements []map[string]map[string]map[string]map[string]map[string]float64) []FINANCIAL_ANALYSIS_STATEMENT {
 // 	var all_analysis []FINANCIAL_ANALYSIS_STATEMENT
 // 	for _, statement := range statements {

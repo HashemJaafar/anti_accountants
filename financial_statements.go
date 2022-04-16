@@ -1,14 +1,12 @@
-package anti_accountants
 
+package anti_accountants
 // import (
 // 	"math"
 // 	"time"
 // )
-
 // func ending_balance(statement map[string]map[string]map[string]map[string]map[string]float64, key_account_flow, key_account, key_name, key_vpq string) float64 {
 // 	return statement[key_account_flow][key_account][key_name][key_vpq]["beginning_balance"] + statement[key_account][key_account][key_name][key_vpq]["increase"] - statement[key_account][key_account][key_name][key_vpq]["decrease"]
 // }
-
 // func sum_flows(b JOURNAL_TAG, both_credit_or_debit bool, map_v, map_q map[string]float64) {
 // 	if (b.VALUE > 0) == both_credit_or_debit {
 // 		map_v["outflow"] += math.Abs(b.VALUE)
@@ -18,7 +16,6 @@ package anti_accountants
 // 		map_q["inflow"] += math.Abs(b.QUANTITY)
 // 	}
 // }
-
 // func sum_values(date, start_date time.Time, entry JOURNAL_TAG, nan_flow_statement map[string]map[string]map[string]map[string]float64) {
 // 	map_v1 := INITIALIZE_MAP_3(nan_flow_statement, entry.ACCOUNT, entry.NAME, "value")
 // 	map_q1 := INITIALIZE_MAP_3(nan_flow_statement, entry.ACCOUNT, entry.NAME, "quantity")
@@ -47,7 +44,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func sum_flow(date, start_date time.Time, one_simple_entry []JOURNAL_TAG, flow_statement map[string]map[string]map[string]map[string]map[string]float64) {
 // 	for _, a := range one_simple_entry {
 // 		for _, b := range one_simple_entry {
@@ -64,7 +60,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func calculate_price(statement map[string]map[string]map[string]map[string]map[string]float64) {
 // 	for _, map_account_flow := range statement {
 // 		for _, map_account := range map_account_flow {
@@ -81,7 +76,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func prepare_statement(statement map[string]map[string]map[string]map[string]map[string]float64) {
 // 	for key_account_flow, map_account_flow := range statement {
 // 		if key_account_flow == PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS {
@@ -111,7 +105,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func horizontal_analysis(statement_current, statement_base map[string]map[string]map[string]map[string]map[string]float64) {
 // 	for key_account_flow, map_account_flow := range statement_current {
 // 		for key_account, map_account := range map_account_flow {
@@ -124,7 +117,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func vertical_analysis(statement map[string]map[string]map[string]map[string]map[string]float64, days float64) {
 // 	for key_account_flow, map_account_flow := range statement {
 // 		for key_account, map_account := range map_account_flow {
@@ -144,7 +136,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func sum_3rd_column(statement map[string]map[string]map[string]map[string]map[string]float64, names, exempt_names []string, name string, in_names bool) {
 // 	for _, map_account_flow := range statement {
 // 		for _, map_account := range map_account_flow {
@@ -172,7 +163,6 @@ package anti_accountants
 // 		}
 // 	}
 // }
-
 // func sum_2nd_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
 // 	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
 // 	for key_account_flow, map_account_flow := range statement {
@@ -239,7 +229,6 @@ package anti_accountants
 // 	// }
 // 	return new_statement
 // }
-
 // func sum_1st_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
 // 	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
 // 	for key_account_flow, map_account_flow := range statement {
@@ -300,7 +289,6 @@ package anti_accountants
 // 	// }
 // 	return new_statement
 // }
-
 // func combine_statements(flow_statement map[string]map[string]map[string]map[string]map[string]float64, nan_flow_statement map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
 // 	for key_account_flow := range nan_flow_statement {
 // 		for key_account, map_account := range nan_flow_statement {
@@ -316,7 +304,6 @@ package anti_accountants
 // 	}
 // 	return flow_statement
 // }
-
 // func statement(journal []JOURNAL_TAG, start_date, end_date time.Time) (map[string]map[string]map[string]map[string]map[string]float64, map[string]map[string]map[string]map[string]float64) {
 // 	var one_simple_entry []JOURNAL_TAG
 // 	var previous_entry_number int
@@ -338,7 +325,6 @@ package anti_accountants
 // 	sum_flow(date, start_date, one_simple_entry, flow_statement)
 // 	return flow_statement, nan_flow_statement
 // }
-
 // func FINANCIAL_STATEMENTS(DB_READ_JOURNAL []JOURNAL_TAG, start_date, end_date time.Time, periods int, names []string, in_names bool) []map[string]map[string]map[string]map[string]map[string]float64 {
 // 	check_dates(start_date, end_date)
 // 	days := int(end_date.Sub(start_date).Hours() / 24)
