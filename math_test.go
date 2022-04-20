@@ -1,6 +1,6 @@
-
 //this file created automatically
 package anti_accountants
+
 import "testing"
 
 func Benchmark_CHECK_MAP_KEYS_FOR_EQUATIONS(b *testing.B) {
@@ -10,7 +10,7 @@ func Benchmark_CHECK_MAP_KEYS_FOR_EQUATIONS(b *testing.B) {
 	//}
 }
 
-func Example_CHECK_MAP_KEYS_FOR_EQUATIONS() {
+func ExampleCHECK_MAP_KEYS_FOR_EQUATIONS() {
 	//TODO
 	//a1:=CHECK_MAP_KEYS_FOR_EQUATIONS()
 	//fmt.Println(a1)
@@ -26,7 +26,7 @@ func Fuzz_CHECK_MAP_KEYS_FOR_EQUATIONS(f *testing.F) {
 	//})
 }
 
-func Test_CHECK_MAP_KEYS_FOR_EQUATIONS(t *testing.T) {
+func TestCHECK_MAP_KEYS_FOR_EQUATIONS(t *testing.T) {
 	//TODO
 	//a1:=CHECK_MAP_KEYS_FOR_EQUATIONS()
 	//e1:=
@@ -40,7 +40,7 @@ func Benchmark_EQUATIONS_GENERATOR(b *testing.B) {
 	//}
 }
 
-func Example_EQUATIONS_GENERATOR() {
+func ExampleEQUATIONS_GENERATOR() {
 	//TODO
 	//a1:=EQUATIONS_GENERATOR()
 	//fmt.Println(a1)
@@ -56,7 +56,7 @@ func Fuzz_EQUATIONS_GENERATOR(f *testing.F) {
 	//})
 }
 
-func Test_EQUATIONS_GENERATOR(t *testing.T) {
+func TestEQUATIONS_GENERATOR(t *testing.T) {
 	//TODO
 	//a1:=EQUATIONS_GENERATOR()
 	//e1:=
@@ -70,7 +70,7 @@ func Benchmark_EQUATIONS_SOLVER(b *testing.B) {
 	//}
 }
 
-func Example_EQUATIONS_SOLVER() {
+func ExampleEQUATIONS_SOLVER() {
 	//TODO
 	//a1:=EQUATIONS_SOLVER()
 	//fmt.Println(a1)
@@ -86,7 +86,7 @@ func Fuzz_EQUATIONS_SOLVER(f *testing.F) {
 	//})
 }
 
-func Test_EQUATIONS_SOLVER(t *testing.T) {
+func TestEQUATIONS_SOLVER(t *testing.T) {
 	//TODO
 	//a1:=EQUATIONS_SOLVER()
 	//e1:=
@@ -100,7 +100,7 @@ func Benchmark_EQUATION_SOLVER(b *testing.B) {
 	//}
 }
 
-func Example_EQUATION_SOLVER() {
+func ExampleEQUATION_SOLVER() {
 	//TODO
 	//a1:=EQUATION_SOLVER()
 	//fmt.Println(a1)
@@ -116,7 +116,7 @@ func Fuzz_EQUATION_SOLVER(f *testing.F) {
 	//})
 }
 
-func Test_EQUATION_SOLVER(t *testing.T) {
+func TestEQUATION_SOLVER(t *testing.T) {
 	//TODO
 	//a1:=EQUATION_SOLVER()
 	//e1:=
@@ -130,7 +130,7 @@ func Benchmark_FIRST_POINT(b *testing.B) {
 	//}
 }
 
-func Example_FIRST_POINT() {
+func ExampleFIRST_POINT() {
 	//TODO
 	//a1:=FIRST_POINT()
 	//fmt.Println(a1)
@@ -146,7 +146,7 @@ func Fuzz_FIRST_POINT(f *testing.F) {
 	//})
 }
 
-func Test_FIRST_POINT(t *testing.T) {
+func TestFIRST_POINT(t *testing.T) {
 	//TODO
 	//a1:=FIRST_POINT()
 	//e1:=
@@ -160,7 +160,7 @@ func Benchmark_HIGH_LOW(b *testing.B) {
 	//}
 }
 
-func Example_HIGH_LOW() {
+func ExampleHIGH_LOW() {
 	//TODO
 	//a1:=HIGH_LOW()
 	//fmt.Println(a1)
@@ -176,7 +176,7 @@ func Fuzz_HIGH_LOW(f *testing.F) {
 	//})
 }
 
-func Test_HIGH_LOW(t *testing.T) {
+func TestHIGH_LOW(t *testing.T) {
 	//TODO
 	//a1:=HIGH_LOW()
 	//e1:=
@@ -190,7 +190,7 @@ func Benchmark_LEAST_SQUARES_REGRESSION(b *testing.B) {
 	//}
 }
 
-func Example_LEAST_SQUARES_REGRESSION() {
+func ExampleLEAST_SQUARES_REGRESSION() {
 	//TODO
 	//a1:=LEAST_SQUARES_REGRESSION()
 	//fmt.Println(a1)
@@ -206,7 +206,7 @@ func Fuzz_LEAST_SQUARES_REGRESSION(f *testing.F) {
 	//})
 }
 
-func Test_LEAST_SQUARES_REGRESSION(t *testing.T) {
+func TestLEAST_SQUARES_REGRESSION(t *testing.T) {
 	//TODO
 	//a1:=LEAST_SQUARES_REGRESSION()
 	//e1:=
@@ -220,7 +220,7 @@ func Benchmark_LOGARITHM(b *testing.B) {
 	//}
 }
 
-func Example_LOGARITHM() {
+func ExampleLOGARITHM() {
 	//TODO
 	//a1:=LOGARITHM()
 	//fmt.Println(a1)
@@ -236,7 +236,7 @@ func Fuzz_LOGARITHM(f *testing.F) {
 	//})
 }
 
-func Test_LOGARITHM(t *testing.T) {
+func TestLOGARITHM(t *testing.T) {
 	//TODO
 	//a1:=LOGARITHM()
 	//e1:=
@@ -250,7 +250,7 @@ func Benchmark_MAX(b *testing.B) {
 	//}
 }
 
-func Example_MAX() {
+func ExampleMAX() {
 	//TODO
 	//a1:=MAX()
 	//fmt.Println(a1)
@@ -266,7 +266,7 @@ func Fuzz_MAX(f *testing.F) {
 	//})
 }
 
-func Test_MAX(t *testing.T) {
+func TestMAX(t *testing.T) {
 	//TODO
 	//a1:=MAX()
 	//e1:=
@@ -280,7 +280,7 @@ func Benchmark_MIN(b *testing.B) {
 	//}
 }
 
-func Example_MIN() {
+func ExampleMIN() {
 	//TODO
 	//a1:=MIN()
 	//fmt.Println(a1)
@@ -296,7 +296,7 @@ func Fuzz_MIN(f *testing.F) {
 	//})
 }
 
-func Test_MIN(t *testing.T) {
+func TestMIN(t *testing.T) {
 	//TODO
 	//a1:=MIN()
 	//e1:=
@@ -310,7 +310,7 @@ func Benchmark_PRINT_EQUATION(b *testing.B) {
 	//}
 }
 
-func Example_PRINT_EQUATION() {
+func ExamplePRINT_EQUATION() {
 	//TODO
 	//a1:=PRINT_EQUATION()
 	//fmt.Println(a1)
@@ -326,7 +326,7 @@ func Fuzz_PRINT_EQUATION(f *testing.F) {
 	//})
 }
 
-func Test_PRINT_EQUATION(t *testing.T) {
+func TestPRINT_EQUATION(t *testing.T) {
 	//TODO
 	//a1:=PRINT_EQUATION()
 	//e1:=
@@ -340,7 +340,7 @@ func Benchmark_ROOT(b *testing.B) {
 	//}
 }
 
-func Example_ROOT() {
+func ExampleROOT() {
 	//TODO
 	//a1:=ROOT()
 	//fmt.Println(a1)
@@ -356,7 +356,7 @@ func Fuzz_ROOT(f *testing.F) {
 	//})
 }
 
-func Test_ROOT(t *testing.T) {
+func TestROOT(t *testing.T) {
 	//TODO
 	//a1:=ROOT()
 	//e1:=
@@ -370,7 +370,7 @@ func Benchmark_X_UNDER_X(b *testing.B) {
 	//}
 }
 
-func Example_X_UNDER_X() {
+func ExampleX_UNDER_X() {
 	//TODO
 	//a1:=X_UNDER_X()
 	//fmt.Println(a1)
@@ -386,7 +386,7 @@ func Fuzz_X_UNDER_X(f *testing.F) {
 	//})
 }
 
-func Test_X_UNDER_X(t *testing.T) {
+func TestX_UNDER_X(t *testing.T) {
 	//TODO
 	//a1:=X_UNDER_X()
 	//e1:=

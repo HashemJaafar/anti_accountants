@@ -37,33 +37,59 @@ func FORMAT_THE_STRING(str string) string {
 	return strings.ToLower(strings.Join(strings.Fields(str), " "))
 }
 
-func INITIALIZE_MAP_3(m map[string]map[string]map[string]map[string]float64, a, b, c string) map[string]float64 {
+func INITIALIZE_MAP_6[ta, tb, tc, td, te, tf comparable, tr any](m map[ta]map[tb]map[tc]map[td]map[te]map[tf]tr, a ta, b tb, c tc, d td, e te) map[tf]tr {
+	if m == nil {
+		m = map[ta]map[tb]map[tc]map[td]map[te]map[tf]tr{}
+	}
 	if m[a] == nil {
-		m[a] = map[string]map[string]map[string]float64{}
+		m[a] = map[tb]map[tc]map[td]map[te]map[tf]tr{}
 	}
 	if m[a][b] == nil {
-		m[a][b] = map[string]map[string]float64{}
+		m[a][b] = map[tc]map[td]map[te]map[tf]tr{}
 	}
 	if m[a][b][c] == nil {
-		m[a][b][c] = map[string]float64{}
-	}
-	return m[a][b][c]
-}
-
-func INITIALIZE_MAP_4(m map[string]map[string]map[string]map[string]map[string]float64, a, b, c, d string) map[string]float64 {
-	if m[a] == nil {
-		m[a] = map[string]map[string]map[string]map[string]float64{}
-	}
-	if m[a][b] == nil {
-		m[a][b] = map[string]map[string]map[string]float64{}
-	}
-	if m[a][b][c] == nil {
-		m[a][b][c] = map[string]map[string]float64{}
+		m[a][b][c] = map[td]map[te]map[tf]tr{}
 	}
 	if m[a][b][c][d] == nil {
-		m[a][b][c][d] = map[string]float64{}
+		m[a][b][c][d] = map[te]map[tf]tr{}
+	}
+	if m[a][b][c][d][e] == nil {
+		m[a][b][c][d][e] = map[tf]tr{}
+	}
+	return m[a][b][c][d][e]
+}
+func INITIALIZE_MAP_5[ta, tb, tc, td, te comparable, tr any](m map[ta]map[tb]map[tc]map[td]map[te]tr, a ta, b tb, c tc, d td) map[te]tr {
+	if m == nil {
+		m = map[ta]map[tb]map[tc]map[td]map[te]tr{}
+	}
+	if m[a] == nil {
+		m[a] = map[tb]map[tc]map[td]map[te]tr{}
+	}
+	if m[a][b] == nil {
+		m[a][b] = map[tc]map[td]map[te]tr{}
+	}
+	if m[a][b][c] == nil {
+		m[a][b][c] = map[td]map[te]tr{}
+	}
+	if m[a][b][c][d] == nil {
+		m[a][b][c][d] = map[te]tr{}
 	}
 	return m[a][b][c][d]
+}
+func INITIALIZE_MAP_4[ta comparable, tb comparable, tc comparable, td comparable, tr any](m map[ta]map[tb]map[tc]map[td]tr, a ta, b tb, c tc) map[td]tr {
+	if m == nil {
+		m = map[ta]map[tb]map[tc]map[td]tr{}
+	}
+	if m[a] == nil {
+		m[a] = map[tb]map[tc]map[td]tr{}
+	}
+	if m[a][b] == nil {
+		m[a][b] = map[tc]map[td]tr{}
+	}
+	if m[a][b][c] == nil {
+		m[a][b][c] = map[td]tr{}
+	}
+	return m[a][b][c]
 }
 
 func IS_IN[t any](element t, elements []t) bool {

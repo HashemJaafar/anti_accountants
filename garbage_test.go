@@ -44,11 +44,11 @@ func Reverse(s string) (string, error) {
 	return string(r), nil
 }
 
-func Test_2(t *testing.T) {
+func Test2(t *testing.T) {
 	fmt.Println(len(FORMAT_THE_STRING("	   ")))
 }
 
-func Test_DropAll_database(t *testing.T) {
+func TestDropAll_database(t *testing.T) {
 	DB_ACCOUNTS.DropAll()
 	DB_JOURNAL.DropAll()
 	DB_INVENTORY.DropAll()
@@ -56,23 +56,23 @@ func Test_DropAll_database(t *testing.T) {
 	PRINT_FORMATED_ACCOUNTS()
 }
 
-func Test_a(t *testing.T) {
+func Testa(t *testing.T) {
 	add_under_score("remove the accounts not in accounts list")
 }
 
-func Test_lower(t *testing.T) {
+func Testlower(t *testing.T) {
 	fmt.Println(strings.ToLower("ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS"))
 	fmt.Println(strings.ToLower("ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY"))
 	fmt.Println(strings.ToLower("TARGET_BALANCE"))
 	fmt.Println(strings.ToLower("IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD"))
 }
 
-func Test_m(t *testing.T) {
+func Testm(t *testing.T) {
 	b, err := json.Marshal(10)
 	fmt.Println(err, b)
 }
 
-func Test_upper(t *testing.T) {
+func Testupper(t *testing.T) {
 	fmt.Println(strings.ToLower("ENTRY_NUMBER_COMPOUND int, ENTRY_NUMBER_SIMPLE int"))
 }
 

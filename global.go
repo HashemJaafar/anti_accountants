@@ -22,6 +22,27 @@ const (
 	THURSDAY    = "Thursday"
 	FRIDAY      = "Friday"
 	TIME_LAYOUT = "2006-01-02 15:04:05.999999999 -0700 MST"
+	//constants for financial_statements
+	// vpq
+	VALUE    = "value"
+	PRICE    = "price"
+	QUANTITY = "quantity"
+	// type_of_vpq
+	beginning_balance = "beginning_balance"
+	ending_balance    = "ending_balance"
+	inflow            = "inflow"
+	outflow           = "outflow"
+	flow              = "flow"
+	average           = "average"
+	turnover          = "turnover"
+	turnover_days     = "turnover_days"
+	growth_ratio      = "growth_ratio"
+	percent           = "percent"
+	name_percent      = "name_percent"
+	// key words for statment columns in financial statement
+	all_names    = "all_names"
+	names        = "names"
+	all_accounts = "all_accounts"
 )
 
 var (
@@ -110,12 +131,14 @@ type start_end_minutes struct {
 	minutes    float64
 }
 type AUTO_COMPLETE_ENTRIE struct {
-	INVENTORY_ACCOUNT         string
-	COST_OF_GOOD_SOLD_ACCOUNT string
-	REVENUE_ACCOUNT           string
-	DESCOUNT_ACCOUNT          string
-	SELLING_PRICE             float64
-	DESCOUNT_PRICE            float64
+	ACCOUNT_NAME    string
+	ACCOUNT_CREDIT  string
+	ACCOUNT_DEBIT   string
+	PRICE_DEBIT     float64
+	PRICE_CREDIT    float64
+	QUANTITY        float64
+	QUANTITY_DEBIT  float64
+	QUANTITY_CREDIT float64
 }
 type FILTERED_STATEMENT struct {
 	KEY_ACCOUNT_FLOW string

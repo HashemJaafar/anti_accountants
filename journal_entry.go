@@ -80,17 +80,22 @@ func SET_PRICE_AND_QUANTITY(account PRICE_QUANTITY_ACCOUNT, is_update bool) PRIC
 	if account.QUANTITY > 0 {
 		return account
 	}
-	// i remove fifo because it dont make any difference in time order because the time is ordered in ascending way
-	// and the lifo is the reverse of fifo
-	keys, inventory := DB_READ[INVENTORY_TAG](DB_INVENTORY)
+
+	// i make it this way just to make it faster when using WMA case
+	var keys [][]byte
+	var inventory []INVENTORY_TAG
 	switch account.COST_FLOW_TYPE {
+	case FIFO:
+		keys, inventory = DB_READ[INVENTORY_TAG](DB_INVENTORY)
 	case LIFO:
+		keys, inventory = DB_READ[INVENTORY_TAG](DB_INVENTORY)
 		REVERSE_SLICE(keys)
 		REVERSE_SLICE(inventory)
 	case WMA:
 		WEIGHTED_AVERAGE(account.ACCOUNT_NAME)
 		keys, inventory = DB_READ[INVENTORY_TAG](DB_INVENTORY)
 	}
+
 	quantity_count := math.Abs(account.QUANTITY)
 	var costs float64
 	for k1, v1 := range inventory {
@@ -317,9 +322,9 @@ func SIMPLE_JOURNAL_ENTRY(
 	slice_of_price_quantity_account = GROUP_BY_ACCOUNT(slice_of_price_quantity_account)
 	FIND_COST(slice_of_price_quantity_account, false)
 
-	if auto_completion {
-		AUTO_COMPLETION_THE_ENTRY(slice_of_price_quantity_account)
-	}
+	// if auto_completion {
+	// 	AUTO_COMPLETION_THE_ENTRY(slice_of_price_quantity_account)
+	// }
 	// if invoice_discount {
 	// 	entries = auto_completion_the_invoice_discount(entries)
 	// }
@@ -377,9 +382,10 @@ func VALUE_AFTER_ADJUST_USING_ADJUSTING_METHODS(adjusting_method string, minutes
 		return minutes * (total_value / TOTAL_MINUTES)
 	}
 }
-func AUTO_COMPLETION_THE_ENTRY(entries []PRICE_QUANTITY_ACCOUNT) [][]PRICE_QUANTITY_ACCOUNT {
-	return [][]PRICE_QUANTITY_ACCOUNT{}
-}
+
+// func AUTO_COMPLETION_THE_ENTRY(entries []PRICE_QUANTITY_ACCOUNT) [][]PRICE_QUANTITY_ACCOUNT {
+// 	return [][]PRICE_QUANTITY_ACCOUNT{}
+// }
 
 func REVERSE_ENTRIES(entry_number_compound, entry_number_simple int, name_employee string) {
 	var entries []JOURNAL_TAG

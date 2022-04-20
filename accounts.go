@@ -115,7 +115,11 @@ func CHECK_THE_TREE() []error {
 }
 
 func EDIT_ACCOUNT(is_delete bool, index int, account ACCOUNT) {
-	if !IS_USED_IN_JOURNAL(account.ACCOUNT_NAME) {
+	new_name := FORMAT_THE_STRING(account.ACCOUNT_NAME)
+	old_name := ACCOUNTS[index].ACCOUNT_NAME
+
+	// here i will search for old_name in journal if not used i can delete it or chenge it
+	if !IS_USED_IN_JOURNAL(old_name) {
 		if is_delete {
 			ACCOUNTS = REMOVE(ACCOUNTS, index)
 			SET_THE_ACCOUNTS()
@@ -125,18 +129,16 @@ func EDIT_ACCOUNT(is_delete bool, index int, account ACCOUNT) {
 
 		ACCOUNTS[index].IS_LOW_LEVEL_ACCOUNT = account.IS_LOW_LEVEL_ACCOUNT
 		ACCOUNTS[index].IS_CREDIT = account.IS_CREDIT
+	}
 
+	if old_name != new_name && new_name != "" {
 		// if the account not used in journal then the account is not used in inventory then
-		// i will search for the account name in accounts database if it is not used then i can chenge the name
-		new_name := FORMAT_THE_STRING(account.ACCOUNT_NAME)
-		old_name := ACCOUNTS[index].ACCOUNT_NAME
-		if old_name != new_name && new_name != "" {
-			_, _, err := ACCOUNT_STRUCT_FROM_NAME(new_name)
-			if err != nil {
-				DB_UPDATE_ACCOUNT_NAME_IN_JOURNAL(old_name, new_name)
-				DB_UPDATE_ACCOUNT_NAME_IN_INVENTORY(old_name, new_name)
-				ACCOUNTS[index].ACCOUNT_NAME = new_name
-			}
+		// i will search for the account new_name in accounts database if it is not used then i can chenge the name
+		_, _, err := ACCOUNT_STRUCT_FROM_NAME(new_name)
+		if err != nil {
+			DB_UPDATE_ACCOUNT_NAME_IN_JOURNAL(old_name, new_name)
+			DB_UPDATE_ACCOUNT_NAME_IN_INVENTORY(old_name, new_name)
+			ACCOUNTS[index].ACCOUNT_NAME = new_name
 		}
 	}
 
