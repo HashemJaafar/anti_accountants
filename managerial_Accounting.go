@@ -1,5 +1,5 @@
+package main
 
-package anti_accountants
 import "log"
 
 func CALCULATE_CVP_MAP(cvp map[string]map[string]float64, print, check_if_keys_in_the_equations bool) {
@@ -46,6 +46,18 @@ func COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations bool, m map[string
 		{"units_gap", "units", "-", "actual_units"},
 	}
 	EQUATIONS_SOLVER(print, check_if_keys_in_the_equations, m, equations)
+}
+
+func MIX_COST_VOLUME_PROFIT(print, check_if_keys_in_the_equations bool, m map[string]map[string]float64) {
+	var units, sales, variable_cost, fixed_cost float64
+	for _, v1 := range m {
+		units += v1["units"]
+		sales += v1["sales"]
+		variable_cost += v1["variable_cost"]
+		fixed_cost += v1["fixed_cost"]
+	}
+	m["total"] = map[string]float64{"units": units, "sales": sales, "variable_cost": variable_cost, "fixed_cost": fixed_cost}
+	COST_VOLUME_PROFIT(print, false, m["total"])
 }
 
 func COST_VOLUME_PROFIT_SLICE(cvp map[string]map[string]float64, distribution_steps []ONE_STEP_DISTRIBUTION, print, simple bool) {

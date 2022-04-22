@@ -1,4 +1,4 @@
-package anti_accountants
+package main
 
 import (
 	"encoding/json"

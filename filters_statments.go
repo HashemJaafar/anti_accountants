@@ -1,5 +1,5 @@
+package main
 
-package anti_accountants
 // import (
 // 	"sort"
 // 	"strings"

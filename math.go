@@ -1,5 +1,5 @@
+package main
 
-package anti_accountants
 import (
 	"fmt"
 	"math"
@@ -136,7 +136,7 @@ func PRINT_EQUATION(print bool, m map[string]float64, a, b, sign, c string) {
 	}
 }
 
-func ROOT(a, b float64) float64      { return math.Pow(a, 1/b) }
+func ROOT(a, b float64) float64 { return math.Pow(a, 1/b) }
 
 func X_UNDER_X(points [][2]float64, x_max float64) (float64, float64) {
 	x, y := 0.0, 0.0

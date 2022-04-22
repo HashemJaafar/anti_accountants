@@ -1,4 +1,4 @@
-package anti_accountants
+package main
 
 import (
 	"fmt"
@@ -37,59 +37,45 @@ func FORMAT_THE_STRING(str string) string {
 	return strings.ToLower(strings.Join(strings.Fields(str), " "))
 }
 
-func INITIALIZE_MAP_6[ta, tb, tc, td, te, tf comparable, tr any](m map[ta]map[tb]map[tc]map[td]map[te]map[tf]tr, a ta, b tb, c tc, d td, e te) map[tf]tr {
+func INITIALIZE_MAP_6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr, i1 t1, i2 t2, i3 t3, i4 t4, i5 t5) map[t6]tr {
 	if m == nil {
-		m = map[ta]map[tb]map[tc]map[td]map[te]map[tf]tr{}
+		m = map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr{}
 	}
-	if m[a] == nil {
-		m[a] = map[tb]map[tc]map[td]map[te]map[tf]tr{}
+	if m[i1] == nil {
+		m[i1] = map[t2]map[t3]map[t4]map[t5]map[t6]tr{}
 	}
-	if m[a][b] == nil {
-		m[a][b] = map[tc]map[td]map[te]map[tf]tr{}
+	if m[i1][i2] == nil {
+		m[i1][i2] = map[t3]map[t4]map[t5]map[t6]tr{}
 	}
-	if m[a][b][c] == nil {
-		m[a][b][c] = map[td]map[te]map[tf]tr{}
+	if m[i1][i2][i3] == nil {
+		m[i1][i2][i3] = map[t4]map[t5]map[t6]tr{}
 	}
-	if m[a][b][c][d] == nil {
-		m[a][b][c][d] = map[te]map[tf]tr{}
+	if m[i1][i2][i3][i4] == nil {
+		m[i1][i2][i3][i4] = map[t5]map[t6]tr{}
 	}
-	if m[a][b][c][d][e] == nil {
-		m[a][b][c][d][e] = map[tf]tr{}
+	if m[i1][i2][i3][i4][i5] == nil {
+		m[i1][i2][i3][i4][i5] = map[t6]tr{}
 	}
-	return m[a][b][c][d][e]
+	return m[i1][i2][i3][i4][i5]
 }
-func INITIALIZE_MAP_5[ta, tb, tc, td, te comparable, tr any](m map[ta]map[tb]map[tc]map[td]map[te]tr, a ta, b tb, c tc, d td) map[te]tr {
+
+func INITIALIZE_MAP_5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr, i1 t1, i2 t2, i3 t3, i4 t4) map[t5]tr {
 	if m == nil {
-		m = map[ta]map[tb]map[tc]map[td]map[te]tr{}
+		m = map[t1]map[t2]map[t3]map[t4]map[t5]tr{}
 	}
-	if m[a] == nil {
-		m[a] = map[tb]map[tc]map[td]map[te]tr{}
+	if m[i1] == nil {
+		m[i1] = map[t2]map[t3]map[t4]map[t5]tr{}
 	}
-	if m[a][b] == nil {
-		m[a][b] = map[tc]map[td]map[te]tr{}
+	if m[i1][i2] == nil {
+		m[i1][i2] = map[t3]map[t4]map[t5]tr{}
 	}
-	if m[a][b][c] == nil {
-		m[a][b][c] = map[td]map[te]tr{}
+	if m[i1][i2][i3] == nil {
+		m[i1][i2][i3] = map[t4]map[t5]tr{}
 	}
-	if m[a][b][c][d] == nil {
-		m[a][b][c][d] = map[te]tr{}
+	if m[i1][i2][i3][i4] == nil {
+		m[i1][i2][i3][i4] = map[t5]tr{}
 	}
-	return m[a][b][c][d]
-}
-func INITIALIZE_MAP_4[ta comparable, tb comparable, tc comparable, td comparable, tr any](m map[ta]map[tb]map[tc]map[td]tr, a ta, b tb, c tc) map[td]tr {
-	if m == nil {
-		m = map[ta]map[tb]map[tc]map[td]tr{}
-	}
-	if m[a] == nil {
-		m[a] = map[tb]map[tc]map[td]tr{}
-	}
-	if m[a][b] == nil {
-		m[a][b] = map[tc]map[td]tr{}
-	}
-	if m[a][b][c] == nil {
-		m[a][b][c] = map[td]tr{}
-	}
-	return m[a][b][c]
+	return m[i1][i2][i3][i4]
 }
 
 func IS_IN[t any](element t, elements []t) bool {
@@ -122,9 +108,17 @@ func REMOVE[t any](s []t, a int) []t { return append(s[:a], s[a+1:]...) }
 
 func RETURN_SAME_SIGN_OF_NUMBER_SIGN(number_sign, number float64) float64 {
 	if number_sign < 0 {
-		return -math.Abs(number)
+		return -ABS(number)
 	}
-	return math.Abs(number)
+	return ABS(number)
+}
+
+func ABS[t NUMBER](n t) t {
+	// this is alternative of math.Abs
+	if n < 0 {
+		return -n
+	}
+	return n
 }
 
 func RETURN_SET_AND_DUPLICATES_SLICES[t any](slice []t) ([]t, []t) {
@@ -155,12 +149,11 @@ func SMALLEST[t NUMBER](a, b t) t {
 	return b
 }
 
-func SORT_BY_TIME_INVENTORY[t any](slice1 []time.Time, slice2 []t, is_ascending bool) {
+func SORT_TIME(slice1 []time.Time, is_ascending bool) {
 	for k1 := range slice1 {
 		for k2 := range slice1 {
 			if k1 < k2 && (slice1[k1]).After((slice1[k2])) == is_ascending {
 				SWAP(slice1, k1, k2)
-				SWAP(slice2, k1, k2)
 			}
 		}
 	}
@@ -168,15 +161,10 @@ func SORT_BY_TIME_INVENTORY[t any](slice1 []time.Time, slice2 []t, is_ascending 
 func CONVERT_BYTE_SLICE_TO_TIME(slice [][]byte) []time.Time {
 	var slice_of_time []time.Time
 	for _, v1 := range slice {
-		slice_of_time = append(slice_of_time, PARSE_BYTE_TO_TIME(v1))
+		date, _ := time.Parse(TIME_LAYOUT, string(v1))
+		slice_of_time = append(slice_of_time, date)
 	}
 	return slice_of_time
-}
-
-func PARSE_BYTE_TO_TIME(v1 []byte) time.Time {
-	// i use this function convert slice of byte to time.Time in format of TIME_LAYOUT
-	date, _ := time.Parse(TIME_LAYOUT, string(v1))
-	return date
 }
 
 func SWAP[t any](s []t, a, b int) { s[a], s[b] = s[b], s[a] }
@@ -232,4 +220,57 @@ func UNPACK[t any](slice [][]t) []t {
 		result = append(result, element...)
 	}
 	return result
+}
+
+func FILTER_NUMBER[t NUMBER](number, bellow, above t, is_just_between bool) bool {
+	is_bellow := number <= bellow
+	is_above := number >= above
+	if is_just_between {
+		return is_bellow && is_above
+	}
+	return is_bellow || is_above
+}
+
+func print_map_6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr) {
+	for k1, v1 := range m {
+		for k2, v2 := range v1 {
+			for k3, v3 := range v2 {
+				for k4, v4 := range v3 {
+					for k5, v5 := range v4 {
+						for k6, v6 := range v5 {
+							fmt.Fprintln(PRINT_TABLE, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", k6, "\t", v6)
+						}
+					}
+				}
+			}
+		}
+	}
+	fmt.Println("//////////////////////////////////////////")
+	PRINT_TABLE.Flush()
+}
+
+func print_map_5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr) {
+	for k1, v1 := range m {
+		for k2, v2 := range v1 {
+			for k3, v3 := range v2 {
+				for k4, v4 := range v3 {
+					for k5, v5 := range v4 {
+						fmt.Fprintln(PRINT_TABLE, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", v5)
+					}
+				}
+			}
+		}
+	}
+	fmt.Println("//////////////////////////////////////////")
+	PRINT_TABLE.Flush()
+}
+
+func print_map_2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
+	for k1, v1 := range m {
+		for k2, v2 := range v1 {
+			fmt.Fprintln(PRINT_TABLE, k1, "\t", k2, "\t", v2)
+		}
+	}
+	fmt.Println("//////////////////////////////////////////")
+	PRINT_TABLE.Flush()
 }

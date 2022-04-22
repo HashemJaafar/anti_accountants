@@ -1,4 +1,4 @@
-package anti_accountants
+package main
 
 import (
 	"fmt"
@@ -8,18 +8,18 @@ import (
 )
 
 func ACCOUNT_STRUCT_FROM_BARCODE(barcode string) (ACCOUNT, int, error) {
-	for indexa, a := range ACCOUNTS {
-		if IS_IN(barcode, a.BARCODE) {
-			return a, indexa, nil
+	for k1, v1 := range ACCOUNTS {
+		if IS_IN(barcode, v1.BARCODE) {
+			return v1, k1, nil
 		}
 	}
 	return ACCOUNT{}, 0, ERROR_NOT_LISTED
 }
 
 func ACCOUNT_STRUCT_FROM_NAME(account_name string) (ACCOUNT, int, error) {
-	for indexa, a := range ACCOUNTS {
-		if a.ACCOUNT_NAME == account_name {
-			return a, indexa, nil
+	for k1, v1 := range ACCOUNTS {
+		if v1.ACCOUNT_NAME == account_name {
+			return v1, k1, nil
 		}
 	}
 	return ACCOUNT{}, 0, ERROR_NOT_LISTED
@@ -47,13 +47,13 @@ func ADD_ACCOUNT(account ACCOUNT) error {
 func CHECK_IF_ACCOUNT_NUMBER_DUPLICATED() []error {
 	var errors []error
 	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
-	for i := 0; i < max_len; i++ {
+	for k1 := 0; k1 < max_len; k1++ {
 	big_loop:
-		for indexa, a := range ACCOUNTS {
-			if len(a.ACCOUNT_NUMBER[i]) > 0 {
+		for k2, v2 := range ACCOUNTS {
+			if len(v2.ACCOUNT_NUMBER[k1]) > 0 {
 				for indexb, b := range ACCOUNTS {
-					if indexa != indexb && reflect.DeepEqual(a.ACCOUNT_NUMBER[i], b.ACCOUNT_NUMBER[i]) {
-						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", a.ACCOUNT_NUMBER[i], a))
+					if k2 != indexb && reflect.DeepEqual(v2.ACCOUNT_NUMBER[k1], b.ACCOUNT_NUMBER[k1]) {
+						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", v2.ACCOUNT_NUMBER[k1], v2))
 						continue big_loop
 					}
 				}
@@ -67,19 +67,19 @@ func CHECK_IF_ACCOUNT_NUMBER_DUPLICATED() []error {
 func CHECK_IF_LOW_LEVEL_ACCOUNT_FOR_ALL() []error {
 	var errors []error
 	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
-	for i := 1; i < max_len; i++ {
+	for k1 := 1; k1 < max_len; k1++ {
 	big_loop:
-		for indexa, a := range ACCOUNTS {
-			if len(a.ACCOUNT_NUMBER[i]) > 0 {
-				for _, b := range ACCOUNTS {
-					if len(b.ACCOUNT_NUMBER[i]) > 0 {
-						if IS_IT_SUB_ACCOUNT_USING_NUMBER(a.ACCOUNT_NUMBER[i], b.ACCOUNT_NUMBER[i]) {
+		for k2, v2 := range ACCOUNTS {
+			if len(v2.ACCOUNT_NUMBER[k1]) > 0 {
+				for _, v3 := range ACCOUNTS {
+					if len(v3.ACCOUNT_NUMBER[k1]) > 0 {
+						if IS_IT_SUB_ACCOUNT_USING_NUMBER(v2.ACCOUNT_NUMBER[k1], v3.ACCOUNT_NUMBER[k1]) {
 							continue big_loop
 						}
 					}
 				}
-				if !ACCOUNTS[indexa].IS_LOW_LEVEL_ACCOUNT {
-					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", ACCOUNTS[indexa]))
+				if !ACCOUNTS[k2].IS_LOW_LEVEL_ACCOUNT {
+					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", ACCOUNTS[k2]))
 				}
 			}
 		}
@@ -90,16 +90,16 @@ func CHECK_IF_LOW_LEVEL_ACCOUNT_FOR_ALL() []error {
 func CHECK_IF_THE_TREE_CONNECTED() []error {
 	var errors []error
 	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
-	for i := 0; i < max_len; i++ {
+	for k1 := 0; k1 < max_len; k1++ {
 	big_loop:
-		for _, a := range ACCOUNTS {
-			if len(a.ACCOUNT_NUMBER[i]) > 1 {
-				for _, b := range ACCOUNTS {
-					if IS_IT_THE_FATHER(b.ACCOUNT_NUMBER[i], a.ACCOUNT_NUMBER[i]) {
+		for _, v2 := range ACCOUNTS {
+			if len(v2.ACCOUNT_NUMBER[k1]) > 1 {
+				for _, v3 := range ACCOUNTS {
+					if IS_IT_THE_FATHER(v3.ACCOUNT_NUMBER[k1], v2.ACCOUNT_NUMBER[k1]) {
 						continue big_loop
 					}
 				}
-				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", a.ACCOUNT_NUMBER[i], a))
+				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", v2.ACCOUNT_NUMBER[k1], v2))
 			}
 		}
 	}
@@ -201,9 +201,9 @@ func FORMAT_STRING_SLICE_TO_STRING(a []string) string {
 }
 
 func IS_BARCODES_USED(barcode []string) bool {
-	for _, a := range ACCOUNTS {
-		for _, b := range barcode {
-			if IS_IN(b, a.BARCODE) {
+	for _, v1 := range ACCOUNTS {
+		for _, v2 := range barcode {
+			if IS_IN(v2, v1.BARCODE) {
 				return true
 			}
 		}
@@ -315,25 +315,9 @@ func PRINT_FORMATED_ACCOUNTS() {
 	p.Flush()
 }
 
-func SET_FATHER_AND_GRANDPA_ACCOUNTS_NAME() {
-	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
-	for i := 0; i < max_len; i++ {
-		for indexa, a := range ACCOUNTS {
-			if len(a.ACCOUNT_NUMBER[i]) > 1 {
-				for _, b := range ACCOUNTS {
-					if len(b.ACCOUNT_NUMBER[i]) > 0 {
-						if IS_IT_SUB_ACCOUNT_USING_NUMBER(b.ACCOUNT_NUMBER[i], a.ACCOUNT_NUMBER[i]) {
-							ACCOUNTS[indexa].FATHER_AND_GRANDPA_ACCOUNTS_NAME[i] = append(ACCOUNTS[indexa].FATHER_AND_GRANDPA_ACCOUNTS_NAME[i], b.ACCOUNT_NAME)
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
 func SET_THE_ACCOUNTS() {
 	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
+
 	for k1, v1 := range ACCOUNTS {
 		// init the slices
 		ACCOUNTS[k1].FATHER_AND_GRANDPA_ACCOUNTS_NAME = make([][]string, max_len)
@@ -355,16 +339,37 @@ func SET_THE_ACCOUNTS() {
 			ACCOUNTS[k1].COST_FLOW_TYPE = FIFO
 		}
 	}
-	SET_FATHER_AND_GRANDPA_ACCOUNTS_NAME()
-	SORT_THE_ACCOUNTS_BY_ACCOUNT_NUMBER()
-}
 
-func SORT_THE_ACCOUNTS_BY_ACCOUNT_NUMBER() {
-	for indexa := range ACCOUNTS {
-		for indexb := range ACCOUNTS {
-			if indexa < indexb && !IS_IT_HIGH_THAN_BY_ORDER(ACCOUNTS[indexa].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], ACCOUNTS[indexb].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER]) {
-				SWAP(ACCOUNTS, indexa, indexb)
+	// here i set the father and grandpa accounts name
+	for k1 := 0; k1 < max_len; k1++ {
+		for k2, v2 := range ACCOUNTS { // here i loop over account
+			if len(v2.ACCOUNT_NUMBER[k1]) > 1 {
+				for _, v3 := range ACCOUNTS { // but here i loop over account to find the father or grandpa account
+					if len(v3.ACCOUNT_NUMBER[k1]) > 0 {
+						if IS_IT_SUB_ACCOUNT_USING_NUMBER(v3.ACCOUNT_NUMBER[k1], v2.ACCOUNT_NUMBER[k1]) {
+							ACCOUNTS[k2].FATHER_AND_GRANDPA_ACCOUNTS_NAME[k1] = append(ACCOUNTS[k2].FATHER_AND_GRANDPA_ACCOUNTS_NAME[k1], v3.ACCOUNT_NAME)
+						}
+					}
+				}
 			}
 		}
 	}
+
+	// here i sort the accounts by there account number
+	for k1 := range ACCOUNTS {
+		for k2 := range ACCOUNTS {
+			if k1 < k2 && !IS_IT_HIGH_THAN_BY_ORDER(ACCOUNTS[k1].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], ACCOUNTS[k2].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER]) {
+				SWAP(ACCOUNTS, k1, k2)
+			}
+		}
+	}
+}
+
+func SET_RETAINED_EARNINGS_ACCOUNT(account ACCOUNT) ACCOUNT {
+	// in this function i fix the account field to the retained earnings account
+	// just to know the RETAINED_EARNINGS is low level account but i dont want to use it in journal
+	account.IS_LOW_LEVEL_ACCOUNT = true
+	account.IS_CREDIT = true
+	account.IS_TEMPORARY = false
+	return account
 }

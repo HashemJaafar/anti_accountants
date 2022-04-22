@@ -1,4 +1,4 @@
-package anti_accountants
+package main
 
 import (
 	"errors"
@@ -28,21 +28,43 @@ const (
 	PRICE    = "price"
 	QUANTITY = "quantity"
 	// type_of_vpq
-	beginning_balance = "beginning_balance"
-	ending_balance    = "ending_balance"
-	inflow            = "inflow"
-	outflow           = "outflow"
-	flow              = "flow"
-	average           = "average"
-	turnover          = "turnover"
-	turnover_days     = "turnover_days"
-	growth_ratio      = "growth_ratio"
-	percent           = "percent"
-	name_percent      = "name_percent"
+	beginning_balance           = "beginning_balance"
+	ending_balance              = "ending_balance"
+	inflow                      = "inflow"
+	outflow                     = "outflow"
+	flow                        = "flow"
+	average                     = "average"
+	turnover                    = "turnover"
+	turnover_days               = "turnover_days"
+	growth_ratio                = "growth_ratio"
+	name_percent                = "name_percent"
+	change_since_base_period    = "change_since_base_period"
+	growth_ratio_to_base_period = "growth_ratio_to_base_period"
 	// key words for statment columns in financial statement
 	all_names    = "all_names"
 	names        = "names"
 	all_accounts = "all_accounts"
+
+	// all cvp keyword
+	variable_cost                 = "variable_cost"
+	variable_cost_per_units       = "variable_cost_per_units"
+	units                         = "units"
+	fixed_cost                    = "fixed_cost"
+	fixed_cost_per_units          = "fixed_cost_per_units"
+	mixed_cost                    = "mixed_cost"
+	mixed_cost_per_units          = "mixed_cost_per_units"
+	sales                         = "sales"
+	sales_per_units               = "sales_per_units"
+	profit                        = "profit"
+	profit_per_units              = "profit_per_units"
+	contribution_margin           = "contribution_margin"
+	contribution_margin_per_units = "contribution_margin_per_units"
+	break_even_in_sales           = "break_even_in_sales"
+	break_even_in_units           = "break_even_in_units"
+	contribution_margin_ratio     = "contribution_margin_ratio"
+	degree_of_operating_leverage  = "degree_of_operating_leverage"
+	units_gap                     = "units_gap"
+	actual_units                  = "actual_units"
 )
 
 var (
@@ -82,10 +104,10 @@ var (
 	DB_PATH_JOURNAL   = "./db/" + COMPANY_NAME + "/journal"
 	DB_PATH_INVENTORY = "./db/" + COMPANY_NAME + "/inventory"
 	// standards
-	PRINT_TABLE          = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	STANDARD_DAYS        = []string{SATURDAY, SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY}
-	DEPRECIATION_METHODS = []string{LINEAR, EXPONENTIAL, LOGARITHMIC}
-	COST_FLOW_TYPE       = []string{FIFO, LIFO, WMA}
+	PRINT_TABLE = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	// STANDARD_DAYS        = []string{SATURDAY, SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY}
+	// DEPRECIATION_METHODS = []string{LINEAR, EXPONENTIAL, LOGARITHMIC}
+	COST_FLOW_TYPE = []string{FIFO, LIFO, WMA}
 	//errors
 	ERROR_NOT_LISTED             = errors.New("is not listed")
 	ERROR_NOT_INVENTORY_ACCOUNT  = errors.New("not inventory account")
@@ -141,12 +163,75 @@ type AUTO_COMPLETE_ENTRIE struct {
 	QUANTITY_CREDIT float64
 }
 type FILTERED_STATEMENT struct {
-	KEY_ACCOUNT_FLOW string
-	KEY_ACCOUNT      string
-	KEY_NAME         string
-	KEY_VPQ          string
-	KEY_NUMBER       string
-	NUMBER           float64
+	ACCOUNT1    string
+	ACCOUNT2    string
+	NAME        string
+	VPQ         string
+	TYPE_OF_VPQ string
+	NUMBER      float64
+}
+type THE_FILTER_OF_THE_STATEMENT struct {
+	old_statement         map[string]map[string]map[string]map[string]map[string]float64
+	account1              []string
+	account2              []string
+	name                  []string
+	vpq                   []string
+	type_of_vpq           []string
+	account1_levels       []uint
+	account2_levels       []uint
+	is_in_account1        bool
+	is_in_account2        bool
+	is_in_name            bool
+	is_in_vpq             bool
+	is_in_type_of_vpq     bool
+	is_in_account1_levels bool
+	is_in_account2_levels bool
+}
+type THE_JOURNAL_FILTER struct {
+	JUST_BETWEEN_DATE                          bool
+	JUST_BETWEEN_REVERSE_ENTRY_NUMBER_COMPOUND bool
+	JUST_BETWEEN_REVERSE_ENTRY_NUMBER_SIMPLE   bool
+	JUST_BETWEEN_ENTRY_NUMBER_COMPOUND         bool
+	JUST_BETWEEN_ENTRY_NUMBER_SIMPLE           bool
+	JUST_BETWEEN_VALUE                         bool
+	JUST_BETWEEN_PRICE_DEBIT                   bool
+	JUST_BETWEEN_PRICE_CREDIT                  bool
+	JUST_BETWEEN_QUANTITY_DEBIT                bool
+	JUST_BETWEEN_QUANTITY_CREDIT               bool
+	IS_IN_SLICE_IS_REVERSE                     bool
+	IS_IN_SLICE_IS_REVERSED                    bool
+	IS_IN_SLICE_ACCOUNT_DEBIT                  bool
+	IS_IN_SLICE_ACCOUNT_CREDIT                 bool
+	IS_IN_SLICE_NOTES                          bool
+	IS_IN_SLICE_NAME                           bool
+	IS_IN_SLICE_NAME_EMPLOYEE                  bool
+	ABOVE_DATE                                 time.Time
+	ABOVE_REVERSE_ENTRY_NUMBER_COMPOUND        int
+	ABOVE_REVERSE_ENTRY_NUMBER_SIMPLE          int
+	ABOVE_ENTRY_NUMBER_COMPOUND                int
+	ABOVE_ENTRY_NUMBER_SIMPLE                  int
+	ABOVE_VALUE                                float64
+	ABOVE_PRICE_DEBIT                          float64
+	ABOVE_PRICE_CREDIT                         float64
+	ABOVE_QUANTITY_DEBIT                       float64
+	ABOVE_QUANTITY_CREDIT                      float64
+	BELLOW_DATE                                time.Time
+	BELLOW_REVERSE_ENTRY_NUMBER_COMPOUND       int
+	BELLOW_REVERSE_ENTRY_NUMBER_SIMPLE         int
+	BELLOW_ENTRY_NUMBER_COMPOUND               int
+	BELLOW_ENTRY_NUMBER_SIMPLE                 int
+	BELLOW_VALUE                               float64
+	BELLOW_PRICE_DEBIT                         float64
+	BELLOW_PRICE_CREDIT                        float64
+	BELLOW_QUANTITY_DEBIT                      float64
+	BELLOW_QUANTITY_CREDIT                     float64
+	SLICE_IS_REVERSE                           []bool
+	SLICE_IS_REVERSED                          []bool
+	SLICE_ACCOUNT_DEBIT                        []string
+	SLICE_ACCOUNT_CREDIT                       []string
+	SLICE_NOTES                                []string
+	SLICE_NAME                                 []string
+	SLICE_NAME_EMPLOYEE                        []string
 }
 type FINANCIAL_ACCOUNTING struct {
 	ASSETS                    []string
@@ -169,19 +254,22 @@ type FINANCIAL_ACCOUNTING struct {
 	INTEREST_EXPENSE          []string
 }
 type JOURNAL_TAG struct {
-	REVERSE               bool
-	ENTRY_NUMBER_COMPOUND int
-	ENTRY_NUMBER_SIMPLE   int
-	VALUE                 float64
-	PRICE_DEBIT           float64
-	PRICE_CREDIT          float64
-	QUANTITY_DEBIT        float64
-	QUANTITY_CREDIT       float64
-	ACCOUNT_DEBIT         string
-	ACCOUNT_CREDIT        string
-	NOTES                 string
-	NAME                  string
-	NAME_EMPLOYEE         string
+	IS_REVERSE                    bool
+	IS_REVERSED                   bool
+	REVERSE_ENTRY_NUMBER_COMPOUND int
+	REVERSE_ENTRY_NUMBER_SIMPLE   int
+	ENTRY_NUMBER_COMPOUND         int
+	ENTRY_NUMBER_SIMPLE           int
+	VALUE                         float64
+	PRICE_DEBIT                   float64
+	PRICE_CREDIT                  float64
+	QUANTITY_DEBIT                float64
+	QUANTITY_CREDIT               float64
+	ACCOUNT_DEBIT                 string
+	ACCOUNT_CREDIT                string
+	NOTES                         string
+	NAME                          string
+	NAME_EMPLOYEE                 string
 }
 type INVENTORY_TAG struct {
 	PRICE        float64
