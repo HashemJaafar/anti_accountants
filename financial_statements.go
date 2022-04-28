@@ -1,362 +1,368 @@
-package anti_accountants
+package main
 
 import (
-	"math"
+	"fmt"
 	"time"
 )
 
-func ending_balance(statement map[string]map[string]map[string]map[string]map[string]float64, key_account_flow, key_account, key_name, key_vpq string) float64 {
-	return statement[key_account_flow][key_account][key_name][key_vpq]["beginning_balance"] + statement[key_account][key_account][key_name][key_vpq]["increase"] - statement[key_account][key_account][key_name][key_vpq]["decrease"]
-}
+func FINANCIAL_STATEMENTS(all_end_dates []time.Time, period_in_days_before_end_date uint, names_you_want []string, in_names bool, retained_earnings_account ACCOUNT) ([]map[string]map[string]map[string]map[string]map[string]float64, error) {
+	var statements []map[string]map[string]map[string]map[string]map[string]float64
 
-func sum_flows(b JOURNAL_TAG, both_credit_or_debit bool, map_v, map_q map[string]float64) {
-	if (b.VALUE > 0) == both_credit_or_debit {
-		map_v["outflow"] += math.Abs(b.VALUE)
-		map_q["outflow"] += math.Abs(b.QUANTITY)
-	} else {
-		map_v["inflow"] += math.Abs(b.VALUE)
-		map_q["inflow"] += math.Abs(b.QUANTITY)
+	// if the account name is used then the function is abort
+	_, _, err := ACCOUNT_STRUCT_FROM_NAME(retained_earnings_account.ACCOUNT_NAME)
+	if err == nil {
+		return statements, ERROR_ACCOUNT_NAME_IS_USED
 	}
-}
 
-func sum_values(date, start_date time.Time, entry JOURNAL_TAG, nan_flow_statement map[string]map[string]map[string]map[string]float64) {
-	map_v1 := initialize_map_3(nan_flow_statement, entry.ACCOUNT, entry.NAME, "value")
-	map_q1 := initialize_map_3(nan_flow_statement, entry.ACCOUNT, entry.NAME, "quantity")
-	map_v2 := initialize_map_3(nan_flow_statement, PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, entry.NAME, "value")
-	map_q2 := initialize_map_3(nan_flow_statement, PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, entry.NAME, "quantity")
-	if date.Before(start_date) {
-		switch {
-		case is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, entry.ACCOUNT) && is_credit(entry.ACCOUNT):
-			map_v2["beginning_balance"] += entry.VALUE
-			map_q2["beginning_balance"] += entry.QUANTITY
-		case is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.RETAINED_EARNINGS, entry.ACCOUNT) && !is_credit(entry.ACCOUNT):
-			map_v2["beginning_balance"] -= entry.VALUE
-			map_q2["beginning_balance"] -= entry.QUANTITY
-		default:
-			map_v1["beginning_balance"] += entry.VALUE
-			map_q1["beginning_balance"] += entry.QUANTITY
-		}
-	}
-	if date.After(start_date) {
-		if entry.VALUE >= 0 {
-			map_v1["increase"] += math.Abs(entry.VALUE)
-			map_q1["increase"] += math.Abs(entry.QUANTITY)
-		} else {
-			map_v1["decrease"] += math.Abs(entry.VALUE)
-			map_q1["decrease"] += math.Abs(entry.QUANTITY)
-		}
-	}
-}
+	// here i store the ACCOUNTS to old_accounts to restore after add the retained_earnings_account
+	old_accounts := ACCOUNTS
 
-func sum_flow(date, start_date time.Time, one_simple_entry []JOURNAL_TAG, flow_statement map[string]map[string]map[string]map[string]map[string]float64) {
-	for _, a := range one_simple_entry {
-		for _, b := range one_simple_entry {
-			map_v := initialize_map_4(flow_statement, a.ACCOUNT, b.ACCOUNT, b.NAME, "value")
-			map_q := initialize_map_4(flow_statement, a.ACCOUNT, b.ACCOUNT, b.NAME, "quantity")
-			if date.After(start_date) {
-				both_credit_or_debit := is_credit(b.ACCOUNT) == is_credit(a.ACCOUNT)
-				if b.ACCOUNT == a.ACCOUNT {
-					sum_flows(b, false, map_v, map_q)
-				} else {
-					sum_flows(b, both_credit_or_debit, map_v, map_q)
-				}
-			}
-		}
-	}
-}
+	retained_earnings_account = SET_RETAINED_EARNINGS_ACCOUNT(retained_earnings_account)
+	ACCOUNTS = append(ACCOUNTS, retained_earnings_account)
+	SET_THE_ACCOUNTS()
 
-func calculate_price(statement map[string]map[string]map[string]map[string]map[string]float64) {
-	for _, map_account_flow := range statement {
-		for _, map_account := range map_account_flow {
-			for _, map_name := range map_account {
-				if map_name["price"] == nil {
-					map_name["price"] = map[string]float64{}
-				}
-				for _, map_vpq := range map_name {
-					for key_number := range map_vpq {
-						map_name["price"][key_number] = map_name["value"][key_number] / map_name["quantity"][key_number]
-					}
-				}
-			}
-		}
-	}
-}
+	SORT_TIME(all_end_dates, true)
 
-func prepare_statement(statement map[string]map[string]map[string]map[string]map[string]float64) {
-	for key_account_flow, map_account_flow := range statement {
-		if key_account_flow == PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS {
-			for key_account, map_account := range map_account_flow {
-				for key_name, map_name := range map_account {
-					for key_vpq, map_vpq := range map_name {
-						map_vpq1 := initialize_map_4(statement, "financial_statement", key_account, key_name, key_vpq)
-						for key_number, number := range map_vpq {
-							map_vpq1[key_number] = number
-							if !is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT, key_account) {
-								map_vpq1["percent"] = statement[PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT][key_account][key_name][key_vpq]["percent"]
-							} else {
-								map_vpq1["percent"] = statement[PRIMARY_ACCOUNTS_NAMES.ASSETS][key_account][key_name][key_vpq]["percent"]
-							}
-							switch {
-							case is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.INVENTORY, key_account):
-								map_vpq1["turnover"] = statement[PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD][key_account][key_name][key_vpq]["turnover"]
-								map_vpq1["turnover_days"] = statement[PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD][key_account][key_name][key_vpq]["turnover_days"]
-							case is_it_sub_account_using_name(PRIMARY_ACCOUNTS_NAMES.ASSETS, key_account):
-								map_vpq1["turnover"] = statement[PRIMARY_ACCOUNTS_NAMES.SALES][key_account][key_name][key_vpq]["turnover"]
-								map_vpq1["turnover_days"] = statement[PRIMARY_ACCOUNTS_NAMES.SALES][key_account][key_name][key_vpq]["turnover_days"]
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
+	keys, journal := DB_READ[JOURNAL_TAG](DB_JOURNAL)
+	journal_times := CONVERT_BYTE_SLICE_TO_TIME(keys)
 
-func horizontal_analysis(statement_current, statement_base map[string]map[string]map[string]map[string]map[string]float64) {
-	for key_account_flow, map_account_flow := range statement_current {
-		for key_account, map_account := range map_account_flow {
-			for key_name, map_name := range map_account {
-				for key_vpq, map_vpq := range map_name {
-					map_vpq["change_since_base_period"] = map_vpq["ending_balance"] - statement_base[key_account_flow][key_account][key_name][key_vpq]["ending_balance"]
-					map_vpq["growth_ratio_to_base_period"] = map_vpq["ending_balance"] / statement_base[key_account_flow][key_account][key_name][key_vpq]["ending_balance"]
-				}
-			}
-		}
-	}
-}
-
-func vertical_analysis(statement map[string]map[string]map[string]map[string]map[string]float64, days float64) {
-	for key_account_flow, map_account_flow := range statement {
-		for key_account, map_account := range map_account_flow {
-			for key_name, map_name := range map_account {
-				for key_vpq, map_vpq := range map_name {
-					map_vpq["increase_or_decrease"] = map_vpq["increase"] - map_vpq["decrease"]
-					map_vpq["ending_balance"] = map_vpq["beginning_balance"] + map_vpq["increase_or_decrease"]
-					map_vpq["flow"] = map_vpq["inflow"] - map_vpq["outflow"]
-					map_vpq["average"] = (map_vpq["ending_balance"] + map_vpq["beginning_balance"]) / 2
-					map_vpq["turnover"] = map_vpq["inflow"] / map_vpq["average"]
-					map_vpq["turnover_days"] = days / map_vpq["turnover"]
-					map_vpq["growth_ratio"] = map_vpq["ending_balance"] / map_vpq["beginning_balance"]
-					map_vpq["percent"] = map_vpq["ending_balance"] / ending_balance(statement, key_account_flow, key_account_flow, key_name, key_vpq)
-					map_vpq["name_percent"] = map_vpq["ending_balance"] / ending_balance(statement, key_account_flow, key_account, "all", key_vpq)
-				}
-			}
-		}
-	}
-}
-
-func sum_3rd_column(statement map[string]map[string]map[string]map[string]map[string]float64, names, exempt_names []string, name string, in_names bool) {
-	for _, map_account_flow := range statement {
-		for _, map_account := range map_account_flow {
-			if map_account[name] == nil {
-				map_account[name] = map[string]map[string]float64{}
-			}
-			for key_name, map_name := range map_account {
-				var ok bool
-				if !is_in(key_name, append(exempt_names, name)) {
-					if is_in(key_name, names) == in_names {
-						ok = true
-					}
-					if ok {
-						for key_vpq, map_vpq := range map_name {
-							if map_account[name][key_vpq] == nil {
-								map_account[name][key_vpq] = map[string]float64{}
-							}
-							for key_number, number := range map_vpq {
-								map_account[name][key_vpq][key_number] += number
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-func sum_2nd_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
-	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
-	for key_account_flow, map_account_flow := range statement {
-		for key_account, map_account := range map_account_flow {
-			higher_level_accounts := append(find_all_higher_level_accounts(key_account), key_account)
-			for key_name, map_name := range map_account {
-				for key_vpq, map_vpq := range map_name {
-					for _, accuont := range higher_level_accounts {
-						new_map_vpq := initialize_map_4(new_statement, key_account_flow, accuont, key_name, key_vpq)
-						for key_number, number := range map_vpq {
-							switch {
-							case !is_in(key_number, []string{"inflow", "outflow"}):
-								if is_credit(key_account) == is_credit(accuont) {
-									new_map_vpq[key_number] += number
-								} else {
-									new_map_vpq[key_number] -= number
-								}
-							case key_account_flow != accuont:
-								new_map_vpq[key_number] += number
-							case key_account_flow == accuont:
-								new_statement[key_account_flow][accuont][key_name][key_vpq][key_number] += number
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	// for key_account_flow, map_account_flow := range statement {
-	// 	for key_account, map_account := range map_account_flow {
-	// 		var last_name string
-	// 		key1 := key_account
-	// 		for {
-	// 			for _, ss := range ACCOUNTS {
-	// 				if ss.NAME == key_account {
-	// 					key_account = ss.FATHER
-	// 					for key_name, map_name := range map_account {
-	// 						for key_vpq, map_vpq := range map_name {
-	// 							map_vpq1 := initialize_map_4(new_statement, key_account_flow, ss.NAME, key_name, key_vpq)
-	// 							for key_number, number := range map_vpq {
-	// 								switch {
-	// 								case !is_in(key_number, []string{"inflow", "outflow"}):
-	// 									if is_credit(key1) == is_credit(ss.NAME) {
-	// 										map_vpq1[key_number] += number
-	// 									} else {
-	// 										map_vpq1[key_number] -= number
-	// 									}
-	// 								case key_account_flow != key1:
-	// 									map_vpq1[key_number] += number
-	// 								case key_account_flow == ss.NAME:
-	// 									new_statement[key_account_flow][key1][key_name][key_vpq][key_number] += number
-	// 								}
-	// 							}
-	// 						}
-	// 					}
-	// 				}
-	// 			}
-	// 			if last_name == key_account {
-	// 				break
-	// 			}
-	// 			last_name = key_account
-	// 		}
-	// 	}
-	// }
-	return new_statement
-}
-
-func sum_1st_column(statement map[string]map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
-	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
-	for key_account_flow, map_account_flow := range statement {
-		higher_level_accounts := append(find_all_higher_level_accounts(key_account_flow), key_account_flow)
-		for key_account, map_account := range map_account_flow {
-			for key_name, map_name := range map_account {
-				for key_vpq, map_vpq := range map_name {
-					for _, accuont := range higher_level_accounts {
-						new_map_vpq := initialize_map_4(new_statement, accuont, key_account, key_name, key_vpq)
-						for key_number, number := range map_vpq {
-							switch {
-							case !is_in(key_number, []string{"inflow", "outflow"}):
-								// if is_credit(key_account) == is_credit(accuont) {
-								new_map_vpq[key_number] += number
-								// } else {
-								// 	new_map_vpq[key_number] -= number
-								// }
-							default:
-								new_map_vpq[key_number] = number
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	// var flow_accounts []string
-	// for _, a := range ACCOUNTS {
-	// 	for _, b := range ACCOUNTS {
-	// 		if is_it_sub_account_using_name(a.NAME, b.NAME) {
-	// 			flow_accounts = append(flow_accounts, b.NAME)
-	// 		}
-	// 	}
-	// 	for key_account_flow, map_account_flow := range statement {
-	// 		if is_in(key_account_flow, flow_accounts) {
-	// 			for key_account, map_account := range map_account_flow {
-	// 				for key_name, map_name := range map_account {
-	// 					for key_vpq, map_vpq := range map_name {
-	// 						map_vpq1 := initialize_map_4(new_statement, a.NAME, key_account, key_name, key_vpq)
-	// 						for key_number, number := range map_vpq {
-	// 							switch {
-	// 							case is_in(key_number, []string{"inflow", "outflow"}):
-	// 								if is_credit(a.NAME) == is_credit(key_account_flow) {
-	// 									map_vpq1[key_number] += number
-	// 								} else {
-	// 									map_vpq1[key_number] -= number
-	// 								}
-	// 							default:
-	// 								map_vpq1[key_number] = number
-	// 							}
-	// 						}
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// 	flow_accounts = []string{}
-	// }
-	return new_statement
-}
-
-func combine_statements(flow_statement map[string]map[string]map[string]map[string]map[string]float64, nan_flow_statement map[string]map[string]map[string]map[string]float64) map[string]map[string]map[string]map[string]map[string]float64 {
-	for key_account_flow := range nan_flow_statement {
-		for key_account, map_account := range nan_flow_statement {
-			for key_name, map_name := range map_account {
-				for key_vpq, map_vpq := range map_name {
-					map_vpq1 := initialize_map_4(flow_statement, key_account_flow, key_account, key_name, key_vpq)
-					for key_number := range map_vpq {
-						map_vpq1[key_number] = map_vpq[key_number]
-					}
-				}
-			}
-		}
-	}
-	return flow_statement
-}
-
-func statement(journal []JOURNAL_TAG, start_date, end_date time.Time) (map[string]map[string]map[string]map[string]map[string]float64, map[string]map[string]map[string]map[string]float64) {
-	var one_simple_entry []JOURNAL_TAG
-	var previous_entry_number int
-	var date time.Time
-	flow_statement := map[string]map[string]map[string]map[string]map[string]float64{}
-	nan_flow_statement := map[string]map[string]map[string]map[string]float64{}
-	for _, entry := range journal {
-		date = parse_date(entry.DATE, DATE_LAYOUT)
-		if previous_entry_number != entry.ENTRY_NUMBER {
-			sum_flow(date, start_date, one_simple_entry, flow_statement)
-			one_simple_entry = []JOURNAL_TAG{}
-		}
-		if date.Before(end_date) {
-			sum_values(date, start_date, entry, nan_flow_statement)
-			one_simple_entry = append(one_simple_entry, entry)
-		}
-		previous_entry_number = entry.ENTRY_NUMBER
-	}
-	sum_flow(date, start_date, one_simple_entry, flow_statement)
-	return flow_statement, nan_flow_statement
-}
-
-func FINANCIAL_STATEMENTS(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER []JOURNAL_TAG, start_date, end_date time.Time, periods int, names []string, in_names bool) []map[string]map[string]map[string]map[string]map[string]float64 {
-	check_dates(start_date, end_date)
-	days := int(end_date.Sub(start_date).Hours() / 24)
-	statements := []map[string]map[string]map[string]map[string]map[string]float64{}
-	for a := 0; a < periods; a++ {
-		flow_statement, nan_flow_statement := statement(JOURNAL_ORDERED_BY_DATE_ENTRY_NUMBER, start_date.AddDate(0, 0, -days*a), end_date.AddDate(0, 0, -days*a))
-		statement := combine_statements(flow_statement, nan_flow_statement)
-		statement = sum_1st_column(statement)
-		statement = sum_2nd_column(statement)
-		sum_3rd_column(statement, []string{}, []string{}, "all", false)
-		sum_3rd_column(statement, names, []string{"all"}, "names", in_names)
-		vertical_analysis(statement, float64(days))
+	for _, v1 := range all_end_dates {
+		trailing_balance_sheet := STATEMENT_STEP_1(journal_times, journal, v1.AddDate(0, 0, -int(period_in_days_before_end_date)), v1)
+		trailing_balance_sheet = STATEMENT_STEP_2(trailing_balance_sheet, retained_earnings_account.ACCOUNT_NAME)
+		trailing_balance_sheet = STATEMENT_STEP_3(trailing_balance_sheet)
+		trailing_balance_sheet = STATEMENT_STEP_4(trailing_balance_sheet)
+		trailing_balance_sheet = STATEMENT_STEP_5(in_names, names_you_want, trailing_balance_sheet)
+		statement := STATEMENT_STEP_6(trailing_balance_sheet)
+		STATEMENT_STEP_7(period_in_days_before_end_date, statement)
+		STATEMENT_STEP_8(statement)
 		statements = append(statements, statement)
 	}
-	for _, statement_current := range statements {
-		horizontal_analysis(statement_current, statements[periods-1])
-		prepare_statement(statement_current)
-		calculate_price(statement_current)
+
+	for _, v1 := range statements {
+		HORIZONTAL_ANALYSIS(v1, statements[0])
+		// 		prepare_statement(statement_current)
+		CALCULATE_PRICE(v1)
 	}
-	return statements
+
+	ACCOUNTS = old_accounts
+	return statements, nil
+}
+
+func STATEMENT_STEP_1(journal_times []time.Time, journal []JOURNAL_TAG, date_start, date_end time.Time) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+	// in this function we create the statement map
+
+	// the sequanse of the columns is:account1,account2,name,vpq,is_before_date_start,is_credit,number
+	new_statement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
+
+	for k1, v1 := range journal {
+		switch {
+		case journal_times[k1].Before(date_start):
+			fill_new_statement(new_statement, v1, true)
+		case journal_times[k1].Before(date_end):
+			fill_new_statement(new_statement, v1, false)
+		default:
+			break
+		}
+	}
+
+	return new_statement
+}
+
+func STATEMENT_STEP_2(old_statement map[string]map[string]map[string]map[string]map[bool]map[bool]float64, retained_earnings_account_name string) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+	// in this function i insert retained earnings account in column account 1
+
+	new_statement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
+
+	for k1, v1 := range old_statement { //account1
+		account_struct, _, _ := ACCOUNT_STRUCT_FROM_NAME(k1)
+		for k2, v2 := range v1 { //account2
+			for k3, v3 := range v2 { //name
+				for k4, v4 := range v3 { //vpq
+					for k5, v5 := range v4 { //is_before_date_start
+						for k6, v6 := range v5 { //is_credit
+							// if the account is temporary account and the entry is before the date start
+							// then i insert retained earnings account in column account 1
+							// else i dont do anything
+							if account_struct.IS_TEMPORARY && k5 {
+								m := INITIALIZE_MAP_6(new_statement, retained_earnings_account_name, k2, k3, k4, k5)
+								m[k6] += v6
+							} else {
+								// here i copy the map
+								m := INITIALIZE_MAP_6(new_statement, k1, k2, k3, k4, k5)
+								m[k6] += v6
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return new_statement
+}
+
+func STATEMENT_STEP_3(old_statement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+	// in this function i insert the father accounts in column account1
+	// i sum the credit to credit and debit to debit . like:
+	// if there is three accounts like this:
+	// assets debit,equipment debit,depreciation credit
+	// i will sum the debit side of the equipment and depreciation to debit side of assets
+	// and the credit side of the equipment and depreciation to credit side of assets
+
+	new_statement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
+
+	for k1, v1 := range old_statement { //account1
+		account_struct, _, _ := ACCOUNT_STRUCT_FROM_NAME(k1)
+		for k2, v2 := range v1 { //account2
+			for k3, v3 := range v2 { //name
+				for k4, v4 := range v3 { //vpq
+					for k5, v5 := range v4 { //is_before_date_start
+						for k6, v6 := range v5 { //is_credit
+							// here i copy the map
+							m := INITIALIZE_MAP_6(new_statement, k1, k2, k3, k4, k5)
+							m[k6] += v6
+
+							for _, v7 := range account_struct.FATHER_AND_GRANDPA_ACCOUNTS_NAME[INDEX_OF_ACCOUNT_NUMBER] {
+								m = INITIALIZE_MAP_6(new_statement, v7, k2, k3, k4, k5)
+								m[k6] += v6
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return new_statement
+}
+
+func STATEMENT_STEP_4(old_statement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+	// in this function i insert the father accounts and 'all_accounts' key word in column account2
+	// i sum the credit to credit and debit to debit . like:
+	// if there is three accounts like this:
+	// assets debit,equipment debit,depreciation credit
+	// i will sum the debit side of the equipment and depreciation to debit side of assets
+	// and the credit side of the equipment and depreciation to credit side of assets
+
+	new_statement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
+
+	for k1, v1 := range old_statement { //account1
+		for k2, v2 := range v1 { //account2
+			account_struct, _, _ := ACCOUNT_STRUCT_FROM_NAME(k2)
+			for k3, v3 := range v2 { //name
+				for k4, v4 := range v3 { //vpq
+					for k5, v5 := range v4 { //is_before_date_start
+						for k6, v6 := range v5 { //is_credit
+							// here i copy the map
+							m := INITIALIZE_MAP_6(new_statement, k1, k2, k3, k4, k5)
+							m[k6] += v6
+
+							// here i insert the key word 'all_accounts' in column account2
+							m = INITIALIZE_MAP_6(new_statement, k1, all_accounts, k3, k4, k5)
+							m[k6] += v6
+
+							for _, v7 := range account_struct.FATHER_AND_GRANDPA_ACCOUNTS_NAME[INDEX_OF_ACCOUNT_NUMBER] {
+								m = INITIALIZE_MAP_6(new_statement, k1, v7, k3, k4, k5)
+								m[k6] += v6
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return new_statement
+}
+
+func STATEMENT_STEP_5(in_names bool, names_you_want []string, old_statement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+	// in this function i insert the key word 'all_names' and 'names' in column name
+
+	new_statement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
+
+	for k1, v1 := range old_statement { //account1
+		for k2, v2 := range v1 { //account2
+			for k3, v3 := range v2 { //name
+				for k4, v4 := range v3 { //vpq
+					for k5, v5 := range v4 { //is_before_date_start
+						for k6, v6 := range v5 { //is_credit
+							// here i copy the map
+							m := INITIALIZE_MAP_6(new_statement, k1, k2, k3, k4, k5)
+							m[k6] += v6
+
+							// here i insert the key word 'all_names' in column name
+							m = INITIALIZE_MAP_6(new_statement, k1, k2, all_names, k4, k5)
+							m[k6] += v6
+
+							if IS_IN(k2, names_you_want) == in_names {
+								// here i insert the key word 'names' in column name
+								m = INITIALIZE_MAP_6(new_statement, k1, k2, names, k4, k5)
+								m[k6] += v6
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return new_statement
+}
+
+func STATEMENT_STEP_6(old_statement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[string]float64 {
+	// in this function i insert the type_of_vpq and remove column is before_date_start and is_credit
+
+	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
+	new_statement := map[string]map[string]map[string]map[string]map[string]float64{}
+
+	for k1, v1 := range old_statement { //account1
+		account_struct1, _, _ := ACCOUNT_STRUCT_FROM_NAME(k1)
+		for k2, v2 := range v1 { //account2
+			for k3, v3 := range v2 { //name
+				for k4, v4 := range v3 { //vpq
+					for k5, v5 := range v4 { //is_before_date_start
+						for k6, v6 := range v5 { //is_credit
+							if k5 {
+								// here i insert beginning_balance
+								if account_struct1.IS_CREDIT == k6 {
+									m := INITIALIZE_MAP_5(new_statement, k1, k2, k3, k4)
+									m[beginning_balance] += v6
+								} else {
+									m := INITIALIZE_MAP_5(new_statement, k1, k2, k3, k4)
+									m[beginning_balance] -= v6
+								}
+							} else {
+								// here i insert inflow and outflow
+								if account_struct1.IS_CREDIT == k6 {
+									m := INITIALIZE_MAP_5(new_statement, k1, k2, k3, k4)
+									m[inflow] += v6
+								} else {
+									m := INITIALIZE_MAP_5(new_statement, k1, k2, k3, k4)
+									m[outflow] += v6
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return new_statement
+}
+
+func STATEMENT_STEP_7(days uint, old_statement map[string]map[string]map[string]map[string]map[string]float64) {
+	// in this function we make vertical analysis of the statement
+
+	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
+	for _, v1 := range old_statement { //account1
+		for _, v2 := range v1 { //account2
+			for _, v3 := range v2 { //name
+				for _, v4 := range v3 { //vpq
+					v4[flow] = v4[inflow] - v4[outflow]
+					// here i calculate the ending balance of the account by sum the flow with beginning_balance
+					// because the inflow is the same of the increase of the account
+					// and outflow is the same of the decrease of the account
+					v4[ending_balance] = v4[beginning_balance] + v4[flow]
+					v4[average] = (v4[ending_balance] + v4[beginning_balance]) / 2
+					v4[turnover] = v4[outflow] / v4[average]
+					v4[turnover_days] = float64(days) / v4[turnover]
+					v4[growth_ratio] = v4[ending_balance] / v4[beginning_balance]
+				}
+			}
+		}
+	}
+}
+
+func STATEMENT_STEP_8(old_statement map[string]map[string]map[string]map[string]map[string]float64) {
+	// in this function i complete vertical analysis of the statement
+	// but here i calculate the percentage of the account from account father
+
+	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
+	for _, v1 := range old_statement { //account1
+		for _, v2 := range v1 { //account2
+			for _, v3 := range v2 { //name
+				for k4, v4 := range v3 { //vpq
+					v4[name_percent] = v4[ending_balance] / v2[all_names][k4][ending_balance]
+				}
+			}
+		}
+	}
+}
+
+func HORIZONTAL_ANALYSIS(old_statement, base_statement map[string]map[string]map[string]map[string]map[string]float64) {
+	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
+	for k1, v1 := range old_statement { //account1
+		for k2, v2 := range v1 { //account2
+			for k3, v3 := range v2 { //name
+				for k4, v4 := range v3 { //vpq
+					v4[change_since_base_period] = v4[ending_balance] - base_statement[k1][k2][k3][k4][ending_balance]
+					v4[growth_ratio_to_base_period] = v4[ending_balance] / base_statement[k1][k2][k3][k4][ending_balance]
+				}
+			}
+		}
+	}
+}
+
+func CALCULATE_PRICE(old_statement map[string]map[string]map[string]map[string]map[string]float64) {
+	// in this function we calculate the price
+
+	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
+	for _, v1 := range old_statement { //account1
+		for _, v2 := range v1 { //account2
+			for _, v3 := range v2 { //name
+				if v3[PRICE] == nil {
+					v3[PRICE] = map[string]float64{}
+				}
+				for _, v4 := range v3 { //vpq
+					for k5 := range v4 { //type_of_vpq
+						v3[PRICE][k5] = v3[VALUE][k5] / v3[QUANTITY][k5]
+					}
+				}
+			}
+		}
+	}
+}
+
+func fill_new_statement(new_statement map[string]map[string]map[string]map[string]map[bool]map[bool]float64, v1 JOURNAL_TAG, is_before_date_start bool) {
+	m := INITIALIZE_MAP_6(new_statement, v1.ACCOUNT_CREDIT, v1.ACCOUNT_DEBIT, v1.NAME, VALUE, is_before_date_start)
+	m[true] += v1.VALUE
+	m = INITIALIZE_MAP_6(new_statement, v1.ACCOUNT_CREDIT, v1.ACCOUNT_DEBIT, v1.NAME, QUANTITY, is_before_date_start)
+	m[true] += ABS(v1.QUANTITY_CREDIT)
+	m = INITIALIZE_MAP_6(new_statement, v1.ACCOUNT_DEBIT, v1.ACCOUNT_CREDIT, v1.NAME, VALUE, is_before_date_start)
+	m[false] += v1.VALUE
+	m = INITIALIZE_MAP_6(new_statement, v1.ACCOUNT_DEBIT, v1.ACCOUNT_CREDIT, v1.NAME, QUANTITY, is_before_date_start)
+	m[false] += ABS(v1.QUANTITY_DEBIT)
+}
+
+func STATEMENT_FILTER(a THE_FILTER_OF_THE_STATEMENT) []FILTERED_STATEMENT {
+	var new_statement []FILTERED_STATEMENT
+
+	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
+	for k1, v1 := range a.old_statement { //account1
+		account_struct1, _, _ := ACCOUNT_STRUCT_FROM_NAME(k1)
+		if IS_IN(k1, a.account1) == a.is_in_account1 && IS_IN(account_struct1.ACCOUNT_LEVELS[INDEX_OF_ACCOUNT_NUMBER], a.account1_levels) == a.is_in_account1_levels {
+			for k2, v2 := range v1 { //account2
+				account_struct2, _, _ := ACCOUNT_STRUCT_FROM_NAME(k2)
+				fmt.Println(account_struct2)
+				if IS_IN(k2, a.account2) == a.is_in_account2 && IS_IN(account_struct2.ACCOUNT_LEVELS[INDEX_OF_ACCOUNT_NUMBER], a.account2_levels) == a.is_in_account2_levels {
+					for k3, v3 := range v2 { //name
+						if IS_IN(k3, a.name) == a.is_in_name {
+							for k4, v4 := range v3 { //vpq
+								if IS_IN(k4, a.vpq) == a.is_in_vpq {
+									for k5, v5 := range v4 { //type_of_vpq
+										if IS_IN(k5, a.type_of_vpq) == a.is_in_type_of_vpq {
+											new_statement = append(new_statement, FILTERED_STATEMENT{k1, k2, k3, k4, k5, v5})
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return new_statement
 }

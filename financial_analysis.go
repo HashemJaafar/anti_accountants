@@ -1,4 +1,4 @@
-package anti_accountants
+package main
 
 func FINANCIAL_ANALYSIS_STATEMENT_func(s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_STATEMENT {
 	CURRENT_RATIO := s.CURRENT_ASSETS / s.CURRENT_LIABILITIES
@@ -32,34 +32,34 @@ func FINANCIAL_ANALYSIS_STATEMENT_func(s FINANCIAL_ANALYSIS) FINANCIAL_ANALYSIS_
 		PRICE_EARNINGS_RATIO:                 PRICE_EARNINGS_RATIO}
 }
 
-func ANALYSIS(statements []map[string]map[string]map[string]map[string]map[string]float64) []FINANCIAL_ANALYSIS_STATEMENT {
-	var all_analysis []FINANCIAL_ANALYSIS_STATEMENT
-	for _, statement := range statements {
-		analysis := FINANCIAL_ANALYSIS_STATEMENT_func(FINANCIAL_ANALYSIS{
-			CURRENT_ASSETS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS]["names"]["value"]["ending_balance"],
-			CURRENT_LIABILITIES:                 statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CURRENT_LIABILITIES]["names"]["value"]["ending_balance"],
-			CASH:                                statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS]["names"]["value"]["ending_balance"],
-			SHORT_TERM_INVESTMENTS:              statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.SHORT_TERM_INVESTMENTS]["names"]["value"]["ending_balance"],
-			NET_RECEIVABLES:                     statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["value"]["ending_balance"],
-			NET_CREDIT_SALES:                    statement[PRIMARY_ACCOUNTS_NAMES.SALES][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["value"]["flow"],
-			AVERAGE_NET_RECEIVABLES:             statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["value"]["average"],
-			COST_OF_GOODS_SOLD:                  statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD]["names"]["value"]["ending_balance"],
-			AVERAGE_INVENTORY:                   statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INVENTORY]["names"]["value"]["average"],
-			NET_INCOME:                          statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT]["names"]["value"]["ending_balance"],
-			NET_SALES:                           statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.SALES]["names"]["value"]["ending_balance"],
-			AVERAGE_ASSETS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.ASSETS]["names"]["value"]["average"],
-			AVERAGE_EQUITY:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.EQUITY]["names"]["value"]["average"],
-			PREFERRED_DIVIDENDS:                 0,
-			AVERAGE_COMMON_STOCKHOLDERS_EQUITY:  0,
-			MARKET_PRICE_PER_SHARES_OUTSTANDING: 0,
-			CASH_DIVIDENDS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.DIVIDENDS]["names"]["value"]["flow"],
-			TOTAL_DEBT:                          statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.LIABILITIES]["names"]["value"]["ending_balance"],
-			TOTAL_ASSETS:                        statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.ASSETS]["names"]["value"]["ending_balance"],
-			EBITDA:                              statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.EBITDA]["names"]["value"]["ending_balance"],
-			INTEREST_EXPENSE:                    statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INTEREST_EXPENSE]["names"]["value"]["ending_balance"],
-			WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING: 0,
-		})
-		all_analysis = append(all_analysis, analysis)
-	}
-	return all_analysis
-}
+// func ANALYSIS(statements []map[string]map[string]map[string]map[string]map[string]float64) []FINANCIAL_ANALYSIS_STATEMENT {
+// 	var all_analysis []FINANCIAL_ANALYSIS_STATEMENT
+// 	for _, statement := range statements {
+// 		analysis := FINANCIAL_ANALYSIS_STATEMENT_func(FINANCIAL_ANALYSIS{
+// 			CURRENT_ASSETS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS]["names"]["value"]["ending_balance"],
+// 			CURRENT_LIABILITIES:                 statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CURRENT_LIABILITIES]["names"]["value"]["ending_balance"],
+// 			CASH:                                statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS]["names"]["value"]["ending_balance"],
+// 			SHORT_TERM_INVESTMENTS:              statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.SHORT_TERM_INVESTMENTS]["names"]["value"]["ending_balance"],
+// 			NET_RECEIVABLES:                     statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["value"]["ending_balance"],
+// 			NET_CREDIT_SALES:                    statement[PRIMARY_ACCOUNTS_NAMES.SALES][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["value"]["flow"],
+// 			AVERAGE_NET_RECEIVABLES:             statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["value"]["average"],
+// 			COST_OF_GOODS_SOLD:                  statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD]["names"]["value"]["ending_balance"],
+// 			AVERAGE_INVENTORY:                   statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INVENTORY]["names"]["value"]["average"],
+// 			NET_INCOME:                          statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT]["names"]["value"]["ending_balance"],
+// 			NET_SALES:                           statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.SALES]["names"]["value"]["ending_balance"],
+// 			AVERAGE_ASSETS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.ASSETS]["names"]["value"]["average"],
+// 			AVERAGE_EQUITY:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.EQUITY]["names"]["value"]["average"],
+// 			PREFERRED_DIVIDENDS:                 0,
+// 			AVERAGE_COMMON_STOCKHOLDERS_EQUITY:  0,
+// 			MARKET_PRICE_PER_SHARES_OUTSTANDING: 0,
+// 			CASH_DIVIDENDS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.DIVIDENDS]["names"]["value"]["flow"],
+// 			TOTAL_DEBT:                          statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.LIABILITIES]["names"]["value"]["ending_balance"],
+// 			TOTAL_ASSETS:                        statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.ASSETS]["names"]["value"]["ending_balance"],
+// 			EBITDA:                              statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.EBITDA]["names"]["value"]["ending_balance"],
+// 			INTEREST_EXPENSE:                    statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INTEREST_EXPENSE]["names"]["value"]["ending_balance"],
+// 			WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING: 0,
+// 		})
+// 		all_analysis = append(all_analysis, analysis)
+// 	}
+// 	return all_analysis
+// }
