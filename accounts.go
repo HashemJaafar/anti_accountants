@@ -7,79 +7,79 @@ import (
 	"text/tabwriter"
 )
 
-func ACCOUNT_STRUCT_FROM_BARCODE(barcode string) (ACCOUNT, int, error) {
-	for k1, v1 := range ACCOUNTS {
-		if IS_IN(barcode, v1.BARCODE) {
+func AccountStructFromBarcode(barcode string) (Account, int, error) {
+	for k1, v1 := range Accounts {
+		if IsIn(barcode, v1.Barcode) {
 			return v1, k1, nil
 		}
 	}
-	return ACCOUNT{}, 0, ERROR_NOT_LISTED
+	return Account{}, 0, ErrorNotListed
 }
 
-func ACCOUNT_STRUCT_FROM_NAME(account_name string) (ACCOUNT, int, error) {
-	for k1, v1 := range ACCOUNTS {
-		if v1.ACCOUNT_NAME == account_name {
+func AccountStructFromName(accountName string) (Account, int, error) {
+	for k1, v1 := range Accounts {
+		if v1.AccountName == accountName {
 			return v1, k1, nil
 		}
 	}
-	return ACCOUNT{}, 0, ERROR_NOT_LISTED
+	return Account{}, 0, ErrorNotListed
 }
 
-func ADD_ACCOUNT(account ACCOUNT) error {
-	account.ACCOUNT_NAME = FORMAT_THE_STRING(account.ACCOUNT_NAME)
-	if account.ACCOUNT_NAME == "" {
-		return ERROR_ACCOUNT_NAME_IS_EMPTY
+func AddAccount(account Account) error {
+	account.AccountName = FormatTheString(account.AccountName)
+	if account.AccountName == "" {
+		return ErrorAccountNameIsEmpty
 	}
-	_, _, err := ACCOUNT_STRUCT_FROM_NAME(account.ACCOUNT_NAME)
+	_, _, err := AccountStructFromName(account.AccountName)
 	if err == nil {
-		return ERROR_ACCOUNT_NAME_IS_USED
+		return ErrorAccountNameIsUsed
 	}
-	if IS_BARCODES_USED(account.BARCODE) {
-		return ERROR_BARCODE_IS_USED
+	if IsBarcodesUsed(account.Barcode) {
+		return ErrorBarcodeIsUsed
 	}
 
-	ACCOUNTS = append(ACCOUNTS, account)
-	SET_THE_ACCOUNTS()
-	DB_INSERT_INTO_ACCOUNTS()
+	Accounts = append(Accounts, account)
+	SetTheAccounts()
+	DbInsertIntoAccounts()
 	return nil
 }
 
-func CHECK_IF_ACCOUNT_NUMBER_DUPLICATED() []error {
+func CheckIfAccountNumberDuplicated() []error {
 	var errors []error
-	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
-	for k1 := 0; k1 < max_len; k1++ {
+	maxLen := MaxLenForAccountNumber()
+	for k1 := 0; k1 < maxLen; k1++ {
 	big_loop:
-		for k2, v2 := range ACCOUNTS {
-			if len(v2.ACCOUNT_NUMBER[k1]) > 0 {
-				for indexb, b := range ACCOUNTS {
-					if k2 != indexb && reflect.DeepEqual(v2.ACCOUNT_NUMBER[k1], b.ACCOUNT_NUMBER[k1]) {
-						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", v2.ACCOUNT_NUMBER[k1], v2))
+		for k2, v2 := range Accounts {
+			if len(v2.AccountNumber[k1]) > 0 {
+				for indexb, b := range Accounts {
+					if k2 != indexb && reflect.DeepEqual(v2.AccountNumber[k1], b.AccountNumber[k1]) {
+						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", v2.AccountNumber[k1], v2))
 						continue big_loop
 					}
 				}
 			}
 		}
 	}
-	errors, _ = RETURN_SET_AND_DUPLICATES_SLICES(errors)
+	errors, _ = ReturnSetAndDuplicatesSlices(errors)
 	return errors
 }
 
-func CHECK_IF_LOW_LEVEL_ACCOUNT_FOR_ALL() []error {
+func CheckIfLowLevelAccountForAll() []error {
 	var errors []error
-	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
-	for k1 := 1; k1 < max_len; k1++ {
+	maxLen := MaxLenForAccountNumber()
+	for k1 := 1; k1 < maxLen; k1++ {
 	big_loop:
-		for k2, v2 := range ACCOUNTS {
-			if len(v2.ACCOUNT_NUMBER[k1]) > 0 {
-				for _, v3 := range ACCOUNTS {
-					if len(v3.ACCOUNT_NUMBER[k1]) > 0 {
-						if IS_IT_SUB_ACCOUNT_USING_NUMBER(v2.ACCOUNT_NUMBER[k1], v3.ACCOUNT_NUMBER[k1]) {
+		for k2, v2 := range Accounts {
+			if len(v2.AccountNumber[k1]) > 0 {
+				for _, v3 := range Accounts {
+					if len(v3.AccountNumber[k1]) > 0 {
+						if IsItSubAccountUsingNumber(v2.AccountNumber[k1], v3.AccountNumber[k1]) {
 							continue big_loop
 						}
 					}
 				}
-				if !ACCOUNTS[k2].IS_LOW_LEVEL_ACCOUNT {
-					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", ACCOUNTS[k2]))
+				if !Accounts[k2].IsLowLevelAccount {
+					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", Accounts[k2]))
 				}
 			}
 		}
@@ -87,80 +87,79 @@ func CHECK_IF_LOW_LEVEL_ACCOUNT_FOR_ALL() []error {
 	return errors
 }
 
-func CHECK_IF_THE_TREE_CONNECTED() []error {
+func CheckIfTheTreeConnected() []error {
 	var errors []error
-	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
-	for k1 := 0; k1 < max_len; k1++ {
+	maxLen := MaxLenForAccountNumber()
+	for k1 := 0; k1 < maxLen; k1++ {
 	big_loop:
-		for _, v2 := range ACCOUNTS {
-			if len(v2.ACCOUNT_NUMBER[k1]) > 1 {
-				for _, v3 := range ACCOUNTS {
-					if IS_IT_THE_FATHER(v3.ACCOUNT_NUMBER[k1], v2.ACCOUNT_NUMBER[k1]) {
+		for _, v2 := range Accounts {
+			if len(v2.AccountNumber[k1]) > 1 {
+				for _, v3 := range Accounts {
+					if IsItTheFather(v3.AccountNumber[k1], v2.AccountNumber[k1]) {
 						continue big_loop
 					}
 				}
-				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", v2.ACCOUNT_NUMBER[k1], v2))
+				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", v2.AccountNumber[k1], v2))
 			}
 		}
 	}
 	return errors
 }
 
-func CHECK_THE_TREE() []error {
-	var errors_messages []error
-	errors_messages = append(errors_messages, CHECK_IF_LOW_LEVEL_ACCOUNT_FOR_ALL()...)
-	errors_messages = append(errors_messages, CHECK_IF_ACCOUNT_NUMBER_DUPLICATED()...)
-	errors_messages = append(errors_messages, CHECK_IF_THE_TREE_CONNECTED()...)
-	return errors_messages
+func CheckTheTree() []error {
+	var errorsMessages []error
+	errorsMessages = append(errorsMessages, CheckIfLowLevelAccountForAll()...)
+	errorsMessages = append(errorsMessages, CheckIfAccountNumberDuplicated()...)
+	errorsMessages = append(errorsMessages, CheckIfTheTreeConnected()...)
+	return errorsMessages
 }
 
-func EDIT_ACCOUNT(is_delete bool, index int, account ACCOUNT) {
-	new_name := FORMAT_THE_STRING(account.ACCOUNT_NAME)
-	old_name := ACCOUNTS[index].ACCOUNT_NAME
+func EditAccount(isDelete bool, index int, account Account) {
+	newAccountName := FormatTheString(account.AccountName)
+	oldAccountName := Accounts[index].AccountName
 
-	// here i will search for old_name in journal if not used i can delete it or chenge it
-	if !IS_USED_IN_JOURNAL(old_name) {
-		if is_delete {
-			ACCOUNTS = REMOVE(ACCOUNTS, index)
-			SET_THE_ACCOUNTS()
-			DB_INSERT_INTO_ACCOUNTS()
+	// here i will search for oldAccountName in journal if not used i can delete it or chenge it
+	if !IsUsedInJournal(oldAccountName) {
+		if isDelete {
+			Accounts = Remove(Accounts, index)
+			SetTheAccounts()
+			DbInsertIntoAccounts()
 			return
 		}
 
-		ACCOUNTS[index].IS_LOW_LEVEL_ACCOUNT = account.IS_LOW_LEVEL_ACCOUNT
-		ACCOUNTS[index].IS_CREDIT = account.IS_CREDIT
+		Accounts[index].IsLowLevelAccount = account.IsLowLevelAccount
+		Accounts[index].IsCredit = account.IsCredit
 	}
 
-	if old_name != new_name && new_name != "" {
+	if oldAccountName != newAccountName && newAccountName != "" {
 		// if the account not used in journal then the account is not used in inventory then
-		// i will search for the account new_name in accounts database if it is not used then i can chenge the name
-		_, _, err := ACCOUNT_STRUCT_FROM_NAME(new_name)
+		// i will search for the account newAccountName in accounts database if it is not used then i can chenge the name
+		_, _, err := AccountStructFromName(newAccountName)
 		if err != nil {
-			DB_UPDATE_ACCOUNT_NAME_IN_JOURNAL(old_name, new_name)
-			DB_UPDATE_ACCOUNT_NAME_IN_INVENTORY(old_name, new_name)
-			ACCOUNTS[index].ACCOUNT_NAME = new_name
+			ChangeAccountName(oldAccountName, newAccountName)
+			Accounts[index].AccountName = newAccountName
 		}
 	}
 
-	if !IS_BARCODES_USED(account.BARCODE) {
-		ACCOUNTS[index].BARCODE = account.BARCODE
+	if !IsBarcodesUsed(account.Barcode) {
+		Accounts[index].Barcode = account.Barcode
 	}
 
-	ACCOUNTS[index].IS_TEMPORARY = account.IS_TEMPORARY
-	ACCOUNTS[index].COST_FLOW_TYPE = account.COST_FLOW_TYPE
-	ACCOUNTS[index].NOTES = account.NOTES
-	ACCOUNTS[index].IMAGE = account.IMAGE
-	ACCOUNTS[index].ACCOUNT_NUMBER = account.ACCOUNT_NUMBER
-	ACCOUNTS[index].ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS = account.ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS
-	ACCOUNTS[index].ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY = account.ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY
-	ACCOUNTS[index].TARGET_BALANCE = account.TARGET_BALANCE
-	ACCOUNTS[index].IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD = account.IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD
+	Accounts[index].IsTemporary = account.IsTemporary
+	Accounts[index].CostFlowType = account.CostFlowType
+	Accounts[index].Notes = account.Notes
+	Accounts[index].Image = account.Image
+	Accounts[index].AccountNumber = account.AccountNumber
+	Accounts[index].AlertForMinimumQuantityByTurnoverInDays = account.AlertForMinimumQuantityByTurnoverInDays
+	Accounts[index].AlertForMinimumQuantityByQuintity = account.AlertForMinimumQuantityByQuintity
+	Accounts[index].TargetBalance = account.TargetBalance
+	Accounts[index].IfTheTargetBalanceIsLessIsGood = account.IfTheTargetBalanceIsLessIsGood
 
-	SET_THE_ACCOUNTS()
-	DB_INSERT_INTO_ACCOUNTS()
+	SetTheAccounts()
+	DbInsertIntoAccounts()
 }
 
-func FORMAT_SLICE_OF_SLICE_OF_STRING_TO_STRING(a [][]string) string {
+func FormatSliceOfSliceOfStringToString(a [][]string) string {
 	var str string
 	for _, b := range a {
 		str += "{"
@@ -172,7 +171,7 @@ func FORMAT_SLICE_OF_SLICE_OF_STRING_TO_STRING(a [][]string) string {
 	return "[][]string{" + str + "}"
 }
 
-func FORMAT_SLICE_OF_SLICE_OF_UINT_TO_STRING(a [][]uint) string {
+func FormatSliceOfSliceOfUintToString(a [][]uint) string {
 	var str string
 	for _, b := range a {
 		str += "{"
@@ -184,7 +183,7 @@ func FORMAT_SLICE_OF_SLICE_OF_UINT_TO_STRING(a [][]uint) string {
 	return "[][]uint{" + str + "}"
 }
 
-func FORMAT_SLICE_OF_UINT_TO_STRING(a []uint) string {
+func FormatSliceOfUintToString(a []uint) string {
 	var str string
 	for _, b := range a {
 		str += fmt.Sprint(b) + ","
@@ -192,7 +191,7 @@ func FORMAT_SLICE_OF_UINT_TO_STRING(a []uint) string {
 	return "[]uint{" + str + "}"
 }
 
-func FORMAT_STRING_SLICE_TO_STRING(a []string) string {
+func FormatStringSliceToString(a []string) string {
 	var str string
 	for _, b := range a {
 		str += "\"" + b + "\","
@@ -200,10 +199,10 @@ func FORMAT_STRING_SLICE_TO_STRING(a []string) string {
 	return "[]string{" + str + "}"
 }
 
-func IS_BARCODES_USED(barcode []string) bool {
-	for _, v1 := range ACCOUNTS {
+func IsBarcodesUsed(barcode []string) bool {
+	for _, v1 := range Accounts {
 		for _, v2 := range barcode {
-			if IS_IN(v2, v1.BARCODE) {
+			if IsIn(v2, v1.Barcode) {
 				return true
 			}
 		}
@@ -211,143 +210,143 @@ func IS_BARCODES_USED(barcode []string) bool {
 	return false
 }
 
-func IS_IT_HIGH_THAN_BY_ORDER(account_number1, account_number2 []uint) bool {
-	l1 := len(account_number1)
-	l2 := len(account_number2)
-	for index := 0; index < SMALLEST(l1, l2); index++ {
-		if account_number1[index] < account_number2[index] {
+func IsItHighThanByOrder(accountNumber1, accountNumber2 []uint) bool {
+	l1 := len(accountNumber1)
+	l2 := len(accountNumber2)
+	for index := 0; index < Smallest(l1, l2); index++ {
+		if accountNumber1[index] < accountNumber2[index] {
 			return true
-		} else if account_number1[index] > account_number2[index] {
+		} else if accountNumber1[index] > accountNumber2[index] {
 			return false
 		}
 	}
 	return l2 > l1
 }
 
-func IS_IT_POSSIBLE_TO_BE_SUB_ACCOUNT(higher_level_account_number, lower_level_account_number []uint) bool {
-	len_higher_level_account_number := len(higher_level_account_number)
-	len_lower_level_account_number := len(lower_level_account_number)
-	if len_higher_level_account_number == 0 || len_lower_level_account_number == 0 {
+func IsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
+	lenHigherLevelAccountNumber := len(higherLevelAccountNumber)
+	lenLowerLevelAccountNumber := len(lowerLevelAccountNumber)
+	if lenHigherLevelAccountNumber == 0 || lenLowerLevelAccountNumber == 0 {
 		return false
 	}
-	if len_higher_level_account_number >= len_lower_level_account_number {
+	if lenHigherLevelAccountNumber >= lenLowerLevelAccountNumber {
 		return false
 	}
-	if reflect.DeepEqual(higher_level_account_number, lower_level_account_number) {
+	if reflect.DeepEqual(higherLevelAccountNumber, lowerLevelAccountNumber) {
 		return false
 	}
 	return true
 }
 
-func IS_IT_SUB_ACCOUNT_USING_NAME(higher_level_account, lower_level_account string) bool {
-	a1, _, _ := ACCOUNT_STRUCT_FROM_NAME(higher_level_account)
-	a2, _, _ := ACCOUNT_STRUCT_FROM_NAME(lower_level_account)
-	return IS_IT_SUB_ACCOUNT_USING_NUMBER(a1.ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], a2.ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER])
+func IsItSubAccountUsingName(higherLevelAccount, lowerLevelAccount string) bool {
+	a1, _, _ := AccountStructFromName(higherLevelAccount)
+	a2, _, _ := AccountStructFromName(lowerLevelAccount)
+	return IsItSubAccountUsingNumber(a1.AccountNumber[IndexOfAccountNumber], a2.AccountNumber[IndexOfAccountNumber])
 }
 
-func IS_IT_SUB_ACCOUNT_USING_NUMBER(higher_level_account_number, lower_level_account_number []uint) bool {
-	if !IS_IT_POSSIBLE_TO_BE_SUB_ACCOUNT(higher_level_account_number, lower_level_account_number) {
+func IsItSubAccountUsingNumber(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
+	if !IsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumber) {
 		return false
 	}
-	for i, h := range higher_level_account_number {
-		if h != lower_level_account_number[i] {
+	for i, h := range higherLevelAccountNumber {
+		if h != lowerLevelAccountNumber[i] {
 			return false
 		}
 	}
 	return true
 }
 
-func IS_IT_THE_FATHER(higher_level_account_number, lower_level_account_number []uint) bool {
-	if !IS_IT_POSSIBLE_TO_BE_SUB_ACCOUNT(higher_level_account_number, lower_level_account_number) {
+func IsItTheFather(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
+	if !IsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumber) {
 		return false
 	}
-	return reflect.DeepEqual(higher_level_account_number, CUT_THE_SLICE(lower_level_account_number, 1))
+	return reflect.DeepEqual(higherLevelAccountNumber, CutTheSlice(lowerLevelAccountNumber, 1))
 }
 
-func IS_USED_IN_JOURNAL(account_name string) bool {
-	_, journal := DB_READ[JOURNAL_TAG](DB_JOURNAL)
+func IsUsedInJournal(accountName string) bool {
+	_, journal := DbRead[JournalTag](DbJournal)
 	for _, i := range journal {
-		if account_name == i.ACCOUNT_CREDIT || account_name == i.ACCOUNT_DEBIT {
+		if accountName == i.AccountCredit || accountName == i.AccountDebit {
 			return true
 		}
 	}
 	return false
 }
 
-func MAX_LEN_FOR_ACCOUNT_NUMBER() int {
-	var max_len int
-	for _, a := range ACCOUNTS {
+func MaxLenForAccountNumber() int {
+	var maxLen int
+	for _, a := range Accounts {
 		var length int
-		for _, b := range a.ACCOUNT_NUMBER {
+		for _, b := range a.AccountNumber {
 			if len(b) > 0 {
 				length++
 			}
 		}
-		if length > max_len {
-			max_len = length
+		if length > maxLen {
+			maxLen = length
 		}
 	}
-	return max_len
+	return maxLen
 }
 
-func PRINT_FORMATED_ACCOUNTS() {
+func PrintFormatedAccounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	for _, a := range ACCOUNTS {
-		is_low_level_account := a.IS_LOW_LEVEL_ACCOUNT
-		is_credit := "\t," + fmt.Sprint(a.IS_CREDIT)
-		is_temporary := "\t," + fmt.Sprint(a.IS_TEMPORARY)
-		COST_FLOW_TYPE := "\t,\"" + a.COST_FLOW_TYPE + "\""
-		account_name := "\t,\"" + a.ACCOUNT_NAME + "\""
-		notes := "\t,\"" + a.NOTES + "\""
-		image := "\t," + FORMAT_STRING_SLICE_TO_STRING(a.IMAGE)
-		barcodes := "\t," + FORMAT_STRING_SLICE_TO_STRING(a.BARCODE)
-		account_number := "\t," + FORMAT_SLICE_OF_SLICE_OF_UINT_TO_STRING(a.ACCOUNT_NUMBER)
-		account_levels := "\t," + FORMAT_SLICE_OF_UINT_TO_STRING(a.ACCOUNT_LEVELS)
-		father_and_grandpa_accounts_name := "\t," + FORMAT_SLICE_OF_SLICE_OF_STRING_TO_STRING(a.FATHER_AND_GRANDPA_ACCOUNTS_NAME)
-		alert_for_minimum_quantity_by_turnover_in_days := "\t," + fmt.Sprint(a.ALERT_FOR_MINIMUM_QUANTITY_BY_TURNOVER_IN_DAYS)
-		alert_for_minimum_quantity_by_quintity := "\t," + fmt.Sprint(a.ALERT_FOR_MINIMUM_QUANTITY_BY_QUINTITY)
-		target_balance := "\t," + fmt.Sprint(a.TARGET_BALANCE)
-		if_the_target_balance_is_less_is_good := "\t," + fmt.Sprint(a.IF_THE_TARGET_BALANCE_IS_LESS_IS_GOOD)
-		fmt.Fprintln(p, "{", is_low_level_account, is_credit, is_temporary, COST_FLOW_TYPE, account_name, notes,
-			image, barcodes, account_number, account_levels, father_and_grandpa_accounts_name,
-			alert_for_minimum_quantity_by_turnover_in_days, alert_for_minimum_quantity_by_quintity, target_balance, if_the_target_balance_is_less_is_good, "},")
+	for _, a := range Accounts {
+		isLowLevelAccount := a.IsLowLevelAccount
+		isCredit := "\t," + fmt.Sprint(a.IsCredit)
+		isTemporary := "\t," + fmt.Sprint(a.IsTemporary)
+		costFlowType := "\t,\"" + a.CostFlowType + "\""
+		accountName := "\t,\"" + a.AccountName + "\""
+		notes := "\t,\"" + a.Notes + "\""
+		image := "\t," + FormatStringSliceToString(a.Image)
+		barcodes := "\t," + FormatStringSliceToString(a.Barcode)
+		accountNumber := "\t," + FormatSliceOfSliceOfUintToString(a.AccountNumber)
+		accountLevels := "\t," + FormatSliceOfUintToString(a.AccountLevels)
+		fathersAccountsName := "\t," + FormatSliceOfSliceOfStringToString(a.FathersAccountsName)
+		alertForMinimumQuantityByTurnoverInDays := "\t," + fmt.Sprint(a.AlertForMinimumQuantityByTurnoverInDays)
+		alertForMinimumQuantityByQuintity := "\t," + fmt.Sprint(a.AlertForMinimumQuantityByQuintity)
+		targetBalance := "\t," + fmt.Sprint(a.TargetBalance)
+		ifTheTargetBalanceIsLessIsGood := "\t," + fmt.Sprint(a.IfTheTargetBalanceIsLessIsGood)
+		fmt.Fprintln(p, "{", isLowLevelAccount, isCredit, isTemporary, costFlowType, accountName, notes,
+			image, barcodes, accountNumber, accountLevels, fathersAccountsName,
+			alertForMinimumQuantityByTurnoverInDays, alertForMinimumQuantityByQuintity, targetBalance, ifTheTargetBalanceIsLessIsGood, "},")
 	}
 	p.Flush()
 }
 
-func SET_THE_ACCOUNTS() {
-	max_len := MAX_LEN_FOR_ACCOUNT_NUMBER()
+func SetTheAccounts() {
+	maxLen := MaxLenForAccountNumber()
 
-	for k1, v1 := range ACCOUNTS {
+	for k1, v1 := range Accounts {
 		// init the slices
-		ACCOUNTS[k1].FATHER_AND_GRANDPA_ACCOUNTS_NAME = make([][]string, max_len)
-		ACCOUNTS[k1].ACCOUNT_NUMBER = make([][]uint, max_len)
-		ACCOUNTS[k1].ACCOUNT_LEVELS = make([]uint, max_len)
-		for k2, v2 := range v1.ACCOUNT_NUMBER {
-			if k2 < max_len {
-				ACCOUNTS[k1].ACCOUNT_NUMBER[k2] = v2
-				ACCOUNTS[k1].ACCOUNT_LEVELS[k2] = uint(len(v2))
+		Accounts[k1].FathersAccountsName = make([][]string, maxLen)
+		Accounts[k1].AccountNumber = make([][]uint, maxLen)
+		Accounts[k1].AccountLevels = make([]uint, maxLen)
+		for k2, v2 := range v1.AccountNumber {
+			if k2 < maxLen {
+				Accounts[k1].AccountNumber[k2] = v2
+				Accounts[k1].AccountLevels[k2] = uint(len(v2))
 			}
 		}
 
 		// set high level account to permanent
 		// set cost flow type . the cost flow should be used for every low level account
-		if !v1.IS_LOW_LEVEL_ACCOUNT {
-			ACCOUNTS[k1].IS_TEMPORARY = false
-			ACCOUNTS[k1].COST_FLOW_TYPE = ""
-		} else if !IS_IN(v1.COST_FLOW_TYPE, COST_FLOW_TYPE) {
-			ACCOUNTS[k1].COST_FLOW_TYPE = FIFO
+		if !v1.IsLowLevelAccount {
+			Accounts[k1].IsTemporary = false
+			Accounts[k1].CostFlowType = ""
+		} else if !IsIn(v1.CostFlowType, CostFlowType) {
+			Accounts[k1].CostFlowType = Fifo
 		}
 	}
 
 	// here i set the father and grandpa accounts name
-	for k1 := 0; k1 < max_len; k1++ {
-		for k2, v2 := range ACCOUNTS { // here i loop over account
-			if len(v2.ACCOUNT_NUMBER[k1]) > 1 {
-				for _, v3 := range ACCOUNTS { // but here i loop over account to find the father or grandpa account
-					if len(v3.ACCOUNT_NUMBER[k1]) > 0 {
-						if IS_IT_SUB_ACCOUNT_USING_NUMBER(v3.ACCOUNT_NUMBER[k1], v2.ACCOUNT_NUMBER[k1]) {
-							ACCOUNTS[k2].FATHER_AND_GRANDPA_ACCOUNTS_NAME[k1] = append(ACCOUNTS[k2].FATHER_AND_GRANDPA_ACCOUNTS_NAME[k1], v3.ACCOUNT_NAME)
+	for k1 := 0; k1 < maxLen; k1++ {
+		for k2, v2 := range Accounts { // here i loop over account
+			if len(v2.AccountNumber[k1]) > 1 {
+				for _, v3 := range Accounts { // but here i loop over account to find the father or grandpa account
+					if len(v3.AccountNumber[k1]) > 0 {
+						if IsItSubAccountUsingNumber(v3.AccountNumber[k1], v2.AccountNumber[k1]) {
+							Accounts[k2].FathersAccountsName[k1] = append(Accounts[k2].FathersAccountsName[k1], v3.AccountName)
 						}
 					}
 				}
@@ -356,20 +355,20 @@ func SET_THE_ACCOUNTS() {
 	}
 
 	// here i sort the accounts by there account number
-	for k1 := range ACCOUNTS {
-		for k2 := range ACCOUNTS {
-			if k1 < k2 && !IS_IT_HIGH_THAN_BY_ORDER(ACCOUNTS[k1].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER], ACCOUNTS[k2].ACCOUNT_NUMBER[INDEX_OF_ACCOUNT_NUMBER]) {
-				SWAP(ACCOUNTS, k1, k2)
+	for k1 := range Accounts {
+		for k2 := range Accounts {
+			if k1 < k2 && !IsItHighThanByOrder(Accounts[k1].AccountNumber[IndexOfAccountNumber], Accounts[k2].AccountNumber[IndexOfAccountNumber]) {
+				Swap(Accounts, k1, k2)
 			}
 		}
 	}
 }
 
-func SET_RETAINED_EARNINGS_ACCOUNT(account ACCOUNT) ACCOUNT {
+func SetRetainedEarningsAccount(account Account) Account {
 	// in this function i fix the account field to the retained earnings account
 	// just to know the RETAINED_EARNINGS is low level account but i dont want to use it in journal
-	account.IS_LOW_LEVEL_ACCOUNT = true
-	account.IS_CREDIT = true
-	account.IS_TEMPORARY = false
+	account.IsLowLevelAccount = true
+	account.IsCredit = true
+	account.IsTemporary = false
 	return account
 }

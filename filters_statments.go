@@ -4,44 +4,6 @@ package main
 // 	"sort"
 // 	"strings"
 // )
-// func STATEMENT_FILTER(
-// 	all_financial_statements []map[string]map[string]map[string]map[string]map[string]float64,
-// 	account_flow_slice, account_slice, name_slice, vpq_slice, number_slice []string,
-// 	account_flow_levels, account_levels []uint,
-// 	in_account_flow_slice, in_account_slice, in_name_slice, in_vpq_slice, in_number_slice,
-// 	in_account_flow_levels, in_account_levels bool) [][]FILTERED_STATEMENT {
-// 	var all_statements_struct [][]FILTERED_STATEMENT
-// 	for _, statement := range all_financial_statements {
-// 		var one_statement_struct []FILTERED_STATEMENT
-// 		for key_account_flow, map_account_flow := range statement {
-// 			if IS_IN(key_account_flow, account_flow_slice) == in_account_flow_slice {
-// 				if accept_level_using_name(key_account_flow, account_flow_levels, in_account_flow_levels) {
-// 					for key_account, map_account := range map_account_flow {
-// 						if IS_IN(key_account, account_slice) == in_account_slice {
-// 							if accept_level_using_name(key_account, account_levels, in_account_levels) {
-// 								for key_name, map_name := range map_account {
-// 									if IS_IN(key_name, name_slice) == in_name_slice {
-// 										for key_vpq, map_vpq := range map_name {
-// 											if IS_IN(key_vpq, vpq_slice) == in_vpq_slice {
-// 												for key_number, number := range map_vpq {
-// 													if IS_IN(key_number, number_slice) == in_number_slice {
-// 														one_statement_struct = append(one_statement_struct, FILTERED_STATEMENT{key_account_flow, key_account, key_name, key_vpq, key_number, number})
-// 													}
-// 												}
-// 											}
-// 										}
-// 									}
-// 								}
-// 							}
-// 						}
-// 					}
-// 				}
-// 			}
-// 		}
-// 		all_statements_struct = append(all_statements_struct, one_statement_struct)
-// 	}
-// 	return all_statements_struct
-// }
 // func SORT_THE_STATMENT(all_statements_struct [][]FILTERED_STATEMENT, sort_by string, is_reverse bool) {
 // 	for _, one_statement_struct := range all_statements_struct {
 // 		switch sort_by {
@@ -53,8 +15,6 @@ package main
 // 			column5_sort_statement_by_alphabet(one_statement_struct)
 // 		case "number":
 // 			sort_by_number(one_statement_struct)
-// 		default:
-// 			error_element_is_not_in_elements(sort_by, []string{"account_number", "number"})
 // 		}
 // 		if is_reverse {
 // 			REVERSE_SLICE(one_statement_struct)

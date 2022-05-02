@@ -7,37 +7,41 @@ import (
 	"os"
 	"reflect"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 )
 
-func NOW() []byte {
-	// i use this function to get the current time in the format of TIME_LAYOUT to make the error less likely
-	return []byte(time.Now().Format(TIME_LAYOUT))
+func CutTheSlice[t any](s []t, a int) []t { return s[:len(s)-a] }
+func Remove[t any](s []t, a int) []t      { return append(s[:a], s[a+1:]...) }
+func Swap[t any](s []t, a, b int)         { s[a], s[b] = s[b], s[a] }
+
+func Now() []byte {
+	// i use this function to get the current time in the format of TimeLayout to make the error less likely
+	return []byte(time.Now().Format(TimeLayout))
 }
-func ASSIGN_NUMBER_IF_NUMBER(m map[string]float64, str string) {
+
+func AssignNumberIfNumber(m map[string]float64, str string) {
 	number, err := strconv.ParseFloat(str, 64)
 	if err == nil {
 		m[str] = number
 	}
 }
 
-func CONVERT_NAN_TO_ZERO(value float64) float64 {
-	if math.IsNaN(value) {
+func ConvertNanToZero(VALUE float64) float64 {
+	if math.IsNaN(VALUE) {
 		return 0
 	}
-	return value
+	return VALUE
 }
 
-func CUT_THE_SLICE[t any](s []t, a int) []t { return s[:len(s)-a] }
-
-func FORMAT_THE_STRING(str string) string {
+func FormatTheString(str string) string {
 	return strings.ToLower(strings.Join(strings.Fields(str), " "))
 }
 
-func INITIALIZE_MAP_6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr, i1 t1, i2 t2, i3 t3, i4 t4, i5 t5) map[t6]tr {
+func InitializeMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr, i1 t1, i2 t2, i3 t3, i4 t4, i5 t5) map[t6]tr {
 	if m == nil {
 		m = map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr{}
 	}
@@ -59,7 +63,7 @@ func INITIALIZE_MAP_6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2
 	return m[i1][i2][i3][i4][i5]
 }
 
-func INITIALIZE_MAP_5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr, i1 t1, i2 t2, i3 t3, i4 t4) map[t5]tr {
+func InitializeMap5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr, i1 t1, i2 t2, i3 t3, i4 t4) map[t5]tr {
 	if m == nil {
 		m = map[t1]map[t2]map[t3]map[t4]map[t5]tr{}
 	}
@@ -78,7 +82,7 @@ func INITIALIZE_MAP_5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map
 	return m[i1][i2][i3][i4]
 }
 
-func IS_IN[t comparable](element t, elements []t) bool {
+func IsIn[t comparable](element t, elements []t) bool {
 	for _, v1 := range elements {
 		if v1 == element {
 			return true
@@ -87,7 +91,7 @@ func IS_IN[t comparable](element t, elements []t) bool {
 	return false
 }
 
-func IS_INF_IN(numbers ...float64) bool {
+func IsInfIn(numbers ...float64) bool {
 	for _, a := range numbers {
 		if math.IsInf(a, 0) {
 			return true
@@ -96,24 +100,22 @@ func IS_INF_IN(numbers ...float64) bool {
 	return false
 }
 
-func PACK[t any](len_new_slice int, slice []t) []t {
-	new_slice := make([]t, len_new_slice)
+func Pack[t any](lenNewSlice int, slice []t) []t {
+	newSlice := make([]t, lenNewSlice)
 	for indexa, a := range slice {
-		new_slice[indexa] = a
+		newSlice[indexa] = a
 	}
-	return new_slice
+	return newSlice
 }
 
-func REMOVE[t any](s []t, a int) []t { return append(s[:a], s[a+1:]...) }
-
-func RETURN_SAME_SIGN_OF_NUMBER_SIGN(number_sign, number float64) float64 {
-	if number_sign < 0 {
-		return -ABS(number)
+func ReturnSameSignOfNumberSign(numberSign, number float64) float64 {
+	if numberSign < 0 {
+		return -Abs(number)
 	}
-	return ABS(number)
+	return Abs(number)
 }
 
-func ABS[t NUMBER](n t) t {
+func Abs[t Number](n t) t {
 	// this is alternative of math.Abs
 	if n < 0 {
 		return -n
@@ -121,62 +123,67 @@ func ABS[t NUMBER](n t) t {
 	return n
 }
 
-func RETURN_SET_AND_DUPLICATES_SLICES[t any](slice []t) ([]t, []t) {
-	var set_of_elems, duplicated_element []t
+func ReturnSetAndDuplicatesSlices[t any](slice []t) ([]t, []t) {
+	var setOfElems, duplicatedElement []t
 big_loop:
 	for _, element := range slice {
-		for _, b := range set_of_elems {
+		for _, b := range setOfElems {
 			if reflect.DeepEqual(b, element) {
-				duplicated_element = append(duplicated_element, element)
+				duplicatedElement = append(duplicatedElement, element)
 				continue big_loop
 			}
 		}
-		set_of_elems = append(set_of_elems, element)
+		setOfElems = append(setOfElems, element)
 	}
-	return set_of_elems, duplicated_element
+	return setOfElems, duplicatedElement
 }
 
-func REVERSE_SLICE[t any](s []t) {
+func ReverseSlice[t any](s []t) {
 	for a, b := 0, len(s)-1; a < b; a, b = a+1, b-1 {
-		SWAP(s, a, b)
+		Swap(s, a, b)
 	}
 }
 
-func SMALLEST[t NUMBER](a, b t) t {
+func Smallest[t Number](a, b t) t {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func SORT_TIME(slice1 []time.Time, is_ascending bool) {
+func SortTime(slice1 []time.Time, isAscending bool) {
 	for k1 := range slice1 {
 		for k2 := range slice1 {
-			if k1 < k2 && (slice1[k1]).After((slice1[k2])) == is_ascending {
-				SWAP(slice1, k1, k2)
+			if k1 < k2 && (slice1[k1]).After((slice1[k2])) == isAscending {
+				Swap(slice1, k1, k2)
 			}
 		}
 	}
 }
-func CONVERT_BYTE_SLICE_TO_TIME(slice [][]byte) []time.Time {
-	var slice_of_time []time.Time
-	for _, v1 := range slice {
-		date, _ := time.Parse(TIME_LAYOUT, string(v1))
-		slice_of_time = append(slice_of_time, date)
-	}
-	return slice_of_time
+
+func SortStatementNumber(slice1 []FilteredStatement, isAscending bool) {
+	sort.Slice(slice1, func(k1, k2 int) bool {
+		return slice1[k1].Number > slice1[k2].Number == isAscending
+	})
 }
 
-func SWAP[t any](s []t, a, b int) { s[a], s[b] = s[b], s[a] }
+func ConvertByteSliceToTime(slice [][]byte) []time.Time {
+	var sliceOfTime []time.Time
+	for _, v1 := range slice {
+		date, _ := time.Parse(TimeLayout, string(v1))
+		sliceOfTime = append(sliceOfTime, date)
+	}
+	return sliceOfTime
+}
 
-func TEST[t any](should_equal bool, actual, expected t) {
-	if reflect.DeepEqual(actual, expected) != should_equal {
-		fail_test_number++
+func Test[t any](shouldEqual bool, actual, expected t) {
+	if reflect.DeepEqual(actual, expected) != shouldEqual {
+		FailTestNumber++
 		p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		fmt.Fprintln(p, "\033[32m", "fail_test_number\t:", fail_test_number) //green
-		fmt.Fprintln(p, "\033[35m", "should_equal\t:", should_equal)         //purple
-		fmt.Fprintln(p, "\033[34m", "actual\t:", actual)                     //blue
-		fmt.Fprintln(p, "\033[33m", "expected\t:", expected)                 //yellow
+		fmt.Fprintln(p, "\033[32m", "fail_test_number\t:", FailTestNumber) //green
+		fmt.Fprintln(p, "\033[35m", "should_equal\t:", shouldEqual)        //purple
+		fmt.Fprintln(p, "\033[34m", "actual\t:", actual)                   //blue
+		fmt.Fprintln(p, "\033[33m", "expected\t:", expected)               //yellow
 		p.Flush()
 
 		// fmt.Println("\033[34m") //blue
@@ -193,13 +200,14 @@ func TEST[t any](should_equal bool, actual, expected t) {
 		log.Panic()
 	}
 }
-func PRINT_SLICE[t any](a1 []t) {
+
+func PrintSlice[t any](a1 []t) {
 	for _, v1 := range a1 {
 		fmt.Println(v1)
 	}
 }
 
-func TRANSPOSE[t any](slice [][]t) [][]t {
+func Transpose[t any](slice [][]t) [][]t {
 	xl := len(slice[0])
 	yl := len(slice)
 	result := make([][]t, xl)
@@ -214,7 +222,7 @@ func TRANSPOSE[t any](slice [][]t) [][]t {
 	return result
 }
 
-func UNPACK[t any](slice [][]t) []t {
+func Unpack[t any](slice [][]t) []t {
 	var result []t
 	for _, element := range slice {
 		result = append(result, element...)
@@ -222,84 +230,109 @@ func UNPACK[t any](slice [][]t) []t {
 	return result
 }
 
-func FUNCTION_FILTER_DATE(input time.Time, filter FILTER_DATE) bool {
-	if !filter.FILTER {
+func (s FilterDate) Filter(input time.Time) bool {
+	if !s.IsFilter {
 		return true
 	}
 
-	if filter.BIG.Before(filter.SMALL) {
-		filter.BIG, filter.SMALL = filter.SMALL, filter.BIG
+	if s.Big.Before(s.Small) {
+		s.Big, s.Small = s.Small, s.Big
 	}
 
-	is_smaller_than_small := input.Before(filter.SMALL)
-	is_bigger_than_big := input.After(filter.BIG)
+	isSmallerThanSmall := input.Before(s.Small)
+	isBiggerThanBig := input.After(s.Big)
 
-	switch filter.WAY {
-	case between:
-		return !is_smaller_than_small && !is_bigger_than_big
-	case not_between:
-		return is_smaller_than_small && is_bigger_than_big
-	case bigger:
-		return input.After(filter.SMALL)
-	case smaller:
-		return input.Before(filter.BIG)
-	case equal_to_one_of_them:
-		return input == filter.SMALL || input == filter.BIG
+	switch s.Way {
+	case Between:
+		return !isSmallerThanSmall && !isBiggerThanBig
+	case NotBetween:
+		return isSmallerThanSmall || isBiggerThanBig
+	case Bigger:
+		return input.After(s.Big)
+	case Smaller:
+		return input.Before(s.Small)
+	case EqualToOneOfThem:
+		return input == s.Small || input == s.Big
 	}
 
 	return false
 }
-func FUNCTION_FILTER_NUMBER(input float64, filter FILTER_NUMBER) bool {
-	if !filter.FILTER {
+
+func (s FilterNumber) Filter(input float64) bool {
+	if !s.IsFilter {
 		return true
 	}
 
-	if filter.BIG < filter.SMALL {
-		filter.BIG, filter.SMALL = filter.SMALL, filter.BIG
+	if s.Big < s.Small {
+		s.Big, s.Small = s.Small, s.Big
 	}
 
-	is_smaller_than_small := input < filter.SMALL
-	is_bigger_than_big := input > filter.BIG
+	isSmallerThanSmall := input < s.Small
+	isBiggerThanBig := input > s.Big
 
-	switch filter.WAY {
-	case between:
-		return !is_smaller_than_small && !is_bigger_than_big
-	case not_between:
-		return is_smaller_than_small && is_bigger_than_big
-	case bigger:
-		return input > filter.SMALL
-	case smaller:
-		return input < filter.BIG
-	case equal_to_one_of_them:
-		return input == filter.SMALL || input == filter.BIG
+	switch s.Way {
+	case Between:
+		return !isSmallerThanSmall && !isBiggerThanBig
+	case NotBetween:
+		return isSmallerThanSmall || isBiggerThanBig
+	case Bigger:
+		return input > s.Big
+	case Smaller:
+		return input < s.Small
+	case EqualToOneOfThem:
+		return input == s.Small || input == s.Big
 	}
 
 	return false
 }
-func FUNCTION_FILTER_STRING(input string, filter FILTER_STRING) bool {
-	if !filter.FILTER {
+
+func (s FilterString) Filter(input string) bool {
+	if !s.IsFilter {
 		return true
 	}
 
-	switch filter.WAY {
-	case in_slice:
-		return IS_IN(input, filter.SLICE)
-	case not_in_slice:
-		return IS_IN(input, filter.SLICE) == false
-	case contain_one_in_slice:
-		return IS_CONTAIN_ONE_OF_THE_ELEMENTS(input, filter.SLICE)
-	case not_contain_one_in_slice:
-		return IS_CONTAIN_ONE_OF_THE_ELEMENTS(input, filter.SLICE) == false
+	switch s.Way {
+	case InSlice:
+		return IsIn(input, s.Slice)
+	case NotInSlice:
+		return IsIn(input, s.Slice) == false
+	case ElementsInElement:
+		return FElementsInElement(input, s.Slice)
+	case ElementsNotInElement:
+		return FElementsInElement(input, s.Slice) == false
 	}
 	return false
 }
-func FUNCTION_FILTER_BOOL(input bool, filter FILTER_BOOL) bool {
-	if !filter.FILTER {
+
+func (s FilterSliceString) Filter(input []string) bool {
+	if !s.IsFilter {
 		return true
 	}
-	return input == filter.BOOL_VALUE
+	for _, v1 := range input {
+		for _, v2 := range s.Slice {
+			if v1 == v2 {
+				return true == s.InSlice
+			}
+		}
+	}
+	return false == s.InSlice
 }
-func IS_CONTAIN_ONE_OF_THE_ELEMENTS(element string, elements []string) bool {
+
+func (s FilterSliceUint) Filter(input uint) bool {
+	if !s.IsFilter {
+		return true
+	}
+	return IsIn(input, s.Slice) == s.InSlice
+}
+
+func (s FilterBool) Filter(input bool) bool {
+	if !s.IsFilter {
+		return true
+	}
+	return input == s.BoolValue
+}
+
+func FElementsInElement(element string, elements []string) bool {
 	for _, v1 := range elements {
 		if strings.Contains(element, v1) {
 			return true
@@ -307,20 +340,22 @@ func IS_CONTAIN_ONE_OF_THE_ELEMENTS(element string, elements []string) bool {
 	}
 	return false
 }
-func FUNCTION_FILTER_DUPLICATE[t comparable](input1, input2 t, filter bool) bool {
-	if !filter {
+
+func FunctionFilterDuplicate[t comparable](input1, input2 t, f bool) bool {
+	if !f {
 		return true
 	}
 	return input1 == input2
 }
-func print_map_6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr) {
+
+func PrintMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr) {
 	for k1, v1 := range m {
 		for k2, v2 := range v1 {
 			for k3, v3 := range v2 {
 				for k4, v4 := range v3 {
 					for k5, v5 := range v4 {
 						for k6, v6 := range v5 {
-							fmt.Fprintln(PRINT_TABLE, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", k6, "\t", v6)
+							fmt.Fprintln(PrintTable, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", k6, "\t", v6)
 						}
 					}
 				}
@@ -328,31 +363,39 @@ func print_map_6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[
 		}
 	}
 	fmt.Println("//////////////////////////////////////////")
-	PRINT_TABLE.Flush()
+	PrintTable.Flush()
 }
 
-func print_map_5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr) {
+func PrintMap5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr) {
 	for k1, v1 := range m {
 		for k2, v2 := range v1 {
 			for k3, v3 := range v2 {
 				for k4, v4 := range v3 {
 					for k5, v5 := range v4 {
-						fmt.Fprintln(PRINT_TABLE, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", v5)
+						fmt.Fprintln(PrintTable, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", v5)
 					}
 				}
 			}
 		}
 	}
 	fmt.Println("//////////////////////////////////////////")
-	PRINT_TABLE.Flush()
+	PrintTable.Flush()
 }
 
-func print_map_2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
+func PrintMap2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
 	for k1, v1 := range m {
 		for k2, v2 := range v1 {
-			fmt.Fprintln(PRINT_TABLE, k1, "\t", k2, "\t", v2)
+			fmt.Fprintln(PrintTable, k1, "\t", k2, "\t", v2)
 		}
 	}
 	fmt.Println("//////////////////////////////////////////")
-	PRINT_TABLE.Flush()
+	PrintTable.Flush()
+}
+
+func PrintFilteredStatement(slice []FilteredStatement) {
+	fmt.Fprintln(PrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "Number")
+	for _, v1 := range slice {
+		fmt.Fprintln(PrintTable, v1.Account1, "\t", v1.Account2, "\t", v1.Name, "\t", v1.Vpq, "\t", v1.TypeOfVpq, "\t", v1.Number)
+	}
+	PrintTable.Flush()
 }
