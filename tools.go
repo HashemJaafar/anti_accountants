@@ -151,19 +151,19 @@ func Smallest[t Number](a, b t) t {
 	return b
 }
 
-func SortTime(slice1 []time.Time, isAscending bool) {
-	for k1 := range slice1 {
-		for k2 := range slice1 {
-			if k1 < k2 && (slice1[k1]).After((slice1[k2])) == isAscending {
-				Swap(slice1, k1, k2)
+func SortTime(slice []time.Time, isAscending bool) {
+	for k1 := range slice {
+		for k2 := range slice {
+			if k1 < k2 && (slice[k1]).After((slice[k2])) == isAscending {
+				Swap(slice, k1, k2)
 			}
 		}
 	}
 }
 
-func SortStatementNumber(slice1 []FilteredStatement, isAscending bool) {
-	sort.Slice(slice1, func(k1, k2 int) bool {
-		return slice1[k1].Number > slice1[k2].Number == isAscending
+func SortStatementNumber(slice []StatmentWithAccount, isAscending bool) {
+	sort.Slice(slice, func(k1, k2 int) bool {
+		return slice[k1].Statment.Number > slice[k2].Statment.Number == isAscending
 	})
 }
 
@@ -304,18 +304,30 @@ func (s FilterString) Filter(input string) bool {
 	return false
 }
 
-func (s FilterSliceString) Filter(input []string) bool {
+func (s FilterAccount) Filter(account Account, err error) bool {
+	return (err != nil) || // here if the account is not listed in the account list like AllAccounts it will show in statment
+		(s.IsLowLevelAccount.Filter(account.IsLowLevelAccount) &&
+			s.IsCredit.Filter(account.IsCredit) &&
+			s.IsTemporary.Filter(account.IsTemporary) &&
+			s.FathersAccountsName.Filter(account.AccountName, account.FathersAccountsName[IndexOfAccountNumber]) &&
+			s.AccountLevels.Filter(account.AccountLevels[IndexOfAccountNumber]))
+}
+
+func (s FilterFathersAccountsName) Filter(accountName string, fathersAccountsNameForAccount []string) bool {
 	if !s.IsFilter {
 		return true
 	}
-	for _, v1 := range input {
-		for _, v2 := range s.Slice {
+	for _, v1 := range s.FathersAccountsName {
+		if v1 == accountName { // if accountName is in the slice
+			return s.InAccountName
+		}
+		for _, v2 := range fathersAccountsNameForAccount {
 			if v1 == v2 {
-				return true == s.InSlice
+				return s.InFathersAccountsName
 			}
 		}
 	}
-	return false == s.InSlice
+	return !s.InFathersAccountsName
 }
 
 func (s FilterSliceUint) Filter(input uint) bool {
@@ -341,7 +353,7 @@ func FElementsInElement(element string, elements []string) bool {
 	return false
 }
 
-func FunctionFilterDuplicate[t comparable](input1, input2 t, f bool) bool {
+func FilterDuplicate[t comparable](input1, input2 t, f bool) bool {
 	if !f {
 		return true
 	}

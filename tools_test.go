@@ -4,14 +4,14 @@ import (
 	"testing"
 )
 
-func TestFunctionFilterDuplicate(t *testing.T) {
-	a1 := FunctionFilterDuplicate("lkjds", "ojdi", true)
+func TestFilter(t *testing.T) {
+	a1 := FilterDuplicate("lkjds", "ojdi", true)
 	Test(true, a1, false)
-	a1 = FunctionFilterDuplicate(4496, 546, true)
+	a1 = FilterDuplicate(4496, 546, true)
 	Test(true, a1, false)
-	a1 = FunctionFilterDuplicate(true, true, true)
+	a1 = FilterDuplicate(true, true, true)
 	Test(true, a1, true)
-	a1 = FunctionFilterDuplicate("lkjds", "ojdi", false)
+	a1 = FilterDuplicate("lkjds", "ojdi", false)
 	Test(true, a1, true)
 }
 
@@ -32,12 +32,16 @@ func TestFilterSliceString_Filter(t *testing.T) {
 	i1 := []string{"1", "2", "3"}
 	slice := []string{"4", "5", "6"}
 
-	a1 := FilterSliceString{true, true, i1}.Filter(i1)
-	Test(true, a1, true)
-	a1 = FilterSliceString{true, false, i1}.Filter(i1)
+	a1 := FilterFathersAccountsName{true, false, true, i1}.Filter("1", i1)
 	Test(true, a1, false)
-	a1 = FilterSliceString{true, true, slice}.Filter(i1)
+	a1 = FilterFathersAccountsName{true, false, false, i1}.Filter("1", i1)
 	Test(true, a1, false)
-	a1 = FilterSliceString{true, false, slice}.Filter(i1)
+	a1 = FilterFathersAccountsName{true, false, true, slice}.Filter("1", i1)
+	Test(true, a1, false)
+	a1 = FilterFathersAccountsName{true, false, false, slice}.Filter("1", i1)
 	Test(true, a1, true)
+	a1 = FilterFathersAccountsName{true, true, true, i1}.Filter("1", []string{})
+	Test(true, a1, true)
+	a1 = FilterFathersAccountsName{true, false, true, i1}.Filter("1", []string{})
+	Test(true, a1, false)
 }

@@ -86,6 +86,10 @@ const (
 	NotInSlice           = "NotInSlice"
 	ElementsInElement    = "ElementsInElement"
 	ElementsNotInElement = "ElementsNotInElement"
+
+	// way to sort statment
+	Ascending  = "Ascending"
+	Descending = "Descending"
 )
 
 var (
@@ -126,6 +130,7 @@ var (
 
 type Number interface{ Integer | float64 | float32 }
 type Integer interface{ int | int64 | uint }
+
 type Account struct { // 									   configer		|change				|correct	|necessary	|is unique
 	IsLowLevelAccount                       bool       // manual		|if not in journal	|cant		|yes		|no
 	IsCredit                                bool       // manual		|if not in journal	|cant		|yes		|no
@@ -142,6 +147,30 @@ type Account struct { // 									   configer		|change				|correct	|necessary	|i
 	AlertForMinimumQuantityByQuintity       float64    // manual		|manual				|manual		|no			|no
 	TargetBalance                           float64    // manual		|manual				|manual		|no			|no
 	IfTheTargetBalanceIsLessIsGood          bool       // manual		|manual				|manual		|no			|no
+}
+type Inventory struct {
+	Price       float64
+	Quantity    float64
+	AccountName string
+}
+type Journal struct {
+	IsReverse                  bool    // this is true to the new entry when you enter reverse old entry
+	IsReversed                 bool    // this is true to the old entry when you enter reverse old entry
+	ReverseEntryNumberCompound int     // that mean if this is reverse entry what the entry compound was reversed
+	ReverseEntryNumberSimple   int     // that mean if this is reverse entry what the entry simple was reversed
+	EntryNumberCompound        int     // that mean number entry you made
+	EntryNumberSimple          int     // that mean the index of the simple entry in the you made
+	Value                      float64 // this sould be positive
+	PriceDebit                 float64 // this sould be positive
+	PriceCredit                float64 // this sould be positive
+	QuantityDebit              float64 // this sould be positive
+	QuantityCredit             float64 // this sould be positive
+	AccountDebit               string  // the account name in the debit side
+	AccountCredit              string  // the account name in the credit side
+	Notes                      string  // your nots on the entry
+	Name                       string  // the name of the dealer or customer
+	NameEmployee               string  // the name of the employee that made the entry
+	TypeOfCompoundEntry        string  // the type of the compound entry like: invoice, payment, receipt
 }
 type DayStartEnd struct {
 	Day         string
@@ -165,6 +194,11 @@ type AutoCompleteEntrie struct {
 	QuantityDebit  float64
 	QuantityCredit float64
 }
+type StatmentWithAccount struct {
+	Account1 Account
+	Account2 Account
+	Statment FilteredStatement
+}
 type FilteredStatement struct {
 	Account1  string
 	Account2  string
@@ -173,25 +207,9 @@ type FilteredStatement struct {
 	TypeOfVpq string
 	Number    float64
 }
-type TheJournalDuplicateFilter struct {
-	IsReverse                  bool
-	IsReversed                 bool
-	ReverseEntryNumberCompound bool
-	ReverseEntryNumberSimple   bool
-	Value                      bool
-	PriceDebit                 bool
-	PriceCredit                bool
-	QuantityDebit              bool
-	QuantityCredit             bool
-	AccountDebit               bool
-	AccountCredit              bool
-	Notes                      bool
-	Name                       bool
-	NameEmployee               bool
-}
 type FilterStatement struct {
-	Account1  FilterString
-	Account2  FilterString
+	Account1  FilterAccount
+	Account2  FilterAccount
 	Name      FilterString
 	Vpq       FilterString
 	TypeOfVpq FilterString
@@ -215,18 +233,38 @@ type FilterJournal struct {
 	Notes                      FilterString
 	Name                       FilterString
 	NameEmployee               FilterString
+	TypeOfCompoundEntry        FilterString
+}
+type FilterJournalDuplicate struct {
+	IsReverse                  bool
+	IsReversed                 bool
+	ReverseEntryNumberCompound bool
+	ReverseEntryNumberSimple   bool
+	Value                      bool
+	PriceDebit                 bool
+	PriceCredit                bool
+	QuantityDebit              bool
+	QuantityCredit             bool
+	AccountDebit               bool
+	AccountCredit              bool
+	Notes                      bool
+	Name                       bool
+	NameEmployee               bool
+	TypeOfCompoundEntry        bool
 }
 type FilterAccount struct {
 	IsLowLevelAccount   FilterBool
 	IsCredit            FilterBool
 	IsTemporary         FilterBool
-	FathersAccountsName FilterSliceString
+	Account             FilterString
+	FathersAccountsName FilterFathersAccountsName
 	AccountLevels       FilterSliceUint
 }
-type FilterSliceString struct {
-	IsFilter bool
-	InSlice  bool
-	Slice    []string
+type FilterFathersAccountsName struct {
+	IsFilter              bool
+	InAccountName         bool // if name in the father name do you want to include it
+	InFathersAccountsName bool
+	FathersAccountsName   []string // here the FathersAccountsName
 }
 type FilterSliceUint struct {
 	IsFilter bool
@@ -273,35 +311,6 @@ type FinancialAccounting struct {
 	Discounts              []string
 	InvoiceDiscount        []string
 	InterestExpense        []string
-}
-type JournalTag struct {
-	IsReverse                  bool    // this is true to the new entry when you enter reverse old entry
-	IsReversed                 bool    // this is true to the old entry when you enter reverse old entry
-	ReverseEntryNumberCompound int     // that mean if this is reverse entry what the entry compound was reversed
-	ReverseEntryNumberSimple   int     // that mean if this is reverse entry what the entry simple was reversed
-	EntryNumberCompound        int     // that mean number entry you made
-	EntryNumberSimple          int     // that mean the index of the simple entry in the you made
-	Value                      float64 // this sould be positive
-	PriceDebit                 float64 // this sould be positive
-	PriceCredit                float64 // this sould be positive
-	QuantityDebit              float64 // this sould be positive
-	QuantityCredit             float64 // this sould be positive
-	AccountDebit               string  // the account name in the debit side
-	AccountCredit              string  // the account name in the credit side
-	Notes                      string  // your nots on the entry
-	Name                       string  // the name of the dealer or customer
-	NameEmployee               string  // the name of the employee that made the entry
-}
-type InventoryTag struct {
-	Price       float64
-	Quantity    float64
-	AccountName string
-}
-type InvoiceStruct struct {
-	Value       float64
-	Price       float64
-	Quantity    float64
-	AccountName string
 }
 type FinancialAnalysis struct {
 	CurrentAssets                          float64

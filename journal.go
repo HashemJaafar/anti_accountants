@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-// func AdjustTheArray(array_to_insert []JournalTag, array_start_end_minutes []start_end_minutes, adjusting_method string) [][]JournalTag {
-// 	var adjusted_array_to_insert [][]JournalTag
+// func AdjustTheArray(array_to_insert []Journal, array_start_end_minutes []start_end_minutes, adjusting_method string) [][]Journal {
+// 	var adjusted_array_to_insert [][]Journal
 // 	total_minutes := TOTAL_MINUTES(array_start_end_minutes)
 // 	array_len_start_end_minutes := len(array_start_end_minutes) - 1
 // 	for _, entry := range array_to_insert {
 // 		var VALUE_counter, time_unit_counter float64
-// 		var one_account_adjusted_list []JournalTag
+// 		var one_account_adjusted_list []Journal
 // 		for index, element := range array_start_end_minutes {
 // 			VALUE := VALUE_AFTER_ADJUST_USING_ADJUSTING_METHODS(adjusting_method, element.minutes, total_minutes, time_unit_counter, entry.VALUE)
 
@@ -21,7 +21,7 @@ import (
 
 // 			time_unit_counter += element.minutes
 // 			VALUE_counter += VALUE
-// 			one_account_adjusted_list = append(one_account_adjusted_list, JournalTag{
+// 			one_account_adjusted_list = append(one_account_adjusted_list, Journal{
 // 				IsReversed:           false,
 // 				EntryNumberCompound: index,
 // 				EntryNumberSimple:   0,
@@ -201,17 +201,17 @@ func SetPriceAndQuantity(account PriceQuantityAccount, isUpdate bool) PriceQuant
 
 	// i make it this way just to make it faster when using Wma case
 	var keys [][]byte
-	var inventory []InventoryTag
+	var inventory []Inventory
 	switch account.CostFlowType {
 	case Fifo:
-		keys, inventory = DbRead[InventoryTag](DbInventory)
+		keys, inventory = DbRead[Inventory](DbInventory)
 	case Lifo:
-		keys, inventory = DbRead[InventoryTag](DbInventory)
+		keys, inventory = DbRead[Inventory](DbInventory)
 		ReverseSlice(keys)
 		ReverseSlice(inventory)
 	case Wma:
 		WeightedAverage(account.AccountName)
-		keys, inventory = DbRead[InventoryTag](DbInventory)
+		keys, inventory = DbRead[Inventory](DbInventory)
 	}
 
 	QuantityCount := Abs(account.Quantity)
@@ -270,8 +270,8 @@ func GroupByAccount(entries []PriceQuantityAccount) []PriceQuantityAccount {
 	return entries
 }
 
-func InsertEntryNumber(arrayOfJournalTag []JournalTag) {
-	journalTag := DbLastLine[JournalTag](DbJournal)
+func InsertEntryNumber(arrayOfJournalTag []Journal) {
+	journalTag := DbLastLine[Journal](DbJournal)
 	var lastEntryNumberCompound int
 	var entryNumberSimple int
 	for k1, v1 := range arrayOfJournalTag {
@@ -285,32 +285,36 @@ func InsertEntryNumber(arrayOfJournalTag []JournalTag) {
 	}
 }
 
-func InsertToDatabaseJournal(entries []JournalTag) {
+func InsertToDatabaseJournal(entries []Journal) {
 	InsertEntryNumber(entries)
 	for _, v1 := range entries {
 		DbUpdate(DbJournal, Now(), v1)
 	}
 }
 
-func InsertToJournalTag(debitEntries, creditEntries []PriceQuantityAccount, notes, name, nameEmployee string) []JournalTag {
-	var simpleEntries []JournalTag
+func InsertToJournal(debitEntries, creditEntries []PriceQuantityAccount, notes, name, nameEmployee, typeOfCompoundEntry string) []Journal {
+	var simpleEntries []Journal
 	for _, debitEntry := range debitEntries {
 		for _, creditEntry := range creditEntries {
 			VALUE := Smallest(Abs(debitEntry.Price*debitEntry.Quantity), Abs(creditEntry.Price*creditEntry.Quantity))
-			simpleEntries = append(simpleEntries, JournalTag{
-				IsReversed:          false,
-				EntryNumberCompound: 0,
-				EntryNumberSimple:   0,
-				Value:               VALUE,
-				PriceDebit:          debitEntry.Price,
-				PriceCredit:         creditEntry.Price,
-				QuantityDebit:       VALUE / debitEntry.Price,
-				QuantityCredit:      VALUE / creditEntry.Price,
-				AccountDebit:        debitEntry.AccountName,
-				AccountCredit:       creditEntry.AccountName,
-				Notes:               notes,
-				Name:                name,
-				NameEmployee:        nameEmployee,
+			simpleEntries = append(simpleEntries, Journal{
+				IsReverse:                  false,
+				IsReversed:                 false,
+				ReverseEntryNumberCompound: 0,
+				ReverseEntryNumberSimple:   0,
+				EntryNumberCompound:        0,
+				EntryNumberSimple:          0,
+				Value:                      VALUE,
+				PriceDebit:                 debitEntry.Price,
+				PriceCredit:                creditEntry.Price,
+				QuantityDebit:              VALUE / debitEntry.Price,
+				QuantityCredit:             VALUE / creditEntry.Price,
+				AccountDebit:               debitEntry.AccountName,
+				AccountCredit:              creditEntry.AccountName,
+				Notes:                      notes,
+				Name:                       name,
+				NameEmployee:               nameEmployee,
+				TypeOfCompoundEntry:        typeOfCompoundEntry,
 			})
 		}
 	}
@@ -320,7 +324,7 @@ func InsertToJournalTag(debitEntries, creditEntries []PriceQuantityAccount, note
 func SimpleJournalEntry(
 	entries []PriceQuantityAccountBarcode,
 	insert, autoCompletion, invoiceDiscount bool,
-	notes, name, nameEmployee string) ([]PriceQuantityAccountBarcode, error) {
+	notes, name, nameEmployee, typeOfCompoundEntry string) ([]PriceQuantityAccountBarcode, error) {
 
 	sliceOfPriceQuantityAccount := Stage1(entries)
 	sliceOfPriceQuantityAccount = GroupByAccount(sliceOfPriceQuantityAccount)
@@ -344,7 +348,7 @@ func SimpleJournalEntry(
 	}
 
 	if insert {
-		simpleEntries := InsertToJournalTag(debitEntries, creditEntries, notes, name, nameEmployee)
+		simpleEntries := InsertToJournal(debitEntries, creditEntries, notes, name, nameEmployee, typeOfCompoundEntry)
 		InsertToDatabaseJournal(simpleEntries)
 		InsertToDatabaseInventory(sliceOfPriceQuantityAccount)
 	}
@@ -368,7 +372,7 @@ func ConvertPriceQuantityAccountToPriceQuantityAccountBarcode(entries []PriceQua
 func InsertToDatabaseInventory(entries []PriceQuantityAccount) {
 	for _, v1 := range entries {
 		if v1.Quantity > 0 {
-			DbUpdate(DbInventory, Now(), InventoryTag{v1.Price, v1.Quantity, v1.AccountName})
+			DbUpdate(DbInventory, Now(), Inventory{v1.Price, v1.Quantity, v1.AccountName})
 		} else {
 			SetPriceAndQuantity(v1, true)
 		}
@@ -396,9 +400,9 @@ func Stage1(entries []PriceQuantityAccountBarcode) []PriceQuantityAccount {
 }
 
 func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee string) {
-	var entries []JournalTag
+	var entries []Journal
 	var entriesKeys [][]byte
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	for k1, v1 := range journal {
 		if v1.EntryNumberCompound == entryNumberCompound && (entryNumberSimple == 0 || v1.EntryNumberSimple == entryNumberSimple) && v1.IsReversed == false {
 			entries = append(entries, v1)
@@ -406,7 +410,7 @@ func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee str
 		}
 	}
 
-	var entryToReverse []JournalTag
+	var entryToReverse []Journal
 	for k1, v1 := range entries {
 		// here i check if the credit side credit nature then it will be negative Quantity and vice versa
 		accountStructCredit, _, _ := AccountStructFromName(v1.AccountCredit)
@@ -439,11 +443,11 @@ func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee str
 			v1.QuantityCredit, v1.QuantityDebit = Abs(v1.QuantityDebit), Abs(v1.QuantityCredit)
 			v1.AccountCredit, v1.AccountDebit = v1.AccountDebit, v1.AccountCredit
 
-			v1.Notes = "revese entry for entry was entered by " + v1.NameEmployee
-			v1.NameEmployee = nameEmployee
 			v1.IsReverse = true
 			v1.ReverseEntryNumberCompound = v1.EntryNumberCompound
 			v1.ReverseEntryNumberSimple = v1.EntryNumberSimple
+			v1.Notes = "revese entry for entry was entered by " + v1.NameEmployee
+			v1.NameEmployee = nameEmployee
 
 			// here i append the entry to the journal to reverse all in one entry number compound
 			entryToReverse = append(entryToReverse, v1)
@@ -458,8 +462,8 @@ func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee str
 	InsertToDatabaseJournal(entryToReverse)
 }
 
-func JournalFilter(dates []time.Time, journal []JournalTag, f FilterJournal, isDebitAndCredit bool) ([]time.Time, []JournalTag) {
-	var filteredJournal []JournalTag
+func JournalFilter(dates []time.Time, journal []Journal, f FilterJournal, isDebitAndCredit bool) ([]time.Time, []Journal) {
+	var filteredJournal []Journal
 	var filteredDates []time.Time
 	for k1, v1 := range journal {
 
@@ -486,7 +490,8 @@ func JournalFilter(dates []time.Time, journal []JournalTag, f FilterJournal, isD
 			f.QuantityCredit.Filter(v1.QuantityCredit) &&
 			f.Notes.Filter(v1.Notes) &&
 			f.Name.Filter(v1.Name) &&
-			f.NameEmployee.Filter(v1.NameEmployee) {
+			f.NameEmployee.Filter(v1.NameEmployee) &&
+			f.TypeOfCompoundEntry.Filter(v1.TypeOfCompoundEntry) {
 			filteredJournal = append(filteredJournal, v1)
 			filteredDates = append(filteredDates, dates[k1])
 		}
@@ -494,7 +499,7 @@ func JournalFilter(dates []time.Time, journal []JournalTag, f FilterJournal, isD
 	return filteredDates, filteredJournal
 }
 
-func FindDuplicateElement(dates []time.Time, journal []JournalTag, f TheJournalDuplicateFilter) ([]time.Time, []JournalTag) {
+func FindDuplicateElement(dates []time.Time, journal []Journal, f FilterJournalDuplicate) ([]time.Time, []Journal) {
 	// here i make it return the same input if the filter is is all false because that mean i dont want to filter
 	if !f.IsReverse &&
 		!f.IsReversed &&
@@ -509,29 +514,31 @@ func FindDuplicateElement(dates []time.Time, journal []JournalTag, f TheJournalD
 		!f.AccountCredit &&
 		!f.Notes &&
 		!f.Name &&
-		!f.NameEmployee {
+		!f.NameEmployee &&
+		!f.TypeOfCompoundEntry {
 		return dates, journal
 	}
 
-	var filteredJournal []JournalTag
+	var filteredJournal []Journal
 	var filteredDates []time.Time
 	for k1, v1 := range journal {
 		for k2, v2 := range journal {
 			if k1 != k2 &&
-				FunctionFilterDuplicate(v1.IsReverse, v2.IsReverse, f.IsReverse) &&
-				FunctionFilterDuplicate(v1.IsReversed, v2.IsReversed, f.IsReversed) &&
-				FunctionFilterDuplicate(v1.ReverseEntryNumberCompound, v2.ReverseEntryNumberCompound, f.ReverseEntryNumberCompound) &&
-				FunctionFilterDuplicate(v1.ReverseEntryNumberSimple, v2.ReverseEntryNumberSimple, f.ReverseEntryNumberSimple) &&
-				FunctionFilterDuplicate(v1.Value, v2.Value, f.Value) &&
-				FunctionFilterDuplicate(v1.PriceDebit, v2.PriceDebit, f.PriceDebit) &&
-				FunctionFilterDuplicate(v1.PriceCredit, v2.PriceCredit, f.PriceCredit) &&
-				FunctionFilterDuplicate(v1.QuantityDebit, v2.QuantityDebit, f.QuantityDebit) &&
-				FunctionFilterDuplicate(v1.QuantityCredit, v2.QuantityCredit, f.QuantityCredit) &&
-				FunctionFilterDuplicate(v1.AccountDebit, v2.AccountDebit, f.AccountDebit) &&
-				FunctionFilterDuplicate(v1.AccountCredit, v2.AccountCredit, f.AccountCredit) &&
-				FunctionFilterDuplicate(v1.Notes, v2.Notes, f.Notes) &&
-				FunctionFilterDuplicate(v1.Name, v2.Name, f.Name) &&
-				FunctionFilterDuplicate(v1.NameEmployee, v2.NameEmployee, f.NameEmployee) {
+				FilterDuplicate(v1.IsReverse, v2.IsReverse, f.IsReverse) &&
+				FilterDuplicate(v1.IsReversed, v2.IsReversed, f.IsReversed) &&
+				FilterDuplicate(v1.ReverseEntryNumberCompound, v2.ReverseEntryNumberCompound, f.ReverseEntryNumberCompound) &&
+				FilterDuplicate(v1.ReverseEntryNumberSimple, v2.ReverseEntryNumberSimple, f.ReverseEntryNumberSimple) &&
+				FilterDuplicate(v1.Value, v2.Value, f.Value) &&
+				FilterDuplicate(v1.PriceDebit, v2.PriceDebit, f.PriceDebit) &&
+				FilterDuplicate(v1.PriceCredit, v2.PriceCredit, f.PriceCredit) &&
+				FilterDuplicate(v1.QuantityDebit, v2.QuantityDebit, f.QuantityDebit) &&
+				FilterDuplicate(v1.QuantityCredit, v2.QuantityCredit, f.QuantityCredit) &&
+				FilterDuplicate(v1.AccountDebit, v2.AccountDebit, f.AccountDebit) &&
+				FilterDuplicate(v1.AccountCredit, v2.AccountCredit, f.AccountCredit) &&
+				FilterDuplicate(v1.Notes, v2.Notes, f.Notes) &&
+				FilterDuplicate(v1.Name, v2.Name, f.Name) &&
+				FilterDuplicate(v1.NameEmployee, v2.NameEmployee, f.NameEmployee) &&
+				FilterDuplicate(v1.TypeOfCompoundEntry, v2.TypeOfCompoundEntry, f.TypeOfCompoundEntry) {
 				filteredJournal = append(filteredJournal, v1)
 				filteredDates = append(filteredDates, dates[k1])
 				break

@@ -24,15 +24,15 @@ func TestAccountStructFromName(t *testing.T) {
 
 func TestAddAccount(t *testing.T) {
 	a := AddAccount(Account{
-		IsLowLevelAccount:                       false,
+		IsLowLevelAccount:                       true,
 		IsCredit:                                true,
-		IsTemporary:                             false,
-		CostFlowType:                            Fifo,
-		AccountName:                             "owner equity",
+		IsTemporary:                             true,
+		CostFlowType:                            Wma,
+		AccountName:                             RetinedEarnings,
 		Notes:                                   "",
 		Image:                                   []string{},
 		Barcode:                                 []string{},
-		AccountNumber:                           [][]uint{{3}},
+		AccountNumber:                           [][]uint{{3, 1}},
 		AccountLevels:                           []uint{},
 		FathersAccountsName:                     [][]string{},
 		AlertForMinimumQuantityByTurnoverInDays: 0,
@@ -71,14 +71,13 @@ func TestCheckTheTree(t *testing.T) {
 }
 
 func TestEditAccount(t *testing.T) {
-	accountStruct, index, err := AccountStructFromName("retained earnings")
+	accountStruct, index, err := AccountStructFromName("cash")
 	fmt.Println(err)
 	if err == nil {
-		accountStruct.AccountName = RetinedEarnings
+		accountStruct.CostFlowType = Wma
 		EditAccount(false, index, accountStruct)
 	}
 	DbClose()
-	// Test(true,)
 	PrintFormatedAccounts()
 }
 

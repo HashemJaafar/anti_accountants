@@ -65,6 +65,7 @@ func main() {
 
 	l1 := container.New(&DynamicHBoxLayout{Width: 500, Height: 250}, text1, text2, text3)
 	l2 := container.New(&DynamicVBoxLayout{Width: 500, Height: 250}, text4, text5, text6)
-	w.SetContent(container.New(&DynamicVBoxLayout{Width: 500, Height: 500}, l1, l2))
+	l3 := container.New(&DynamicVBoxLayout{Width: 500, Height: 500}, l1, l2)
+	w.SetContent(l3)
 	w.ShowAndRun()
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"strings"
 	"time"
 )
 
@@ -10,7 +10,7 @@ func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint
 
 	SortTime(allEndDates, true)
 
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	journalTimes := ConvertByteSliceToTime(keys)
 
 	for _, v1 := range allEndDates {
@@ -34,7 +34,7 @@ func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint
 	return statements, nil
 }
 
-func StatementStep1(journalTimes []time.Time, journal []JournalTag, dateStart, dateEnd time.Time) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+func StatementStep1(journalTimes []time.Time, journal []Journal, dateStart, dateEnd time.Time) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
 	// in this function we create the statement map
 
 	// the sequanse of the columns is:account1,account2,name,vpq,isBeforeDateStart,is_credit,number
@@ -314,7 +314,7 @@ func CalculatePrice(oldStatement map[string]map[string]map[string]map[string]map
 	}
 }
 
-func FillNewStatement(newStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64, v1 JournalTag, isBeforeDateStart bool) {
+func FillNewStatement(newStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64, v1 Journal, isBeforeDateStart bool) {
 	m := InitializeMap6(newStatement, v1.AccountCredit, v1.AccountDebit, v1.Name, Value, isBeforeDateStart)
 	m[true] += v1.Value
 	m = InitializeMap6(newStatement, v1.AccountCredit, v1.AccountDebit, v1.Name, Quantity, isBeforeDateStart)
@@ -325,21 +325,33 @@ func FillNewStatement(newStatement map[string]map[string]map[string]map[string]m
 	m[false] += Abs(v1.QuantityDebit)
 }
 
-func StatementFilter(oldStatement map[string]map[string]map[string]map[string]map[string]float64, f FilterStatement) []FilteredStatement {
-	var newStatement []FilteredStatement
+func StatementFilter(oldStatement map[string]map[string]map[string]map[string]map[string]float64, f FilterStatement) []StatmentWithAccount {
+	var newStatement []StatmentWithAccount
 
 	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
 	for k1, v1 := range oldStatement { //account1
-		if f.Account1.Filter(k1) {
-			for k2, v2 := range v1 { //account2
-				if f.Account2.Filter(k2) {
-					for k3, v3 := range v2 { //name
-						if f.Name.Filter(k3) {
-							for k4, v4 := range v3 { //vpq
-								if f.Vpq.Filter(k4) {
-									for k5, v5 := range v4 { //type_of_vpq
-										if f.TypeOfVpq.Filter(k5) && f.Number.Filter(v5) {
-											newStatement = append(newStatement, FilteredStatement{k1, k2, k3, k4, k5, v5})
+		if f.Account1.Account.Filter(k1) {
+			account1, _, err := AccountStructFromName(k1)
+			if f.Account1.Filter(account1, err) {
+				for k2, v2 := range v1 { //account2
+					if f.Account2.Account.Filter(k2) {
+						account2, _, err := AccountStructFromName(k2)
+						if f.Account2.Filter(account1, err) {
+							for k3, v3 := range v2 { //name
+								if f.Name.Filter(k3) {
+									for k4, v4 := range v3 { //vpq
+										if f.Vpq.Filter(k4) {
+											for k5, v5 := range v4 { //type_of_vpq
+												if f.TypeOfVpq.Filter(k5) && f.Number.Filter(v5) {
+
+													// here i prefer to show the account struct in the statment to use it later in sorting the account
+													newStatement = append(newStatement, StatmentWithAccount{
+														Account1: account1,
+														Account2: account2,
+														Statment: FilteredStatement{k1, k2, k3, k4, k5, v5},
+													})
+												}
+											}
 										}
 									}
 								}
@@ -353,36 +365,7 @@ func StatementFilter(oldStatement map[string]map[string]map[string]map[string]ma
 	return newStatement
 }
 
-func StatementFilterAccounts(oldStatement []FilteredStatement, f1 FilterAccount, f2 FilterAccount) []FilteredStatement {
-	var newStatement []FilteredStatement
-	for _, v1 := range oldStatement {
-		account1, _, _ := AccountStructFromName(v1.Account1)
-		if f1.IsLowLevelAccount.Filter(account1.IsLowLevelAccount) &&
-			f1.IsCredit.Filter(account1.IsCredit) &&
-			f1.IsTemporary.Filter(account1.IsTemporary) &&
-			f1.FathersAccountsName.Filter(account1.FathersAccountsName[IndexOfAccountNumber]) &&
-			f1.AccountLevels.Filter(account1.AccountLevels[IndexOfAccountNumber]) {
-
-			if v1.Account2 == AllAccounts {
-				newStatement = append(newStatement, v1)
-				continue
-			}
-
-			account2, _, _ := AccountStructFromName(v1.Account2)
-			if f2.IsLowLevelAccount.Filter(account2.IsLowLevelAccount) &&
-				f2.IsCredit.Filter(account2.IsCredit) &&
-				f2.IsTemporary.Filter(account2.IsTemporary) &&
-				f2.FathersAccountsName.Filter(account1.FathersAccountsName[IndexOfAccountNumber]) &&
-				f2.AccountLevels.Filter(account2.AccountLevels[IndexOfAccountNumber]) {
-
-				newStatement = append(newStatement, v1)
-			}
-		}
-	}
-	return newStatement
-}
-
-func StatementFilterByGreedyAlgorithm(oldStatement []FilteredStatement, isPercent bool, targetUnits float64) []FilteredStatement {
+func StatementFilterByGreedyAlgorithm(oldStatement []StatmentWithAccount, isPercent bool, targetUnits float64) []StatmentWithAccount {
 	if targetUnits == 0 {
 		return oldStatement
 	}
@@ -391,85 +374,104 @@ func StatementFilterByGreedyAlgorithm(oldStatement []FilteredStatement, isPercen
 	if isPercent {
 		// here i sum the numbers to find the total amount to calculate the percentage in units
 		for _, v1 := range oldStatement {
-			totalUnits += v1.Number
+			totalUnits += v1.Statment.Number
 		}
 		// here i convert the percent to a units
 		targetUnits = totalUnits * targetUnits
 	}
 
 	SortStatementNumber(oldStatement, true)
-	var newStatement []FilteredStatement
+	var newStatement []StatmentWithAccount
 	var currentUnits float64
 	for _, v1 := range oldStatement {
 		if currentUnits < targetUnits {
 			newStatement = append(newStatement, v1)
-			currentUnits += v1.Number
+			currentUnits += v1.Statment.Number
 		}
 	}
 	return newStatement
 }
 
-func StatementSort(oldStatement []FilteredStatement, way string) []FilteredStatement {
+func StatementSort(statement []StatmentWithAccount, way string) []StatmentWithAccount {
 	switch way {
-	case "ascending":
-		SortStatementNumber(oldStatement, true)
-		return oldStatement
-	case "descending":
-		SortStatementNumber(oldStatement, false)
-		return oldStatement
+	case Ascending:
+		SortStatementNumber(statement, true)
+		return statement
+	case Descending:
+		SortStatementNumber(statement, false)
+		return statement
 	default:
-		SortByLevel(oldStatement)
-		return oldStatement
+		SortByLevel(statement)
+		return statement
 	}
 }
 
-func SortByLevel(oldStatement []FilteredStatement) []FilteredStatement {
-	type statmentWithAccount struct {
-		Account1 Account
-		Account2 Account
-		Statment FilteredStatement
-	}
-
-	var swa []statmentWithAccount
-	for _, v1 := range oldStatement {
-		account1, _, _ := AccountStructFromName(v1.Account1)
-		account2, _, _ := AccountStructFromName(v1.Account2)
-		swa = append(swa, statmentWithAccount{account1, account2, v1})
-	}
-
-	for k1 := range swa {
-		for k2 := range swa {
+func SortByLevel(s []StatmentWithAccount) []StatmentWithAccount {
+	for k1 := range s {
+		for k2 := range s {
 			if k1 < k2 &&
-				!IsItHighThanByOrder(swa[k1].Account1.AccountNumber[IndexOfAccountNumber], swa[k2].Account1.AccountNumber[IndexOfAccountNumber]) {
-				fmt.Println(swa[k1].Account1.AccountNumber[IndexOfAccountNumber], swa[k2].Account1.AccountNumber[IndexOfAccountNumber])
-				Swap(swa, k1, k2)
+				!IsItHighThanByOrder(s[k1].Account1.AccountNumber[IndexOfAccountNumber], s[k2].Account1.AccountNumber[IndexOfAccountNumber]) {
+				Swap(s, k1, k2) // account1
+
+				if s[k1].Statment.Account1 == s[k2].Statment.Account1 &&
+					(s[k1].Statment.Account2 == AllAccounts || s[k2].Statment.Account2 == AllAccounts ||
+						!IsItHighThanByOrder(s[k1].Account2.AccountNumber[IndexOfAccountNumber], s[k2].Account2.AccountNumber[IndexOfAccountNumber])) {
+					Swap(s, k1, k2) // account2
+
+					if s[k1].Statment.Account2 == s[k2].Statment.Account2 &&
+						s[k1].Statment.Name > s[k2].Statment.Name {
+						Swap(s, k1, k2) // name
+
+						if s[k1].Statment.Name == s[k2].Statment.Name &&
+							s[k1].Statment.Vpq > s[k2].Statment.Vpq {
+							Swap(s, k1, k2) // vpq
+
+							if s[k1].Statment.Vpq == s[k2].Statment.Vpq &&
+								s[k1].Statment.TypeOfVpq > s[k2].Statment.TypeOfVpq {
+								Swap(s, k1, k2) // typeOfVpq
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 
+	return s
+}
+
+func MakeSpaceBeforeAccountInStatementStruct(oldStatement []StatmentWithAccount) {
+	for k1, v1 := range oldStatement {
+		oldStatement[k1].Statment.Account1 = strings.Repeat("  ", int(v1.Account1.AccountLevels[IndexOfAccountNumber])) + v1.Statment.Account1
+		if v1.Statment.Account2 != AllAccounts {
+			oldStatement[k1].Statment.Account2 = strings.Repeat("  ", int(v1.Account2.AccountLevels[IndexOfAccountNumber])) + v1.Statment.Account2
+		}
+	}
+}
+
+func ConvertStatmentWithAccountToFilteredStatement(oldStatement []StatmentWithAccount) []FilteredStatement {
 	var newStatement []FilteredStatement
-	for _, v1 := range swa {
+	for _, v1 := range oldStatement {
 		newStatement = append(newStatement, v1.Statment)
 	}
-
 	return newStatement
 }
 
-func StatementAnalysis(s FinancialAnalysis) FinancialAnalysisStatement {
-	currentRatio := s.CurrentAssets / s.CurrentLiabilities
-	acidTest := (s.Cash + s.ShortTermInvestments + s.NetReceivables) / s.CurrentLiabilities
-	receivablesTurnover := s.NetCreditSales / s.AverageNetReceivables
-	inventoryTurnover := s.CostOfGoodsSold / s.AverageInventory
-	profitMargin := s.NetIncome / s.NetSales
-	assetTurnover := s.NetSales / s.AverageAssets
-	returnOnAssets := s.NetIncome / s.AverageAssets
-	returnOnEquity := s.NetIncome / s.AverageEquity
-	payoutRatio := s.CashDividends / s.NetIncome
-	debtToTotalAssetsRatio := s.TotalDebt / s.TotalAssets
-	timesInterestEarned := s.Ebitda / s.InterestExpense
-	returnOnCommonStockholdersEquity := (s.NetIncome - s.PreferredDividends) / s.AverageCommonStockholdersEquity
-	earningsPerShare := (s.NetIncome - s.PreferredDividends) / s.WeightedAverageCommonSharesOutstanding
-	priceEarningsRatio := s.MarketPricePerSharesOutstanding / earningsPerShare
+func StatementAnalysis(i FinancialAnalysis) FinancialAnalysisStatement {
+	currentRatio := i.CurrentAssets / i.CurrentLiabilities
+	acidTest := (i.Cash + i.ShortTermInvestments + i.NetReceivables) / i.CurrentLiabilities
+	receivablesTurnover := i.NetCreditSales / i.AverageNetReceivables
+	inventoryTurnover := i.CostOfGoodsSold / i.AverageInventory
+	profitMargin := i.NetIncome / i.NetSales
+	assetTurnover := i.NetSales / i.AverageAssets
+	returnOnAssets := i.NetIncome / i.AverageAssets
+	returnOnEquity := i.NetIncome / i.AverageEquity
+	payoutRatio := i.CashDividends / i.NetIncome
+	debtToTotalAssetsRatio := i.TotalDebt / i.TotalAssets
+	timesInterestEarned := i.Ebitda / i.InterestExpense
+	returnOnCommonStockholdersEquity := (i.NetIncome - i.PreferredDividends) / i.AverageCommonStockholdersEquity
+	earningsPerShare := (i.NetIncome - i.PreferredDividends) / i.WeightedAverageCommonSharesOutstanding
+	priceEarningsRatio := i.MarketPricePerSharesOutstanding / earningsPerShare
 	return FinancialAnalysisStatement{
 		CurrentRatio:                     currentRatio,
 		AcidTest:                         acidTest,

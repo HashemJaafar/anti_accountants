@@ -5,6 +5,9 @@ import (
 	"math"
 )
 
+func Root(a, b float64) float64      { return math.Pow(a, 1/b) }
+func Logarithm(a, b float64) float64 { return math.Log(a) / math.Log(b) }
+
 func CheckMapKeysForEquations(equations [][]string, m map[string]float64) error {
 	var elements []string
 	for _, equation := range equations {
@@ -106,8 +109,6 @@ func LeastSquaresRegression(points [][2]float64) (float64, float64) {
 	return m, b
 }
 
-func Logarithm(a, b float64) float64 { return math.Log(a) / math.Log(b) }
-
 func Max(points [][2]float64) (float64, float64) {
 	x, y := FirstPoint(points)
 	for _, i := range points {
@@ -135,8 +136,6 @@ func PrintEquation(print bool, m map[string]float64, a, b, sign, c string) {
 		fmt.Fprintln(PrintTable, a, "\t", m[a], "\t", " = ", "\t", b, "\t", m[b], "\t", sign, "\t", c, "\t", m[c])
 	}
 }
-
-func Root(a, b float64) float64 { return math.Pow(a, 1/b) }
 
 func XUnderX(points [][2]float64, xMax float64) (float64, float64) {
 	x, y := 0.0, 0.0

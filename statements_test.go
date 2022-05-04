@@ -6,7 +6,7 @@ import (
 )
 
 func TestStatementStep1(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Time{}, time.Now())
@@ -14,7 +14,7 @@ func TestStatementStep1(t *testing.T) {
 }
 
 func TestStatementStep3(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Time{}, time.Now())
@@ -23,7 +23,7 @@ func TestStatementStep3(t *testing.T) {
 }
 
 func TestStatementStep4(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Time{}, time.Now())
@@ -33,7 +33,7 @@ func TestStatementStep4(t *testing.T) {
 }
 
 func TestStatementStep5(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Time{}, time.Now())
@@ -44,7 +44,7 @@ func TestStatementStep5(t *testing.T) {
 }
 
 func TestStatementStep6(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Time{}, time.Now())
@@ -56,7 +56,7 @@ func TestStatementStep6(t *testing.T) {
 }
 
 func TestStatementStep7(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Time{}, time.Now())
@@ -69,7 +69,7 @@ func TestStatementStep7(t *testing.T) {
 }
 
 func TestCalculatePrice(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Time{}, time.Now())
@@ -83,7 +83,7 @@ func TestCalculatePrice(t *testing.T) {
 }
 
 func TestStatementStep2(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Now(), time.Now())
@@ -92,7 +92,7 @@ func TestStatementStep2(t *testing.T) {
 }
 
 func TestStatementStep8(t *testing.T) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	journalTimes := ConvertByteSliceToTime(keys)
 	i1 := StatementStep1(journalTimes, journal, time.Time{}, time.Now())
@@ -113,78 +113,96 @@ func TestFinancialStatements(t *testing.T) {
 	}
 }
 
-func TestStatementFilter(t *testing.T) {
-	i1, _ := FinancialStatements([]time.Time{time.Now()}, 1, []string{"yasa"}, true)
-	DbClose()
-
-	a1 := StatementFilter(i1[0], FilterStatement{
-		Account1:  FilterString{IsFilter: false, Way: "", Slice: []string{}},
-		Account2:  FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllAccounts}},
-		Name:      FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllNames, Names}},
-		Vpq:       FilterString{IsFilter: true, Way: InSlice, Slice: []string{Value}},
-		TypeOfVpq: FilterString{IsFilter: true, Way: InSlice, Slice: []string{EndingBalance}},
-		Number:    FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
-	})
-	PrintFilteredStatement(a1)
-}
-
 func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
-	i1 := []FilteredStatement{
-		{"cash", "", "", "", "", 200},
-		{"book", "", "", "", "", 50},
-		{"rent", "", "", "", "", 10},
-		{"book1", "", "", "", "", 288},
-		{"book2", "", "", "", "", 30},
-	}
-	a1 := StatementFilterByGreedyAlgorithm(i1, true, 0.7)
-	PrintSlice(a1)
-}
-
-func TestStatementFilterAccounts(t *testing.T) {
 	i1, _ := FinancialStatements([]time.Time{time.Now()}, 10, []string{"yasa"}, true)
 	DbClose()
-
 	a1 := StatementFilter(i1[0], FilterStatement{
-		Account1:  FilterString{IsFilter: false, Way: "", Slice: []string{}},
-		Account2:  FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllAccounts}},
+		Account1: FilterAccount{
+			IsLowLevelAccount:   FilterBool{IsFilter: true, BoolValue: true},
+			IsCredit:            FilterBool{IsFilter: false, BoolValue: false},
+			IsTemporary:         FilterBool{IsFilter: false, BoolValue: false},
+			Account:             FilterString{IsFilter: false, Way: "", Slice: []string{}},
+			FathersAccountsName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersAccountsName: false, FathersAccountsName: []string{"assets"}},
+			AccountLevels:       FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
+		},
+		Account2: FilterAccount{
+			IsLowLevelAccount:   FilterBool{IsFilter: false, BoolValue: false},
+			IsCredit:            FilterBool{IsFilter: false, BoolValue: false},
+			IsTemporary:         FilterBool{IsFilter: false, BoolValue: false},
+			Account:             FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllAccounts}},
+			FathersAccountsName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersAccountsName: false, FathersAccountsName: []string{}},
+			AccountLevels:       FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
+		},
 		Name:      FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllNames, Names}},
 		Vpq:       FilterString{IsFilter: true, Way: InSlice, Slice: []string{Value}},
 		TypeOfVpq: FilterString{IsFilter: true, Way: InSlice, Slice: []string{EndingBalance}},
 		Number:    FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
 	})
 
-	i2 := FilterAccount{
-		IsLowLevelAccount:   FilterBool{IsFilter: true, BoolValue: true},
-		IsCredit:            FilterBool{IsFilter: true, BoolValue: true},
-		IsTemporary:         FilterBool{IsFilter: true, BoolValue: true},
-		FathersAccountsName: FilterSliceString{},
-		AccountLevels:       FilterSliceUint{},
-	}
-
-	i3 := FilterAccount{
-		IsLowLevelAccount:   FilterBool{},
-		IsCredit:            FilterBool{},
-		IsTemporary:         FilterBool{},
-		FathersAccountsName: FilterSliceString{},
-		AccountLevels:       FilterSliceUint{},
-	}
-	a1 = StatementFilterAccounts(a1, i2, i3)
-	PrintFilteredStatement(a1)
 	a1 = StatementFilterByGreedyAlgorithm(a1, true, 0.7)
-	PrintFilteredStatement(a1)
+	a2 := ConvertStatmentWithAccountToFilteredStatement(a1)
+	PrintFilteredStatement(a2)
 }
 
 func TestSortByLevel(t *testing.T) {
 	i1, _ := FinancialStatements([]time.Time{time.Now()}, 10, []string{"yasa"}, true)
 	DbClose()
 	a1 := StatementFilter(i1[0], FilterStatement{
-		Account1:  FilterString{IsFilter: false, Way: "", Slice: []string{}},
-		Account2:  FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllAccounts}},
+		// Account1: FilterAccount{
+		// 	IsLowLevelAccount:   FilterBool{IsFilter: false, BoolValue: false},
+		// 	IsCredit:            FilterBool{IsFilter: false, BoolValue: false},
+		// 	IsTemporary:         FilterBool{IsFilter: false, BoolValue: false},
+		// 	Account:             FilterString{IsFilter: false, Way: "", Slice: []string{}},
+		// 	FathersAccountsName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersAccountsName: false, FathersAccountsName: []string{"assets"}},
+		// 	AccountLevels:       FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
+		// },
+		// Account2: FilterAccount{
+		// 	IsLowLevelAccount:   FilterBool{IsFilter: false, BoolValue: false},
+		// 	IsCredit:            FilterBool{IsFilter: false, BoolValue: false},
+		// 	IsTemporary:         FilterBool{IsFilter: false, BoolValue: false},
+		// 	Account:             FilterString{IsFilter: true, Way: NotInSlice, Slice: []string{AllAccounts}},
+		// 	FathersAccountsName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersAccountsName: false, FathersAccountsName: []string{}},
+		// 	AccountLevels:       FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
+		// },
+		// Name:      FilterString{IsFilter: false, Way: InSlice, Slice: []string{AllNames, Names}},
+		// Vpq:       FilterString{IsFilter: false, Way: InSlice, Slice: []string{Value}},
+		// TypeOfVpq: FilterString{IsFilter: false, Way: InSlice, Slice: []string{EndingBalance}},
+		// Number:    FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
+	})
+
+	a1 = SortByLevel(a1)
+	a2 := ConvertStatmentWithAccountToFilteredStatement(a1)
+	PrintFilteredStatement(a2)
+}
+
+func TestMakeSpaceBeforeAccountInStatementStruct(t *testing.T) {
+	i1, _ := FinancialStatements([]time.Time{time.Now()}, 10, []string{"yasa"}, true)
+	DbClose()
+	a1 := StatementFilter(i1[0], FilterStatement{
+		Account1: FilterAccount{
+			IsLowLevelAccount:   FilterBool{IsFilter: false, BoolValue: false},
+			IsCredit:            FilterBool{IsFilter: false, BoolValue: false},
+			IsTemporary:         FilterBool{IsFilter: false, BoolValue: false},
+			Account:             FilterString{IsFilter: false, Way: "", Slice: []string{}},
+			FathersAccountsName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersAccountsName: false, FathersAccountsName: []string{"assets"}},
+			AccountLevels:       FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
+		},
+		Account2: FilterAccount{
+			IsLowLevelAccount:   FilterBool{IsFilter: false, BoolValue: false},
+			IsCredit:            FilterBool{IsFilter: false, BoolValue: false},
+			IsTemporary:         FilterBool{IsFilter: false, BoolValue: false},
+			Account:             FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllAccounts}},
+			FathersAccountsName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersAccountsName: false, FathersAccountsName: []string{}},
+			AccountLevels:       FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
+		},
 		Name:      FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllNames, Names}},
 		Vpq:       FilterString{IsFilter: true, Way: InSlice, Slice: []string{Value}},
 		TypeOfVpq: FilterString{IsFilter: true, Way: InSlice, Slice: []string{EndingBalance}},
 		Number:    FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
 	})
-	SortByLevel(a1)
-	PrintFilteredStatement(a1)
+
+	a1 = SortByLevel(a1)
+	MakeSpaceBeforeAccountInStatementStruct(a1)
+	a2 := ConvertStatmentWithAccountToFilteredStatement(a1)
+	PrintFilteredStatement(a2)
 }

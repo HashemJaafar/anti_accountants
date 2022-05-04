@@ -13,7 +13,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func Main1() {
+type menuButtons struct {
+	pageName string
+	page     *fyne.Container
+}
+
+func main1() {
 	// here i want to close the database after the app is closed
 	defer DbClose()
 
@@ -99,11 +104,6 @@ func PageMenu() (*fyne.Container, *fyne.Container) {
 	)
 	PageMenu := container.New(layout.NewMaxLayout(), menu)
 	return PageMenu, page
-}
-
-type menuButtons struct {
-	pageName string
-	page     *fyne.Container
 }
 
 func PageLogin() *fyne.Container {

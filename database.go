@@ -90,7 +90,7 @@ func DbUpdate[t any](db *badger.DB, key []byte, Value t) {
 }
 
 func ChangeAccountName(old, new string) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	for k1, v1 := range journal {
 		if v1.AccountCredit == old {
 			v1.AccountCredit = new
@@ -101,7 +101,7 @@ func ChangeAccountName(old, new string) {
 			DbUpdate(DbJournal, keys[k1], v1)
 		}
 	}
-	keys, inventory := DbRead[InventoryTag](DbInventory)
+	keys, inventory := DbRead[Inventory](DbInventory)
 	for k1, v1 := range inventory {
 		if v1.AccountName == old {
 			v1.AccountName = new
@@ -118,7 +118,7 @@ func WeightedAverage(account string) {
 
 	// here i find the sum of the Value and sum of QUANTITY from journal
 	var totalValue, totalQuantity float64
-	_, journal := DbRead[JournalTag](DbJournal)
+	_, journal := DbRead[Journal](DbJournal)
 	for _, v1 := range journal {
 		if v1.AccountCredit == account {
 			totalValue += v1.Value
@@ -131,7 +131,7 @@ func WeightedAverage(account string) {
 	}
 
 	// here i delete the account from the inventory
-	keys, inventory := DbRead[InventoryTag](DbInventory)
+	keys, inventory := DbRead[Inventory](DbInventory)
 	for k1, v1 := range inventory {
 		if v1.AccountName == account {
 			DbDelete(DbInventory, keys[k1])
@@ -139,11 +139,11 @@ func WeightedAverage(account string) {
 	}
 
 	// here i insert the new account with the new PRICE and sum of the QUANTITY
-	DbUpdate(DbInventory, Now(), InventoryTag{Abs(totalValue / totalQuantity), Abs(totalQuantity), account})
+	DbUpdate(DbInventory, Now(), Inventory{Abs(totalValue / totalQuantity), Abs(totalQuantity), account})
 }
 
 func ChangeNotes(old, new string) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	for k1, v1 := range journal {
 		if v1.Notes == old {
 			v1.Notes = new
@@ -153,7 +153,7 @@ func ChangeNotes(old, new string) {
 }
 
 func ChangeNotesByEntryNumberCompund(entryNumberCompund int, new string) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	for k1, v1 := range journal {
 		if v1.EntryNumberCompound == entryNumberCompund {
 			v1.Notes = new
@@ -163,7 +163,7 @@ func ChangeNotesByEntryNumberCompund(entryNumberCompund int, new string) {
 }
 
 func ChangeNameByEntryNumberCompund(entryNumberCompund int, new string) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	for k1, v1 := range journal {
 		if v1.EntryNumberCompound == entryNumberCompund {
 			v1.Name = new
@@ -173,10 +173,30 @@ func ChangeNameByEntryNumberCompund(entryNumberCompund int, new string) {
 }
 
 func ChangeName(old, new string) {
-	keys, journal := DbRead[JournalTag](DbJournal)
+	keys, journal := DbRead[Journal](DbJournal)
 	for k1, v1 := range journal {
 		if v1.Name == old {
 			v1.Name = new
+			DbUpdate(DbJournal, keys[k1], v1)
+		}
+	}
+}
+
+func ChangeTypeOfCompoundEntryByEntryNumberCompund(entryNumberCompund int, new string) {
+	keys, journal := DbRead[Journal](DbJournal)
+	for k1, v1 := range journal {
+		if v1.EntryNumberCompound == entryNumberCompund {
+			v1.TypeOfCompoundEntry = new
+			DbUpdate(DbJournal, keys[k1], v1)
+		}
+	}
+}
+
+func ChangeTypeOfCompoundEntry(old, new string) {
+	keys, journal := DbRead[Journal](DbJournal)
+	for k1, v1 := range journal {
+		if v1.TypeOfCompoundEntry == old {
+			v1.TypeOfCompoundEntry = new
 			DbUpdate(DbJournal, keys[k1], v1)
 		}
 	}

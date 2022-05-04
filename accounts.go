@@ -264,7 +264,7 @@ func IsItTheFather(higherLevelAccountNumber, lowerLevelAccountNumber []uint) boo
 }
 
 func IsUsedInJournal(accountName string) bool {
-	_, journal := DbRead[JournalTag](DbJournal)
+	_, journal := DbRead[Journal](DbJournal)
 	for _, i := range journal {
 		if accountName == i.AccountCredit || accountName == i.AccountDebit {
 			return true

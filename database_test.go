@@ -17,7 +17,7 @@ func TestDbClose(t *testing.T) {
 
 func TestDbInsert(t *testing.T) {
 	DbInventory.DropAll()
-	DbInsert(DbInventory, []InventoryTag{
+	DbInsert(DbInventory, []Inventory{
 		{1, 10, "book"},
 		{2, 10, "book"},
 		{3, 10, "book"},
@@ -27,40 +27,35 @@ func TestDbInsert(t *testing.T) {
 		{2, 10, "rent"},
 		{9, 10, "rent"},
 	})
-	_, inventory := DbRead[InventoryTag](DbInventory)
+	_, inventory := DbRead[Inventory](DbInventory)
 	for _, v1 := range inventory {
 		fmt.Println(v1)
 	}
 	DbClose()
 }
 
-func TestDbInsertIntoAccounts(t *testing.T) {
-}
-
 func TestDbLastLine(t *testing.T) {
-	a1 := DbLastLine[JournalTag](DbJournal)
+	a1 := DbLastLine[Journal](DbJournal)
 	fmt.Println(a1)
 }
 
 func TestDbRead(t *testing.T) {
-	_, inventory := DbRead[InventoryTag](DbInventory)
-	_, journal := DbRead[JournalTag](DbJournal)
+	_, inventory := DbRead[Inventory](DbInventory)
+	_, journal := DbRead[Journal](DbJournal)
 	DbClose()
 	PrintSlice(inventory)
 	PrintSlice(journal)
 }
 
 func TestDbUpdate(t *testing.T) {
-	DbUpdate(DbInventory, Now(), InventoryTag{1, 10, "book1"})
+	DbUpdate(DbInventory, Now(), Inventory{1, 10, "book1"})
 }
 
 func TestWeightedAverage(t *testing.T) {
 	WeightedAverage("rent")
-	_, inventory := DbRead[InventoryTag](DbInventory)
+	_, inventory := DbRead[Inventory](DbInventory)
 	DbClose()
 	PrintSlice(inventory)
-	//e1:=
-	//Test(true,a1,e1)
 }
 
 func TestChangeName(t *testing.T) {
@@ -69,4 +64,8 @@ func TestChangeName(t *testing.T) {
 
 func TestChangeNameByEntryNumberCompund(t *testing.T) {
 	ChangeNameByEntryNumberCompund(11, "zaid")
+}
+
+func TestChangeTypeOfCompoundEntryByEntryNumberCompund(t *testing.T) {
+	ChangeTypeOfCompoundEntryByEntryNumberCompund(5, "invoice")
 }
