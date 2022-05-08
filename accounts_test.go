@@ -8,41 +8,178 @@ import (
 
 func TestAccountStructFromBarcode(t *testing.T) {
 	IndexOfAccountNumber = 0
-	accountStruct, index, err := AccountStructFromBarcode("kaslajs")
+	account, index, err := FindAccountFromBarcode("kaslajs")
 	Test(true, err, nil)
 	Test(true, index, 1)
-	Test(true, accountStruct, Account{false, false, false, "", "CURRENT_ASSETS", "", []string{}, []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}, 0, 0, 0, false})
+	Test(true, account, Account{false, false, "", "CURRENT_ASSETS", "", []string{}, []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}})
 }
 
 func TestAccountStructFromName(t *testing.T) {
 	IndexOfAccountNumber = 0
-	accountStruct, index, err := AccountStructFromName("ASSETS")
+	account, index, err := FindAccountFromName("ASSETS")
 	Test(true, err, nil)
 	Test(true, index, 0)
-	Test(true, accountStruct, Account{false, false, false, "", "ASSETS", "", []string{}, []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}, 0, 0, 0, false})
+	Test(true, account, Account{false, false, "", "ASSETS", "", []string{}, []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}})
 }
 
 func TestAddAccount(t *testing.T) {
-	a := AddAccount(Account{
-		IsLowLevelAccount:                       true,
-		IsCredit:                                true,
-		IsTemporary:                             true,
-		CostFlowType:                            Wma,
-		AccountName:                             RetinedEarnings,
-		Notes:                                   "",
-		Image:                                   []string{},
-		Barcode:                                 []string{},
-		AccountNumber:                           [][]uint{{3, 1}},
-		AccountLevels:                           []uint{},
-		FathersAccountsName:                     [][]string{},
-		AlertForMinimumQuantityByTurnoverInDays: 0,
-		AlertForMinimumQuantityByQuintity:       0,
-		TargetBalance:                           0,
-		IfTheTargetBalanceIsLessIsGood:          false,
+	var a1 error
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         "assets",
+		Number:       [][]uint{{1}},
 	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         "current assets",
+		Number:       [][]uint{{1, 1}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   true,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         "cash",
+		Number:       [][]uint{{1, 1, 1}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         "invnetory",
+		Number:       [][]uint{{1, 1, 3}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   true,
+		IsCredit:     false,
+		CostFlowType: Fifo,
+		Name:         "book",
+		Number:       [][]uint{{1, 1, 3, 1}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     true,
+		CostFlowType: Wma,
+		Name:         "liabilities",
+		Number:       [][]uint{{2}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     true,
+		CostFlowType: Wma,
+		Name:         "owner's equity",
+		Number:       [][]uint{{3}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   true,
+		IsCredit:     true,
+		CostFlowType: Wma,
+		Name:         "retained earnings",
+		Number:       [][]uint{{3, 1}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     true,
+		CostFlowType: Wma,
+		Name:         "income",
+		Number:       [][]uint{{3, 2}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     true,
+		CostFlowType: Wma,
+		Name:         "revenue",
+		Number:       [][]uint{{3, 2, 1}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   true,
+		IsCredit:     true,
+		CostFlowType: Wma,
+		Name:         "rent",
+		Number:       [][]uint{{3, 2, 1, 1}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         "expense",
+		Number:       [][]uint{{3, 2, 2}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         "discounts",
+		Number:       [][]uint{{3, 2, 2, 1}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   true,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         InvoiceDiscount,
+		Number:       [][]uint{{3, 2, 2, 1, 1}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   true,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         PrefixDiscount + "book",
+		Number:       [][]uint{{3, 2, 2, 1, 2}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   false,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         "cost of goods sold",
+		Number:       [][]uint{{3, 2, 2, 2}},
+	})
+	Test(true, a1, nil)
+
+	a1 = AddAccount(Account{
+		IsLowLevel:   true,
+		IsCredit:     false,
+		CostFlowType: Wma,
+		Name:         PrefixCost + "book",
+		Number:       [][]uint{{3, 2, 2, 2, 1}},
+	})
+	Test(true, a1, nil)
+
 	DbClose()
 	PrintFormatedAccounts()
-	Test(true, a, nil)
 }
 
 func TestCheckIfAccountNumberDuplicated(t *testing.T) {
@@ -63,19 +200,19 @@ func TestCheckIfTheTreeConnected(t *testing.T) {
 }
 
 func TestCheckTheTree(t *testing.T) {
-	CheckTheTree()
-	Test(true, ErrorsMessages, []error{
+	a1 := CheckTheTree()
+	Test(true, a1, []error{
 		errors.New("should be low level account in all account numbers {false false false  b  [] [] [[1 1] [1 2]] [] [] 0 0 0 false}"),
 		errors.New("the account number [2 1 8] for {true false true Fifo f  [] [] [[4 1] [2 1 8]] [] [] 0 0 0 false} not conected to the tree"),
 	})
 }
 
 func TestEditAccount(t *testing.T) {
-	accountStruct, index, err := AccountStructFromName("cash")
+	account, index, err := FindAccountFromName(PrefixRevenue + "book")
 	fmt.Println(err)
 	if err == nil {
-		accountStruct.CostFlowType = Wma
-		EditAccount(false, index, accountStruct)
+		account.Number = [][]uint{{3, 2, 1, 2}}
+		EditAccount(false, index, account)
 	}
 	DbClose()
 	PrintFormatedAccounts()
@@ -164,12 +301,11 @@ func TestPrintFormatedAccounts(t *testing.T) {
 func TestSetTheAccounts(t *testing.T) {
 	SetTheAccounts()
 	PrintFormatedAccounts()
-	Test(true, Accounts, []Account{
-		// {false, false, false, "", "a", "", []string{}, []string{"a"}, [][]uint{{1}, {1}}, []uint{1, 1}, [][]string{{}, {}}, 0, 0, 0, false},
-		// {false, false, false, "", "b", "", []string{}, []string{}, [][]uint{{1, 1}, {1, 2}}, []uint{2, 2}, [][]string{{"a"}, {"a"}}, 0, 0, 0, false},
-		// {true, false, false, "Fifo", "c", "", []string{}, []string{}, [][]uint{{1, 2}, {1, 3}}, []uint{2, 2}, [][]string{{"a"}, {"a"}}, 0, 0, 0, false},
-		// {false, false, false, "", "d", "", []string{}, []string{}, [][]uint{{2}, {2}}, []uint{1, 1}, [][]string{{}, {}}, 0, 0, 0, false},
-		// {false, false, false, "", "e", "", []string{}, []string{}, [][]uint{{4}, {2}}, []uint{1, 1}, [][]string{{}, {}}, 0, 0, 0, false},
-		// {true, false, true, "", "f", "", []string{}, []string{}, [][]uint{{4, 1}, {2, 1, 8}}, []uint{2, 3}, [][]string{{"e"}, {"d", "e"}}, 0, 0, 0, false},
-	})
+}
+
+func TestAddAutoCompletion(t *testing.T) {
+	a1 := AddAutoCompletion(AutoCompletion{"book2", 5, 0, []Discount{}})
+	DbClose()
+	PrintSlice(AutoCompletionEntries)
+	Test(true, a1, nil)
 }

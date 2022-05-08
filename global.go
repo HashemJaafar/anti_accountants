@@ -90,68 +90,90 @@ const (
 	// way to sort statment
 	Ascending  = "Ascending"
 	Descending = "Descending"
+
+	// Prefixes of inventory account
+	PrefixCost         = "cost of "
+	PrefixDiscount     = "discount of "
+	PrefixTaxExpenses  = "tax expenses of "
+	PrefixTaxLiability = "tax liability of "
+	PrefixRevenue      = "revenue of "
 )
 
 var (
 	CompanyName          = "anti_accountants"
 	EmployeeName         = "hashem"
 	IndexOfAccountNumber = 0
-	RetinedEarnings      = FormatTheString("Retained Earnings")
-	InvoiceDiscountsList [][2]float64
-	AutoCompleteEntries  []AutoCompleteEntrie
-	ErrorsMessages       = CheckTheTree()
-	// all the below is final
+	// global accounts
+	InvoiceDiscount      = FormatTheString("Invoice Discount")
+	InvoiceDiscountsList []Discount
+
 	// pathes
-	DbPathAccounts  = "./db/" + CompanyName + "/accounts"
-	DbPathJournal   = "./db/" + CompanyName + "/journal"
-	DbPathInventory = "./db/" + CompanyName + "/inventory"
+	DbPathAccounts              = "./db/" + CompanyName + "/accounts"
+	DbPathJournal               = "./db/" + CompanyName + "/journal"
+	DbPathInventory             = "./db/" + CompanyName + "/inventory"
+	DbPathAutoCompletionEntries = "./db/" + CompanyName + "/auto_completion_entries"
 	// data base
-	DbAccounts  = DbOpen(DbPathAccounts)
-	DbJournal   = DbOpen(DbPathJournal)
-	DbInventory = DbOpen(DbPathInventory)
-	_, Accounts = DbRead[Account](DbAccounts)
+	DbAccounts              = DbOpen(DbPathAccounts)
+	DbJournal               = DbOpen(DbPathJournal)
+	DbInventory             = DbOpen(DbPathInventory)
+	DbAutoCompletionEntries = DbOpen(DbPathAutoCompletionEntries)
+	// read database
+	_, Accounts              = DbRead[Account](DbAccounts)
+	_, AutoCompletionEntries = DbRead[AutoCompletion](DbAutoCompletionEntries)
+
 	// standards
 	PrintTable = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	// STANDARD_DAYS        = []string{SATURDAY, SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY}
-	// DEPRECIATION_METHODS = []string{LINEAR, EXPONENTIAL, LOGARITHMIC}
+	// StandardDays = []string{Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday}
+	// DepreciationMethods = []string{Linear, Exponential, Logarithmic}
 	CostFlowType = []string{Fifo, Lifo, Wma}
-	//errors
-	ErrorNotListed           = errors.New("is not listed")
-	ErrorNotInventoryAccount = errors.New("not inventory account")
-	ErrorShouldBeNegative    = errors.New("the QUANTITY should be negative")
-	ErrorAccountNameIsUsed   = errors.New("account name is used")
-	ErrorBarcodeIsUsed       = errors.New("barcode is used")
-	ErrorAccountNumberIsUsed = errors.New("account number is used")
-	ErrorAccountNameIsEmpty  = errors.New("account name is empty")
 
-	//this vaiable for TEST function
+	//errors
+	ErrorNotListed          = errors.New("is not listed")
+	ErrorAccountNameIsUsed  = errors.New("account name is used")
+	ErrorBarcodeIsUsed      = errors.New("barcode is used")
+	ErrorAccountNameIsEmpty = errors.New("account name is empty")
+
+	//this var for Test function
 	FailTestNumber int
 )
 
 type Number interface{ Integer | float64 | float32 }
 type Integer interface{ int | int64 | uint }
 
-type Account struct { // 									   configer		|change				|correct	|necessary	|is unique
-	IsLowLevelAccount                       bool       // manual		|if not in journal	|cant		|yes		|no
-	IsCredit                                bool       // manual		|if not in journal	|cant		|yes		|no
-	IsTemporary                             bool       // manual		|if not in journal	|auto		|yes		|no
-	CostFlowType                            string     // manual		|manual				|auto		|yes		|no
-	AccountName                             string     // manual		|if not used		|manual		|yes		|yes
-	Notes                                   string     // manual		|manual				|manual		|no			|no
-	Image                                   []string   // manual		|manual				|manual		|no			|no
-	Barcode                                 []string   // manual		|if not used		|manual		|yes		|yes
-	AccountNumber                           [][]uint   // manual		|manual				|manual		|yes		|yes it should be but we don't inforce you
-	AccountLevels                           []uint     // auto		|auto				|auto		|yes		|no
-	FathersAccountsName                     [][]string // auto		|auto				|auto		|yes		|no
-	AlertForMinimumQuantityByTurnoverInDays uint       // manual		|manual				|manual		|no			|no
-	AlertForMinimumQuantityByQuintity       float64    // manual		|manual				|manual		|no			|no
-	TargetBalance                           float64    // manual		|manual				|manual		|no			|no
-	IfTheTargetBalanceIsLessIsGood          bool       // manual		|manual				|manual		|no			|no
+type EntryInfo struct {
+	Notes               string // your nots on the entry
+	Name                string // the name of the dealer or customer
+	Employee            string // the name of the employee that made the entry
+	TypeOfCompoundEntry string // the type of the compound entry like: invoice, payment, receipt
 }
-type Inventory struct {
-	Price       float64
-	Quantity    float64
-	AccountName string
+type APQ struct {
+	Name     string
+	Price    float64
+	Quantity float64
+}
+type APQB struct {
+	Name     string
+	Price    float64
+	Quantity float64
+	Barcode  string
+}
+type APQA struct {
+	Name     string
+	Price    float64
+	Quantity float64
+	Account  Account
+}
+type Account struct { // 							 	  configer		|change				|correct	|necessary	|is unique
+	IsLowLevel   bool       // manual		|if not in journal	|cant		|yes		|no
+	IsCredit     bool       // manual		|if not in journal	|cant		|yes		|no
+	CostFlowType string     // manual		|manual				|auto		|yes		|no
+	Name         string     // manual		|if not used		|manual		|yes		|yes
+	Notes        string     // manual		|manual				|manual		|no			|no
+	Image        []string   // manual		|manual				|manual		|no			|no
+	Barcode      []string   // manual		|if not used		|manual		|yes		|yes
+	Number       [][]uint   // manual		|manual				|manual		|yes		|yes it should be but we don't inforce you
+	Levels       []uint     // auto			|auto				|auto		|yes		|no
+	FathersName  [][]string // auto			|auto				|auto		|yes		|no
 }
 type Journal struct {
 	IsReverse                  bool    // this is true to the new entry when you enter reverse old entry
@@ -169,43 +191,21 @@ type Journal struct {
 	AccountCredit              string  // the account name in the credit side
 	Notes                      string  // your nots on the entry
 	Name                       string  // the name of the dealer or customer
-	NameEmployee               string  // the name of the employee that made the entry
+	Employee                   string  // the name of the employee that made the entry
 	TypeOfCompoundEntry        string  // the type of the compound entry like: invoice, payment, receipt
 }
-type DayStartEnd struct {
-	Day         string
-	StartHour   int
-	StartMinute int
-	EndHour     int
-	EndMinute   int
-}
-type StartEndMinutes struct {
-	DateStart time.Time
-	DateEnd   time.Time
-	Minutes   float64
-}
-type AutoCompleteEntrie struct {
-	AccountName    string
-	AccountCredit  string
-	AccountDebit   string
-	PriceDebit     float64
-	PriceCredit    float64
-	Quantity       float64
-	QuantityDebit  float64
-	QuantityCredit float64
-}
-type StatmentWithAccount struct {
-	Account1 Account
-	Account2 Account
-	Statment FilteredStatement
-}
-type FilteredStatement struct {
+type Statement struct {
 	Account1  string
 	Account2  string
 	Name      string
 	Vpq       string
 	TypeOfVpq string
 	Number    float64
+}
+type StatmentWithAccount struct {
+	Account1 Account
+	Account2 Account
+	Statment Statement
 }
 type FilterStatement struct {
 	Account1  FilterAccount
@@ -232,7 +232,7 @@ type FilterJournal struct {
 	AccountCredit              FilterString
 	Notes                      FilterString
 	Name                       FilterString
-	NameEmployee               FilterString
+	Employee                   FilterString
 	TypeOfCompoundEntry        FilterString
 }
 type FilterJournalDuplicate struct {
@@ -249,22 +249,22 @@ type FilterJournalDuplicate struct {
 	AccountCredit              bool
 	Notes                      bool
 	Name                       bool
-	NameEmployee               bool
+	Employee                   bool
 	TypeOfCompoundEntry        bool
 }
 type FilterAccount struct {
-	IsLowLevelAccount   FilterBool
-	IsCredit            FilterBool
-	IsTemporary         FilterBool
-	Account             FilterString
-	FathersAccountsName FilterFathersAccountsName
-	AccountLevels       FilterSliceUint
+	IsFilter    bool
+	IsLowLevel  FilterBool
+	IsCredit    FilterBool
+	Account     FilterString
+	FathersName FilterFathersAccountsName
+	Levels      FilterSliceUint
 }
 type FilterFathersAccountsName struct {
-	IsFilter              bool
-	InAccountName         bool // if name in the father name do you want to include it
-	InFathersAccountsName bool
-	FathersAccountsName   []string // here the FathersAccountsName
+	IsFilter      bool
+	InAccountName bool // if name in the father name do you want to include it
+	InFathersName bool
+	FathersName   []string // here the FathersName
 }
 type FilterSliceUint struct {
 	IsFilter bool
@@ -291,26 +291,6 @@ type FilterString struct {
 type FilterBool struct {
 	IsFilter  bool
 	BoolValue bool
-}
-type FinancialAccounting struct {
-	Assets                 []string
-	CurrentAssets          []string
-	CashAndCashEquivalents []string
-	ShortTermInvestments   []string
-	Receivables            []string
-	Inventory              []string
-	Liabilities            []string
-	CurrentLiabilities     []string
-	Equity                 []string
-	RetainedEarnings       []string
-	Dividends              []string
-	IncomeStatement        []string
-	Ebitda                 []string
-	Sales                  []string
-	CostOfGoodsSold        []string
-	Discounts              []string
-	InvoiceDiscount        []string
-	InterestExpense        []string
 }
 type FinancialAnalysis struct {
 	CurrentAssets                          float64
@@ -352,23 +332,20 @@ type FinancialAnalysisStatement struct {
 	EarningsPerShare                 float64 // (NET_INCOME - PREFERRED_DIVIDENDS) / WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING
 	PriceEarningsRatio               float64 // MARKET_PRICE_PER_SHARES_OUTSTANDING / EARNINGS_PER_SHARE
 }
-type PriceQuantityAccountBarcode struct {
-	Price       float64
-	Quantity    float64
-	AccountName string
-	Barcode     string
-}
-type PriceQuantityAccount struct {
-	IsCredit     bool
-	CostFlowType string
-	AccountName  string
-	Price        float64
-	Quantity     float64
-}
 type OneStepDistribution struct {
 	SalesOrVariableOrFixed string
 	DistributionMethod     string
 	Amount                 float64
 	From                   map[string]float64
 	To                     map[string]float64
+}
+type AutoCompletion struct {
+	AccountInvnetory string     // the account name that call the auto completion
+	PriceRevenue     float64    // if it is empty it will be deleted
+	PriceTax         float64    // if it is empty it will be deleted
+	PriceDiscount    []Discount // if it is empty it will be deleted
+}
+type Discount struct {
+	Price    float64
+	Quantity float64
 }

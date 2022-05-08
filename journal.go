@@ -2,184 +2,41 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
-// func AdjustTheArray(array_to_insert []Journal, array_start_end_minutes []start_end_minutes, adjusting_method string) [][]Journal {
-// 	var adjusted_array_to_insert [][]Journal
-// 	total_minutes := TOTAL_MINUTES(array_start_end_minutes)
-// 	array_len_start_end_minutes := len(array_start_end_minutes) - 1
-// 	for _, entry := range array_to_insert {
-// 		var VALUE_counter, time_unit_counter float64
-// 		var one_account_adjusted_list []Journal
-// 		for index, element := range array_start_end_minutes {
-// 			VALUE := VALUE_AFTER_ADJUST_USING_ADJUSTING_METHODS(adjusting_method, element.minutes, total_minutes, time_unit_counter, entry.VALUE)
+func ValueAfterAdjustUsingAdjustingMethods(adjustingMethod string, minutesCurrent, minutesTotal, minutesPast, valueTotal float64) float64 {
+	percent := Root(valueTotal, minutesTotal)
+	switch adjustingMethod {
+	case Exponential:
+		return math.Pow(percent, minutesPast+minutesCurrent) - math.Pow(percent, minutesPast)
+	case Logarithmic:
+		return (valueTotal / math.Pow(percent, minutesPast)) - (valueTotal / math.Pow(percent, minutesPast+minutesCurrent))
+	default:
+		return minutesCurrent * (valueTotal / minutesTotal)
+	}
+}
 
-// 			if index == array_len_start_end_minutes {
-// 				VALUE = entry.VALUE - VALUE_counter
-// 			}
-
-// 			time_unit_counter += element.minutes
-// 			VALUE_counter += VALUE
-// 			one_account_adjusted_list = append(one_account_adjusted_list, Journal{
-// 				IsReversed:           false,
-// 				EntryNumberCompound: index,
-// 				EntryNumberSimple:   0,
-// 				VALUE:                 VALUE,
-// 				PriceDebit:           entry.PriceDebit,
-// 				PriceCredit:          entry.PriceCredit,
-// 				QuantityDebit:        RETURN_SAME_SIGN_OF_NUMBER_SIGN(VALUE/entry.PriceDebit, entry.QuantityDebit),
-// 				QuantityCredit:       RETURN_SAME_SIGN_OF_NUMBER_SIGN(VALUE/entry.PriceCredit, entry.QuantityCredit),
-// 				AccountDebit:         entry.AccountDebit,
-// 				AccountCredit:        entry.AccountCredit,
-// 				NOTES:                 entry.NOTES,
-// 				NAME:                  entry.NAME,
-// 				NAME_EMPLOYEE:         entry.NAME_EMPLOYEE,
-// 			})
-// 		}
-// 		adjusted_array_to_insert = append(adjusted_array_to_insert, one_account_adjusted_list)
-// 	}
-// 	return adjusted_array_to_insert
-// }
-
-// func CreateArrayStartEndMinutes(date_start, date_end time.Time, array_day_start_end []DAY_START_END) []start_end_minutes {
-// 	var array_start_end_minutes []start_end_minutes
-// 	var previous_date_end time.Time
-// 	delta_days := int(date_end.Sub(date_start).Hours()/24 + 1)
-// 	year, month, day := date_start.Date()
-// 	for day_counter := 0; day_counter < delta_days; day_counter++ {
-// 		for _, element := range array_day_start_end {
-// 			start := time.Date(year, month, day+day_counter, element.START_HOUR, element.START_MINUTE, 0, 0, time.Local)
-// 			if start.Weekday().String() == element.DAY {
-// 				end := time.Date(year, month, day+day_counter, element.END_HOUR, element.END_MINUTE, 0, 0, time.Local)
-// 				start, end = SHIFT_AND_ARRANGE_THE_TIME_SERIES(previous_date_end, start, end)
-// 				array_start_end_minutes = append(array_start_end_minutes, start_end_minutes{start, end, end.Sub(start).Minutes()})
-// 				previous_date_end = end
-// 			}
-// 		}
-// 	}
-// 	return array_start_end_minutes
-// }
-
-// func SetAdjustingMethod(entry_expair time.Time, adjusting_method string) string {
-// 	if entry_expair.IsZero() {
-// 		return ""
-// 	}
-// 	if !IS_IN(adjusting_method, DEPRECIATION_METHODS) {
-// 		return Linear
-// 	}
-// 	return adjusting_method
-// }
-
-// func SetDateEndToZeroIfSmallerThanDateStart(date_start, date_end time.Time) time.Time {
-// 	if !date_end.IsZero() && date_start.Before(date_end) {
-// 		return time.Time{}
-// 	}
-// 	return date_end
-// }
-
-// func SetSliceDayStartEnd(array_day_start_end []DAY_START_END) []DAY_START_END {
-// 	if len(array_day_start_end) == 0 {
-// 		array_day_start_end = []DAY_START_END{
-// 			{Saturday, 0, 0, 23, 59},
-// 			{Sunday, 0, 0, 23, 59},
-// 			{Monday, 0, 0, 23, 59},
-// 			{Tuesday, 0, 0, 23, 59},
-// 			{Wednesday, 0, 0, 23, 59},
-// 			{Thursday, 0, 0, 23, 59},
-// 			{Friday, 0, 0, 23, 59}}
-// 	}
-// 	for index := range array_day_start_end {
-// 		array_day_start_end[index].DAY = strings.Title(array_day_start_end[index].DAY)
-
-// 		if !IS_IN(array_day_start_end[index].DAY, STANDARD_DAYS) {
-// 			array_day_start_end[index].DAY = Sunday
-// 		}
-
-// 		if array_day_start_end[index].START_HOUR < 0 {
-// 			array_day_start_end[index].START_HOUR = 0
-// 		}
-// 		if array_day_start_end[index].START_HOUR > 23 {
-// 			array_day_start_end[index].START_HOUR = 23
-// 		}
-// 		if array_day_start_end[index].START_MINUTE < 0 {
-// 			array_day_start_end[index].START_MINUTE = 0
-// 		}
-// 		if array_day_start_end[index].START_MINUTE > 59 {
-// 			array_day_start_end[index].START_MINUTE = 59
-// 		}
-// 		if array_day_start_end[index].END_HOUR < 0 {
-// 			array_day_start_end[index].END_HOUR = 0
-// 		}
-// 		if array_day_start_end[index].END_HOUR > 23 {
-// 			array_day_start_end[index].END_HOUR = 23
-// 		}
-// 		if array_day_start_end[index].END_MINUTE < 0 {
-// 			array_day_start_end[index].END_MINUTE = 0
-// 		}
-// 		if array_day_start_end[index].END_MINUTE > 59 {
-// 			array_day_start_end[index].END_MINUTE = 59
-// 		}
-
-// 		if array_day_start_end[index].START_HOUR > array_day_start_end[index].END_HOUR {
-// 			array_day_start_end[index].START_HOUR = 0
-// 		}
-// 		if array_day_start_end[index].START_HOUR == array_day_start_end[index].END_HOUR && array_day_start_end[index].START_MINUTE > array_day_start_end[index].END_MINUTE {
-// 			array_day_start_end[index].START_MINUTE = 0
-// 		}
-// 	}
-// 	return array_day_start_end
-// }
-
-// func ShiftAndArrangeTheTimeSeries(previous_date_end, date_start, date_end time.Time) (time.Time, time.Time) {
-// 	if previous_date_end.After(date_start) {
-// 		date_start = previous_date_end
-// 	}
-// 	if date_start.After(date_end) {
-// 		date_end = date_start
-// 	}
-// 	return date_start, date_end
-// }
-
-// func TotalMinutes(array_start_end_minutes []start_end_minutes) float64 {
-// 	var total_minutes float64
-// 	for _, element := range array_start_end_minutes {
-// 		total_minutes += element.minutes
-// 	}
-// 	return total_minutes
-// }
-
-// func ValueAfterAdjustUsingAdjustingMethods(adjusting_method string, minutes, TOTAL_MINUTES, time_unit_counter, total_VALUE float64) float64 {
-// 	percent := ROOT(total_VALUE, TOTAL_MINUTES)
-// 	switch adjusting_method {
-// 	case Exponential:
-// 		return math.Pow(percent, time_unit_counter+minutes) - math.Pow(percent, time_unit_counter)
-// 	case Logarithmic:
-// 		return (total_VALUE / math.Pow(percent, time_unit_counter)) - (total_VALUE / math.Pow(percent, time_unit_counter+minutes))
-// 	default:
-// 		return minutes * (total_VALUE / TOTAL_MINUTES)
-// 	}
-// }
-
-func CheckDebitEqualCredit(entries []PriceQuantityAccount) ([]PriceQuantityAccount, []PriceQuantityAccount, error) {
-	var debitEntries, creditEntries []PriceQuantityAccount
+func CheckDebitEqualCredit(entries []APQA) ([]APQA, []APQA, error) {
+	var debitEntries, creditEntries []APQA
 	var zero float64
-	for _, entry := range entries {
-		VALUE := entry.Price * entry.Quantity
-		switch entry.IsCredit {
+	for _, v1 := range entries {
+		VALUE := v1.Price * v1.Quantity
+		switch v1.Account.IsCredit {
 		case false:
 			zero += VALUE
 			if VALUE > 0 {
-				debitEntries = append(debitEntries, entry)
+				debitEntries = append(debitEntries, v1)
 			} else if VALUE < 0 {
-				creditEntries = append(creditEntries, entry)
+				creditEntries = append(creditEntries, v1)
 			}
 		case true:
 			zero -= VALUE
 			if VALUE < 0 {
-				debitEntries = append(debitEntries, entry)
+				debitEntries = append(debitEntries, v1)
 			} else if VALUE > 0 {
-				creditEntries = append(creditEntries, entry)
+				creditEntries = append(creditEntries, v1)
 			}
 		}
 	}
@@ -194,33 +51,33 @@ func CheckDebitEqualCredit(entries []PriceQuantityAccount) ([]PriceQuantityAccou
 	return debitEntries, creditEntries, nil
 }
 
-func SetPriceAndQuantity(account PriceQuantityAccount, isUpdate bool) PriceQuantityAccount {
+func SetPriceAndQuantity(account APQA, insert bool) APQA {
 	if account.Quantity > 0 {
 		return account
 	}
 
 	// i make it this way just to make it faster when using Wma case
 	var keys [][]byte
-	var inventory []Inventory
-	switch account.CostFlowType {
+	var inventory []APQ
+	switch account.Account.CostFlowType {
 	case Fifo:
-		keys, inventory = DbRead[Inventory](DbInventory)
+		keys, inventory = DbRead[APQ](DbInventory)
 	case Lifo:
-		keys, inventory = DbRead[Inventory](DbInventory)
+		keys, inventory = DbRead[APQ](DbInventory)
 		ReverseSlice(keys)
 		ReverseSlice(inventory)
 	case Wma:
-		WeightedAverage(account.AccountName)
-		keys, inventory = DbRead[Inventory](DbInventory)
+		WeightedAverage(account.Name)
+		keys, inventory = DbRead[APQ](DbInventory)
 	}
 
 	QuantityCount := Abs(account.Quantity)
 	var costs float64
 	for k1, v1 := range inventory {
-		if v1.AccountName == account.AccountName {
+		if v1.Name == account.Name {
 			if QuantityCount <= v1.Quantity {
 				costs -= v1.Price * QuantityCount
-				if isUpdate {
+				if insert {
 					inventory[k1].Quantity -= QuantityCount
 					DbUpdate(DbInventory, keys[k1], inventory[k1])
 				}
@@ -229,7 +86,7 @@ func SetPriceAndQuantity(account PriceQuantityAccount, isUpdate bool) PriceQuant
 			}
 			if QuantityCount > v1.Quantity {
 				costs -= v1.Price * v1.Quantity
-				if isUpdate {
+				if insert {
 					DbDelete(DbInventory, keys[k1])
 				}
 				QuantityCount -= v1.Quantity
@@ -241,58 +98,44 @@ func SetPriceAndQuantity(account PriceQuantityAccount, isUpdate bool) PriceQuant
 	return account
 }
 
-func GroupByAccount(entries []PriceQuantityAccount) []PriceQuantityAccount {
-	m := map[string]*PriceQuantityAccount{}
+func GroupByAccount(entries []APQA) []APQA {
+	m := map[string]*APQA{}
 	for _, v1 := range entries {
-		key := v1.AccountName
+		key := v1.Name
 		sums := m[key]
 		if sums == nil {
-			sums = &PriceQuantityAccount{}
+			sums = &APQA{}
 			m[key] = sums
 		}
 		// i make this to store the VALUE and then devide it by the Quantity to get the Price
-		sums.IsCredit = v1.IsCredit
-		sums.CostFlowType = v1.CostFlowType
-		sums.AccountName = v1.AccountName
+		sums.Name = v1.Name
 		sums.Price += v1.Price * v1.Quantity //here i store the VALUE in Price field
 		sums.Quantity += v1.Quantity
+		sums.Account = v1.Account
 	}
-	entries = []PriceQuantityAccount{}
+	entries = []APQA{}
 	for _, v1 := range m {
-		entries = append(entries, PriceQuantityAccount{
-			IsCredit:     v1.IsCredit,
-			CostFlowType: v1.CostFlowType,
-			AccountName:  v1.AccountName,
-			Price:        v1.Price / v1.Quantity,
-			Quantity:     v1.Quantity,
+		entries = append(entries, APQA{
+			Name:     v1.Name,
+			Price:    v1.Price / v1.Quantity,
+			Quantity: v1.Quantity,
+			Account:  v1.Account,
 		})
 	}
 	return entries
 }
 
-func InsertEntryNumber(arrayOfJournalTag []Journal) {
-	journalTag := DbLastLine[Journal](DbJournal)
-	var lastEntryNumberCompound int
-	var entryNumberSimple int
-	for k1, v1 := range arrayOfJournalTag {
-		arrayOfJournalTag[k1].EntryNumberCompound = journalTag.EntryNumberCompound + 1
-		if v1.EntryNumberCompound != lastEntryNumberCompound {
-			entryNumberSimple = 0
-			lastEntryNumberCompound = v1.EntryNumberCompound
-		}
-		entryNumberSimple++
-		arrayOfJournalTag[k1].EntryNumberSimple = entryNumberSimple
-	}
-}
+func InsertToDatabaseJournal(journal []Journal) {
+	last := DbLastLine[Journal](DbJournal)
+	for k1, v1 := range journal {
+		v1.EntryNumberCompound = last.EntryNumberCompound + 1
+		v1.EntryNumberSimple = k1 + 1
 
-func InsertToDatabaseJournal(entries []Journal) {
-	InsertEntryNumber(entries)
-	for _, v1 := range entries {
 		DbUpdate(DbJournal, Now(), v1)
 	}
 }
 
-func InsertToJournal(debitEntries, creditEntries []PriceQuantityAccount, notes, name, nameEmployee, typeOfCompoundEntry string) []Journal {
+func InsertToJournal(debitEntries, creditEntries []APQA, entryInfo EntryInfo) []Journal {
 	var simpleEntries []Journal
 	for _, debitEntry := range debitEntries {
 		for _, creditEntry := range creditEntries {
@@ -309,94 +152,171 @@ func InsertToJournal(debitEntries, creditEntries []PriceQuantityAccount, notes, 
 				PriceCredit:                creditEntry.Price,
 				QuantityDebit:              VALUE / debitEntry.Price,
 				QuantityCredit:             VALUE / creditEntry.Price,
-				AccountDebit:               debitEntry.AccountName,
-				AccountCredit:              creditEntry.AccountName,
-				Notes:                      notes,
-				Name:                       name,
-				NameEmployee:               nameEmployee,
-				TypeOfCompoundEntry:        typeOfCompoundEntry,
+				AccountDebit:               debitEntry.Name,
+				AccountCredit:              creditEntry.Name,
+				Notes:                      entryInfo.Notes,
+				Name:                       entryInfo.Name,
+				Employee:                   entryInfo.Employee,
+				TypeOfCompoundEntry:        entryInfo.TypeOfCompoundEntry,
 			})
 		}
 	}
 	return simpleEntries
 }
 
-func SimpleJournalEntry(
-	entries []PriceQuantityAccountBarcode,
-	insert, autoCompletion, invoiceDiscount bool,
-	notes, name, nameEmployee, typeOfCompoundEntry string) ([]PriceQuantityAccountBarcode, error) {
+func SimpleJournalEntry(entries []APQB, entryInfo EntryInfo, insert bool) ([]APQB, error) {
+	newEntries1 := Stage1(entries, false)
+	newEntries1 = GroupByAccount(newEntries1)
 
-	sliceOfPriceQuantityAccount := Stage1(entries)
-	sliceOfPriceQuantityAccount = GroupByAccount(sliceOfPriceQuantityAccount)
-
-	for k1, v1 := range sliceOfPriceQuantityAccount {
-		sliceOfPriceQuantityAccount[k1] = SetPriceAndQuantity(v1, false)
+	for k1, v1 := range newEntries1 {
+		newEntries1[k1] = SetPriceAndQuantity(v1, false)
 	}
 
-	// if autoCompletion {
-	// 	AUTO_COMPLETION_THE_ENTRY(sliceOfPriceQuantityAccount)
-	// }
-	// if invoiceDiscount {
-	// 	entries = auto_completion_the_invoice_discount(entries)
-	// }
-
-	sliceOfPriceQuantityAccount = GroupByAccount(sliceOfPriceQuantityAccount)
-	debitEntries, creditEntries, err := CheckDebitEqualCredit(sliceOfPriceQuantityAccount)
-	newEntries := ConvertPriceQuantityAccountToPriceQuantityAccountBarcode(append(debitEntries, creditEntries...))
+	debitEntries, creditEntries, err := CheckDebitEqualCredit(newEntries1)
+	newEntries2 := ConvertAPQICToAPQB(append(debitEntries, creditEntries...))
 	if err != nil {
-		return newEntries, err
+		return newEntries2, err
 	}
 
 	if insert {
-		simpleEntries := InsertToJournal(debitEntries, creditEntries, notes, name, nameEmployee, typeOfCompoundEntry)
+		simpleEntries := InsertToJournal(debitEntries, creditEntries, entryInfo)
 		InsertToDatabaseJournal(simpleEntries)
-		InsertToDatabaseInventory(sliceOfPriceQuantityAccount)
+		InsertToDatabaseInventory(newEntries1)
 	}
 
-	return newEntries, nil
+	return newEntries2, nil
 }
 
-func ConvertPriceQuantityAccountToPriceQuantityAccountBarcode(entries []PriceQuantityAccount) []PriceQuantityAccountBarcode {
-	var newEntries []PriceQuantityAccountBarcode
+func InvoiceJournalEntry(payAccountName string, payAccountPrice, invoiceDiscountPrice float64, inventoryAccounts []APQB, entryInfo EntryInfo, insert bool) ([]APQB, error) {
+
+	if _, isExist, err := AccountTerms(payAccountName, true, false); !isExist || err != nil {
+		return inventoryAccounts, err
+	}
+	if _, isExist, err := AccountTerms(InvoiceDiscount, true, false); !isExist || err != nil {
+		return inventoryAccounts, err
+	}
+
+	newEntries1 := Stage1(inventoryAccounts, true)
+	newEntries1 = GroupByAccount(newEntries1)
+
+	for k1, v1 := range newEntries1 {
+		newEntries1[k1] = SetPriceAndQuantity(v1, false)
+	}
+
+	newEntries2 := AutoComplete(newEntries1, payAccountName, payAccountPrice)
+	inventoryAccounts = ConvertAPQICToAPQB(newEntries1)
+
+	var newEntries3 []Journal
+	newEntries1 = []APQA{}
+	for _, v1 := range newEntries2 {
+		debitEntries, creditEntries, err := CheckDebitEqualCredit(v1)
+		if err != nil {
+			return inventoryAccounts, err
+		}
+		newEntries1 = append(newEntries1, debitEntries...)
+		newEntries1 = append(newEntries1, creditEntries...)
+		newEntries3 = append(newEntries3, InsertToJournal(debitEntries, creditEntries, entryInfo)...)
+	}
+
+	if insert {
+		InsertToDatabaseJournal(newEntries3)
+		InsertToDatabaseInventory(newEntries1)
+	}
+
+	return inventoryAccounts, nil
+}
+
+func AutoComplete(inventoryAccounts []APQA, payAccountName string, payAccountPrice float64) [][]APQA {
+	var simpleInfoAPQ [][]APQA
+	for _, v1 := range inventoryAccounts {
+
+		autoCompletion, _, err := FindAutoCompletionFromName(v1.Name)
+		if err != nil {
+			continue
+		}
+
+		var inv []APQA
+		var tax []APQA
+		var pay []APQA
+
+		quantity := Abs(v1.Quantity)
+		var valueRevenue float64
+		var valueDiscount float64
+
+		inv = append(inv, APQA{autoCompletion.AccountInvnetory, v1.Price, v1.Quantity, Account{IsCredit: false}})
+		inv = append(inv, APQA{PrefixCost + autoCompletion.AccountInvnetory, v1.Price, quantity, Account{IsCredit: false}})
+
+		if autoCompletion.PriceTax > 0 {
+			tax = append(tax, APQA{PrefixTaxExpenses + autoCompletion.AccountInvnetory, autoCompletion.PriceTax, quantity, Account{IsCredit: false}})
+			tax = append(tax, APQA{PrefixTaxLiability + autoCompletion.AccountInvnetory, autoCompletion.PriceTax, quantity, Account{IsCredit: true}})
+		}
+
+		if autoCompletion.PriceRevenue > 0 {
+			pay = append(pay, APQA{PrefixRevenue + autoCompletion.AccountInvnetory, autoCompletion.PriceRevenue, quantity, Account{IsCredit: true}})
+			valueRevenue = quantity * autoCompletion.PriceRevenue
+		}
+
+		if priceDiscount := MaxDiscount(autoCompletion.PriceDiscount, quantity); priceDiscount > 0 {
+			pay = append(pay, APQA{PrefixDiscount + autoCompletion.AccountInvnetory, priceDiscount, quantity, Account{IsCredit: false}})
+			valueDiscount = quantity * priceDiscount
+		}
+
+		payValue := valueRevenue - valueDiscount
+		pay = append(pay, APQA{payAccountName, payAccountPrice, payValue / payAccountPrice, Account{IsCredit: false}})
+
+		simpleInfoAPQ = append(simpleInfoAPQ, inv)
+		if len(tax) > 1 {
+			simpleInfoAPQ = append(simpleInfoAPQ, tax)
+		}
+		if len(pay) > 1 {
+			simpleInfoAPQ = append(simpleInfoAPQ, pay)
+		}
+
+	}
+	return simpleInfoAPQ
+}
+
+func ConvertAPQICToAPQB(entries []APQA) []APQB {
+	var newEntries []APQB
 	for _, v1 := range entries {
-		newEntries = append(newEntries, PriceQuantityAccountBarcode{
-			Price:       v1.Price,
-			Quantity:    v1.Quantity,
-			AccountName: v1.AccountName,
-			Barcode:     "",
-		})
+		newEntries = append(newEntries, APQB{v1.Name, v1.Price, v1.Quantity, ""})
 	}
 	return newEntries
 }
 
-func InsertToDatabaseInventory(entries []PriceQuantityAccount) {
+func InsertToDatabaseInventory(entries []APQA) {
 	for _, v1 := range entries {
 		if v1.Quantity > 0 {
-			DbUpdate(DbInventory, Now(), Inventory{v1.Price, v1.Quantity, v1.AccountName})
+			DbUpdate(DbInventory, Now(), APQ{v1.Name, v1.Price, v1.Quantity})
 		} else {
 			SetPriceAndQuantity(v1, true)
 		}
 	}
 }
 
-func Stage1(entries []PriceQuantityAccountBarcode) []PriceQuantityAccount {
-	var arrayPriceQuantityAccount []PriceQuantityAccount
+func Stage1(entries []APQB, isInvoice bool) []APQA {
+	var newEntries []APQA
 	for _, v1 := range entries {
-		accountStruct, _, err := AccountStructFromBarcode(v1.Barcode)
+		account, _, err := FindAccountFromBarcode(v1.Barcode)
 		if err != nil {
-			accountStruct, _, err = AccountStructFromName(FormatTheString(v1.AccountName))
+			account, _, err = FindAccountFromName(FormatTheString(v1.Name))
 		}
-		if err == nil && accountStruct.IsLowLevelAccount && v1.Quantity != 0 && v1.Price != 0 {
-			arrayPriceQuantityAccount = append(arrayPriceQuantityAccount, PriceQuantityAccount{
-				IsCredit:     accountStruct.IsCredit,
-				CostFlowType: accountStruct.CostFlowType,
-				AccountName:  accountStruct.AccountName,
-				Price:        Abs(v1.Price),
-				Quantity:     v1.Quantity,
+		if isInvoice {
+			if account.IsCredit || v1.Quantity >= 0 {
+				continue
+			}
+			v1.Price = 1
+		}
+		if err == nil && account.IsLowLevel && v1.Quantity != 0 && v1.Price != 0 {
+			newEntries = append(newEntries, APQA{
+				Name:     account.Name,
+				Price:    Abs(v1.Price),
+				Quantity: v1.Quantity,
+				Account:  account,
 			})
 		}
 	}
-	return arrayPriceQuantityAccount
+	return newEntries
 }
 
 func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee string) {
@@ -413,30 +333,30 @@ func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee str
 	var entryToReverse []Journal
 	for k1, v1 := range entries {
 		// here i check if the credit side credit nature then it will be negative Quantity and vice versa
-		accountStructCredit, _, _ := AccountStructFromName(v1.AccountCredit)
+		accountStructCredit, _, _ := FindAccountFromName(v1.AccountCredit)
 		if accountStructCredit.IsCredit {
 			v1.QuantityCredit *= -1
 		}
 		// here i check if the debit side debit nature then it will be negative Quantity and vice versa
-		accountStructDebit, _, _ := AccountStructFromName(v1.AccountDebit)
+		accountStructDebit, _, _ := FindAccountFromName(v1.AccountDebit)
 		if !accountStructDebit.IsCredit {
 			v1.QuantityDebit *= -1
 		}
 
 		// here i check if the account can be negative by seeing the difference in Quantity after the find the cost in inventory.
 		// because i dont want to make the account negative balance
-		entryCredit := SetPriceAndQuantity(PriceQuantityAccount{false, Fifo, v1.AccountCredit, v1.PriceCredit, v1.QuantityCredit}, false)
-		entryDebit := SetPriceAndQuantity(PriceQuantityAccount{false, Fifo, v1.AccountDebit, v1.PriceDebit, v1.QuantityDebit}, false)
+		entryCredit := SetPriceAndQuantity(APQA{v1.AccountCredit, v1.PriceCredit, v1.QuantityCredit, Account{IsCredit: false, CostFlowType: Fifo}}, false)
+		entryDebit := SetPriceAndQuantity(APQA{v1.AccountDebit, v1.PriceDebit, v1.QuantityDebit, Account{IsCredit: false, CostFlowType: Fifo}}, false)
 
 		// here i compare the Quantity if it is the same i will reverse the entry
 		if entryCredit.Quantity == v1.QuantityCredit && entryDebit.Quantity == v1.QuantityDebit {
 
 			// here i change the cost flow to Wma just to make outflow from the inventory without error
-			entryCredit.CostFlowType = Wma
-			entryDebit.CostFlowType = Wma
+			entryCredit.Account.CostFlowType = Wma
+			entryDebit.Account.CostFlowType = Wma
 
 			// here i insert to the inventory
-			InsertToDatabaseInventory([]PriceQuantityAccount{entryCredit, entryDebit})
+			InsertToDatabaseInventory([]APQA{entryCredit, entryDebit})
 
 			// i swap the debit and credit with each other but the Quantity after i swap it will be positive
 			v1.PriceCredit, v1.PriceDebit = v1.PriceDebit, v1.PriceCredit
@@ -446,8 +366,8 @@ func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee str
 			v1.IsReverse = true
 			v1.ReverseEntryNumberCompound = v1.EntryNumberCompound
 			v1.ReverseEntryNumberSimple = v1.EntryNumberSimple
-			v1.Notes = "revese entry for entry was entered by " + v1.NameEmployee
-			v1.NameEmployee = nameEmployee
+			v1.Notes = "revese entry for entry was entered by " + v1.Employee
+			v1.Employee = nameEmployee
 
 			// here i append the entry to the journal to reverse all in one entry number compound
 			entryToReverse = append(entryToReverse, v1)
@@ -463,8 +383,29 @@ func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee str
 }
 
 func JournalFilter(dates []time.Time, journal []Journal, f FilterJournal, isDebitAndCredit bool) ([]time.Time, []Journal) {
-	var filteredJournal []Journal
-	var filteredDates []time.Time
+	if !f.Date.IsFilter &&
+		!f.IsReverse.IsFilter &&
+		!f.IsReversed.IsFilter &&
+		!f.ReverseEntryNumberCompound.IsFilter &&
+		!f.ReverseEntryNumberSimple.IsFilter &&
+		!f.EntryNumberCompound.IsFilter &&
+		!f.EntryNumberSimple.IsFilter &&
+		!f.Value.IsFilter &&
+		!f.PriceDebit.IsFilter &&
+		!f.PriceCredit.IsFilter &&
+		!f.QuantityDebit.IsFilter &&
+		!f.QuantityCredit.IsFilter &&
+		!f.AccountDebit.IsFilter &&
+		!f.AccountCredit.IsFilter &&
+		!f.Notes.IsFilter &&
+		!f.Name.IsFilter &&
+		!f.Employee.IsFilter &&
+		!f.TypeOfCompoundEntry.IsFilter {
+		return dates, journal
+	}
+
+	var newJournal []Journal
+	var newDates []time.Time
 	for k1, v1 := range journal {
 
 		// here icheck if the user whant the debit and credit or one of them each time
@@ -490,13 +431,13 @@ func JournalFilter(dates []time.Time, journal []Journal, f FilterJournal, isDebi
 			f.QuantityCredit.Filter(v1.QuantityCredit) &&
 			f.Notes.Filter(v1.Notes) &&
 			f.Name.Filter(v1.Name) &&
-			f.NameEmployee.Filter(v1.NameEmployee) &&
+			f.Employee.Filter(v1.Employee) &&
 			f.TypeOfCompoundEntry.Filter(v1.TypeOfCompoundEntry) {
-			filteredJournal = append(filteredJournal, v1)
-			filteredDates = append(filteredDates, dates[k1])
+			newJournal = append(newJournal, v1)
+			newDates = append(newDates, dates[k1])
 		}
 	}
-	return filteredDates, filteredJournal
+	return newDates, newJournal
 }
 
 func FindDuplicateElement(dates []time.Time, journal []Journal, f FilterJournalDuplicate) ([]time.Time, []Journal) {
@@ -514,13 +455,13 @@ func FindDuplicateElement(dates []time.Time, journal []Journal, f FilterJournalD
 		!f.AccountCredit &&
 		!f.Notes &&
 		!f.Name &&
-		!f.NameEmployee &&
+		!f.Employee &&
 		!f.TypeOfCompoundEntry {
 		return dates, journal
 	}
 
-	var filteredJournal []Journal
-	var filteredDates []time.Time
+	var newJournal []Journal
+	var newDates []time.Time
 	for k1, v1 := range journal {
 		for k2, v2 := range journal {
 			if k1 != k2 &&
@@ -537,13 +478,35 @@ func FindDuplicateElement(dates []time.Time, journal []Journal, f FilterJournalD
 				FilterDuplicate(v1.AccountCredit, v2.AccountCredit, f.AccountCredit) &&
 				FilterDuplicate(v1.Notes, v2.Notes, f.Notes) &&
 				FilterDuplicate(v1.Name, v2.Name, f.Name) &&
-				FilterDuplicate(v1.NameEmployee, v2.NameEmployee, f.NameEmployee) &&
+				FilterDuplicate(v1.Employee, v2.Employee, f.Employee) &&
 				FilterDuplicate(v1.TypeOfCompoundEntry, v2.TypeOfCompoundEntry, f.TypeOfCompoundEntry) {
-				filteredJournal = append(filteredJournal, v1)
-				filteredDates = append(filteredDates, dates[k1])
+				newJournal = append(newJournal, v1)
+				newDates = append(newDates, dates[k1])
 				break
 			}
 		}
 	}
-	return filteredDates, filteredJournal
+	return newDates, newJournal
+}
+
+func MaxDiscount(discounts []Discount, quantity float64) float64 {
+	var price float64
+	for _, v1 := range discounts {
+		if v1.Quantity > quantity {
+			price = v1.Price
+		}
+	}
+	return Abs(price)
+}
+
+func FilterJournalFromReverseEntry(keys [][]byte, journal []Journal) ([][]byte, []Journal) {
+	var newKeys [][]byte
+	var newJournal []Journal
+	for k1, v1 := range journal {
+		if !v1.IsReverse && !v1.IsReversed {
+			newKeys = append(newKeys, keys[k1])
+			newJournal = append(newJournal, v1)
+		}
+	}
+	return newKeys, newJournal
 }

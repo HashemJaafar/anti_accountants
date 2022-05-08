@@ -3,27 +3,27 @@ package main
 import "log"
 
 func CalculateCvpMap(cvp map[string]map[string]float64, print, checkIfKeysInTheEquations bool) {
-	for _, i := range cvp {
-		CostVolumeProfit(print, checkIfKeysInTheEquations, i)
-		_, okVariableCostPerUnits := i[VariableCostPerUnits]
+	for _, v1 := range cvp {
+		CostVolumeProfit(print, checkIfKeysInTheEquations, v1)
+		_, okVariableCostPerUnits := v1[VariableCostPerUnits]
 		if !okVariableCostPerUnits {
-			i[VariableCostPerUnits] = 0
-			CostVolumeProfit(print, false, i)
+			v1[VariableCostPerUnits] = 0
+			CostVolumeProfit(print, false, v1)
 		}
-		_, okFixedCost := i[FixedCost]
+		_, okFixedCost := v1[FixedCost]
 		if !okFixedCost {
-			i[FixedCost] = 0
-			CostVolumeProfit(print, false, i)
+			v1[FixedCost] = 0
+			CostVolumeProfit(print, false, v1)
 		}
-		_, okSalesPerUnits := i[SalesPerUnits]
+		_, okSalesPerUnits := v1[SalesPerUnits]
 		if !okSalesPerUnits {
-			i[SalesPerUnits] = 0
-			CostVolumeProfit(print, false, i)
+			v1[SalesPerUnits] = 0
+			CostVolumeProfit(print, false, v1)
 		}
-		_, okUnits := i[Units]
+		_, okUnits := v1[Units]
 		if !okUnits {
-			i[Units] = 0
-			CostVolumeProfit(print, false, i)
+			v1[Units] = 0
+			CostVolumeProfit(print, false, v1)
 		}
 	}
 }
@@ -62,68 +62,68 @@ func MixCostVolumeProfit(print, checkIfKeysInTheEquations bool, m map[string]map
 
 func CostVolumeProfitSlice(cvp map[string]map[string]float64, distributionSteps []OneStepDistribution, print, simple bool) {
 	CalculateCvpMap(cvp, print, true)
-	for _, step := range distributionSteps {
+	for _, v1 := range distributionSteps {
 		var totalMixedCost, totalPortionsTo, totalColumnToDistribute float64
 		if simple {
-			totalMixedCost = step.Amount
+			totalMixedCost = v1.Amount
 		} else {
-			totalMixedCost = TotalMixedCostInComplicatedAndMultiLevelStep(cvp, step, totalMixedCost)
+			totalMixedCost = TotalMixedCostInComplicatedAndMultiLevelStep(cvp, v1, totalMixedCost)
 		}
-		for keyPortionsTo, portionsTo := range step.To {
-			totalPortionsTo += portionsTo
-			totalColumnToDistribute += cvp[keyPortionsTo][step.DistributionMethod]
+		for k2, v2 := range v1.To {
+			totalPortionsTo += v2
+			totalColumnToDistribute += cvp[k2][v1.DistributionMethod]
 		}
-		for keyPortionsTo, portionsTo := range step.To {
+		for k2, v2 := range v1.To {
 			var totalOverheadCostToSum float64
-			switch step.DistributionMethod {
+			switch v1.DistributionMethod {
 			case UnitsGap:
-				totalOverheadCostToSum = cvp[keyPortionsTo][UnitsGap] * cvp[keyPortionsTo][VariableCostPerUnits]
-				cvp[keyPortionsTo][Units] -= cvp[keyPortionsTo][UnitsGap]
-				cvp[keyPortionsTo][UnitsGap] = 0
+				totalOverheadCostToSum = cvp[k2][UnitsGap] * cvp[k2][VariableCostPerUnits]
+				cvp[k2][Units] -= cvp[k2][UnitsGap]
+				cvp[k2][UnitsGap] = 0
 			case "1":
 				totalOverheadCostToSum = totalMixedCost
 			case Portions:
-				totalOverheadCostToSum = portionsTo / totalPortionsTo * totalMixedCost
+				totalOverheadCostToSum = v2 / totalPortionsTo * totalMixedCost
 			case Units:
-				totalOverheadCostToSum = cvp[keyPortionsTo][Units] / totalColumnToDistribute * totalMixedCost
+				totalOverheadCostToSum = cvp[k2][Units] / totalColumnToDistribute * totalMixedCost
 			case VariableCost:
-				totalOverheadCostToSum = cvp[keyPortionsTo][VariableCost] / totalColumnToDistribute * totalMixedCost
+				totalOverheadCostToSum = cvp[k2][VariableCost] / totalColumnToDistribute * totalMixedCost
 			case FixedCost:
-				totalOverheadCostToSum = cvp[keyPortionsTo][FixedCost] / totalColumnToDistribute * totalMixedCost
+				totalOverheadCostToSum = cvp[k2][FixedCost] / totalColumnToDistribute * totalMixedCost
 			case MixedCost:
-				totalOverheadCostToSum = cvp[keyPortionsTo][MixedCost] / totalColumnToDistribute * totalMixedCost
+				totalOverheadCostToSum = cvp[k2][MixedCost] / totalColumnToDistribute * totalMixedCost
 			case Sales:
-				totalOverheadCostToSum = cvp[keyPortionsTo][Sales] / totalColumnToDistribute * totalMixedCost
+				totalOverheadCostToSum = cvp[k2][Sales] / totalColumnToDistribute * totalMixedCost
 			case Profit:
-				totalOverheadCostToSum = cvp[keyPortionsTo][Profit] / totalColumnToDistribute * totalMixedCost
+				totalOverheadCostToSum = cvp[k2][Profit] / totalColumnToDistribute * totalMixedCost
 			case ContributionMargin:
-				totalOverheadCostToSum = cvp[keyPortionsTo][ContributionMargin] / totalColumnToDistribute * totalMixedCost
+				totalOverheadCostToSum = cvp[k2][ContributionMargin] / totalColumnToDistribute * totalMixedCost
 			case PercentFromVariableCost:
-				totalOverheadCostToSum = cvp[keyPortionsTo][VariableCost] * portionsTo
+				totalOverheadCostToSum = cvp[k2][VariableCost] * v2
 			case PercentFromFixedCost:
-				totalOverheadCostToSum = cvp[keyPortionsTo][FixedCost] * portionsTo
+				totalOverheadCostToSum = cvp[k2][FixedCost] * v2
 			case PercentFromMixedCost:
-				totalOverheadCostToSum = cvp[keyPortionsTo][MixedCost] * portionsTo
+				totalOverheadCostToSum = cvp[k2][MixedCost] * v2
 			case PercentFromSales:
-				totalOverheadCostToSum = cvp[keyPortionsTo][Sales] * portionsTo
+				totalOverheadCostToSum = cvp[k2][Sales] * v2
 			case PercentFromProfit:
-				totalOverheadCostToSum = cvp[keyPortionsTo][Profit] * portionsTo
+				totalOverheadCostToSum = cvp[k2][Profit] * v2
 			case PercentFromContributionMargin:
-				totalOverheadCostToSum = cvp[keyPortionsTo][ContributionMargin] * portionsTo
+				totalOverheadCostToSum = cvp[k2][ContributionMargin] * v2
 			default:
-				totalOverheadCostToSum = float64(len(step.To)) * totalMixedCost
+				totalOverheadCostToSum = float64(len(v1.To)) * totalMixedCost
 			}
-			switch step.SalesOrVariableOrFixed {
+			switch v1.SalesOrVariableOrFixed {
 			case VariableCost:
-				cvp[keyPortionsTo][VariableCostPerUnits] = ((cvp[keyPortionsTo][VariableCostPerUnits] * cvp[keyPortionsTo][Units]) + totalOverheadCostToSum) / cvp[keyPortionsTo][Units]
+				cvp[k2][VariableCostPerUnits] = ((cvp[k2][VariableCostPerUnits] * cvp[k2][Units]) + totalOverheadCostToSum) / cvp[k2][Units]
 			case FixedCost:
-				cvp[keyPortionsTo][FixedCost] += totalOverheadCostToSum
+				cvp[k2][FixedCost] += totalOverheadCostToSum
 			default:
-				cvp[keyPortionsTo][SalesPerUnits] = ((cvp[keyPortionsTo][SalesPerUnits] * cvp[keyPortionsTo][Units]) - totalOverheadCostToSum) / cvp[keyPortionsTo][Units]
+				cvp[k2][SalesPerUnits] = ((cvp[k2][SalesPerUnits] * cvp[k2][Units]) - totalOverheadCostToSum) / cvp[k2][Units]
 			}
-			for k1, v1 := range cvp {
-				cvp[k1] = map[string]float64{"units_gap": v1[UnitsGap], "units": v1[Units],
-					"sales_per_units": v1[SalesPerUnits], VariableCostPerUnits: v1[VariableCostPerUnits], "fixedCost": v1[FixedCost]}
+			for k3, v3 := range cvp {
+				cvp[k3] = map[string]float64{"units_gap": v3[UnitsGap], "units": v3[Units],
+					"sales_per_units": v3[SalesPerUnits], VariableCostPerUnits: v3[VariableCostPerUnits], "fixedCost": v3[FixedCost]}
 			}
 			CalculateCvpMap(cvp, print, false)
 		}
@@ -177,15 +177,15 @@ func TotalCostVolumeProfit(cvp map[string]map[string]float64, print bool) {
 }
 
 func TotalMixedCostInComplicatedAndMultiLevelStep(cvp map[string]map[string]float64, step OneStepDistribution, totalMixedCost float64) float64 {
-	for keyPortionsFrom, portions := range step.From {
-		if cvp[keyPortionsFrom][Units] < portions {
-			log.Panic(portions, " for ", keyPortionsFrom, " in ", step.From, " is more than ", cvp[keyPortionsFrom][Units])
+	for k1, v1 := range step.From {
+		if cvp[k1][Units] < v1 {
+			log.Panic(v1, " for ", k1, " in ", step.From, " is more than ", cvp[k1][Units])
 		}
-		totalMixedCost += portions * cvp[keyPortionsFrom][MixedCostPerUnits]
-		cvp[keyPortionsFrom][FixedCost] -= (cvp[keyPortionsFrom][FixedCost] / cvp[keyPortionsFrom][Units]) * portions
-		cvp[keyPortionsFrom][Units] -= portions
-		if cvp[keyPortionsFrom][Units] == 0 {
-			cvp[keyPortionsFrom][VariableCostPerUnits] = 0
+		totalMixedCost += v1 * cvp[k1][MixedCostPerUnits]
+		cvp[k1][FixedCost] -= (cvp[k1][FixedCost] / cvp[k1][Units]) * v1
+		cvp[k1][Units] -= v1
+		if cvp[k1][Units] == 0 {
+			cvp[k1][VariableCostPerUnits] = 0
 		}
 	}
 	return totalMixedCost

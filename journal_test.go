@@ -7,11 +7,11 @@ import (
 )
 
 func TestCheckDebitEqualCredit(t *testing.T) {
-	i1 := []PriceQuantityAccount{
-		{false, "", "book", 1, 10},
-		{false, "", "cash", 1, 10},
-		{true, "", "rent", 1, 10},
-		{true, "", "rent", 1, 10},
+	i1 := []APQA{
+		{"book", 1, 10, Account{IsCredit: false}},
+		{"cash", 1, 10, Account{IsCredit: false}},
+		{"rent", 1, 10, Account{IsCredit: true}},
+		{"rent", 1, 10, Account{IsCredit: true}},
 	}
 	a1, a2, a3 := CheckDebitEqualCredit(i1)
 	PrintSlice(a1)
@@ -20,113 +20,130 @@ func TestCheckDebitEqualCredit(t *testing.T) {
 }
 
 func TestSetPriceAndQuantity(t *testing.T) {
-	_, inventory := DbRead[Inventory](DbInventory)
+	_, inventory := DbRead[APQ](DbInventory)
 	PrintSlice(inventory)
-	i1 := PriceQuantityAccount{false, Wma, "rent", 0, -1}
+	i1 := APQA{"rent", 0, -1, Account{IsCredit: false}}
 	a1 := SetPriceAndQuantity(i1, true)
 	fmt.Println(a1)
-	_, inventory = DbRead[Inventory](DbInventory)
+	_, inventory = DbRead[APQ](DbInventory)
 	PrintSlice(inventory)
 	DbClose()
 }
 
 func TestGroupByAccount(t *testing.T) {
-	i1 := []PriceQuantityAccount{
-		{false, Lifo, "book", 1, 10},
-		{false, Lifo, "book", 5, 10},
-		{false, Lifo, "book", 3, 10},
-		{true, Wma, "rent", 1, 10},
-		{false, Wma, "cash", 1, 10},
+	i1 := []APQA{
+		{"book", 1, 10, Account{IsCredit: false, CostFlowType: Lifo}},
+		{"book", 5, 10, Account{IsCredit: false, CostFlowType: Lifo}},
+		{"book", 3, 10, Account{IsCredit: false, CostFlowType: Lifo}},
+		{"rent", 1, 10, Account{IsCredit: true, CostFlowType: Wma}},
+		{"cash", 1, 10, Account{IsCredit: false, CostFlowType: Wma}},
 	}
 	a1 := GroupByAccount(i1)
-	e1 := []PriceQuantityAccount{
-		{false, Lifo, "book", 3, 30},
-		{true, Wma, "rent", 1, 10},
-		{false, Wma, "cash", 1, 10},
+	e1 := []APQA{
+		{"book", 3, 30, Account{IsCredit: false, CostFlowType: Lifo}},
+		{"rent", 1, 10, Account{IsCredit: true, CostFlowType: Wma}},
+		{"cash", 1, 10, Account{IsCredit: false, CostFlowType: Wma}},
 	}
 	Test(true, a1, e1)
 
 }
 func TestSimpleJournalEntry(t *testing.T) {
-	i1 := []PriceQuantityAccountBarcode{
-		{1, 1000, "cash", ""},
-		{1, 1000, "rent", ""},
-	}
-	a1, a2 := SimpleJournalEntry(i1, true, false, false, "ksdfjpaodka", "yasa", "hashem", "invoice")
+	var i1 []APQB
+	var a1 []APQB
+	var a2 error
 
-	i1 = []PriceQuantityAccountBarcode{
-		{1, 1000, "cash", ""},
-		{1, 1000, "rent", ""},
+	i1 = []APQB{
+		{"cash", 1, 1000, ""},
+		{"rent", 1, 1000, ""},
 	}
-	a1, a2 = SimpleJournalEntry(i1, true, false, false, "ksdfjpaodka", "yasa", "hashem", "invoice")
-
-	i1 = []PriceQuantityAccountBarcode{
-		{1, -400, "cash", ""},
-		{2, 200, "book", ""},
-	}
-	a1, a2 = SimpleJournalEntry(i1, true, false, false, "ksdfjpaodka", "yasa", "hashem", "payment")
-
-	i1 = []PriceQuantityAccountBarcode{
-		{1, -350, "cash", ""},
-		{1.4, 250, "book", ""},
-	}
-	a1, a2 = SimpleJournalEntry(i1, true, false, false, "ksdfjpaodka", "yasa", "hashem", "payment")
-
-	i1 = []PriceQuantityAccountBarcode{
-		{1, 10 * 1.6666666666666667, "cash", ""},
-		{1, -10, "book", ""},
-	}
-	a1, a2 = SimpleJournalEntry(i1, true, false, false, "ksdfjpaodka", "yasa", "hashem", "invoice")
-
-	i1 = []PriceQuantityAccountBarcode{
-		{1, 36, "cash", ""},
-		{1, -18, "book", ""},
-	}
-	a1, a2 = SimpleJournalEntry(i1, true, false, false, "ksdfjpaodka", "zizi", "hashem", "invoice")
-	DbClose()
-	PrintFormatedAccounts()
+	a1, a2 = SimpleJournalEntry(i1, EntryInfo{"ksdfjpaodka", "yasa", "hashem", "invoice"}, true)
 	PrintSlice(a1)
 	Test(true, a2, nil)
+
+	i1 = []APQB{
+		{"cash", 1, 1000, ""},
+		{"rent", 1, 1000, ""},
+	}
+	a1, a2 = SimpleJournalEntry(i1, EntryInfo{"ksdfjpaodka", "yasa", "hashem", "invoice"}, true)
+	PrintSlice(a1)
+	Test(true, a2, nil)
+
+	i1 = []APQB{
+		{"cash", 1, -400, ""},
+		{"book", 2, 200, ""},
+	}
+	a1, a2 = SimpleJournalEntry(i1, EntryInfo{"ksdfjpaodka", "yasa", "hashem", "payment"}, true)
+	PrintSlice(a1)
+	Test(true, a2, nil)
+
+	i1 = []APQB{
+		{"cash", 1, -350, ""},
+		{"book", 1.4, 250, ""},
+	}
+	a1, a2 = SimpleJournalEntry(i1, EntryInfo{"ksdfjpaodka", "yasa", "hashem", "payment"}, true)
+	PrintSlice(a1)
+	Test(true, a2, nil)
+
+	i1 = []APQB{
+		{"cash", 1, 20, ""},
+		{"book", 1, -10, ""},
+	}
+	a1, a2 = SimpleJournalEntry(i1, EntryInfo{"ksdfjpaodka", "yasa", "hashem", "invoice"}, true)
+	PrintSlice(a1)
+	Test(true, a2, nil)
+
+	i1 = []APQB{
+		{"cash", 1, 36, ""},
+		{"book", 1, -18, ""},
+	}
+	a1, a2 = SimpleJournalEntry(i1, EntryInfo{"ksdfjpaodka", "zizi", "hashem", "invoice"}, true)
+	PrintSlice(a1)
+	Test(true, a2, nil)
+
+	i1 = []APQB{
+		{"cash", 1, 20, ""},
+		{"book", 1, -10, ""},
+	}
+	a1, a2 = SimpleJournalEntry(i1, EntryInfo{"ksdfjpaodka", "yasa", "hashem", "invoice"}, true)
+	PrintSlice(a1)
+	Test(true, a2, nil)
+
+	DbClose()
+	PrintFormatedAccounts()
 }
 
 func TestStage1(t *testing.T) {
 	PrintFormatedAccounts()
-	i1 := []PriceQuantityAccountBarcode{
-		{1, 10, "cash", "2"},
-		{1, 10, "book", "1"},
-		{1, 10, "cash", ""},
-		{0, 10, "cash", ""},
-		{10, 0, "cash", ""},
-		{10, 10, "ca", ""},
+	i1 := []APQB{
+		{"cash", 1, 10, "2"},
+		{"book", 1, 10, "1"},
+		{"cash", 1, 10, ""},
+		{"cash", 0, 10, ""},
+		{"cash", 10, 0, ""},
+		{"ca", 10, 10, ""},
 	}
-	a1 := Stage1(i1)
-	e1 := []PriceQuantityAccount{
-		{false, Lifo, "book", 1, 10},
-		{true, Wma, "rent", 1, 10},
-		{false, Wma, "cash", 1, 10},
+	a1 := Stage1(i1, false)
+	e1 := []APQA{
+		{"book", 1, 10, Account{IsCredit: false, CostFlowType: Lifo}},
+		{"rent", 1, 10, Account{IsCredit: true, CostFlowType: Wma}},
+		{"cash", 1, 10, Account{IsCredit: false, CostFlowType: Wma}},
 	}
 	Test(true, a1, e1)
 }
 
 func TestReverseEntries(t *testing.T) {
-	ReverseEntries(5, 0, "hashem")
+	ReverseEntries(8, 0, "hashem")
 	DbClose()
 }
 
 func TestConvertPriceQuantityAccountToPriceQuantityAccountBarcode(t *testing.T) {
-	a1 := ConvertPriceQuantityAccountToPriceQuantityAccountBarcode([]PriceQuantityAccount{{
-		IsCredit:     false,
-		CostFlowType: "",
-		AccountName:  "cash",
-		Price:        5,
-		Quantity:     8,
+	a1 := ConvertAPQICToAPQB([]APQA{{
+		Name:     "cash",
+		Price:    5,
+		Quantity: 8,
+		Account:  Account{},
 	}})
-	e1 := []PriceQuantityAccountBarcode{{
-		Price:       5,
-		Quantity:    8,
-		AccountName: "cash",
-		Barcode:     "",
-	}}
+	e1 := []APQB{{"cash", 5, 8, ""}}
 	Test(true, a1, e1)
 }
 
@@ -147,7 +164,7 @@ func TestFindDuplicateElement(t *testing.T) {
 		AccountCredit:              false,
 		Notes:                      false,
 		Name:                       false,
-		NameEmployee:               false,
+		Employee:                   false,
 	})
 	PrintSlice(a1)
 	PrintSlice(a2)
@@ -173,10 +190,66 @@ func TestJournalFilter(t *testing.T) {
 		AccountCredit:              FilterString{},
 		Notes:                      FilterString{},
 		Name:                       FilterString{},
-		NameEmployee:               FilterString{},
+		Employee:                   FilterString{},
 		TypeOfCompoundEntry:        FilterString{IsFilter: true, Way: InSlice, Slice: []string{"payment"}},
 	}
 	a1, a2 := JournalFilter(dates, journal, i1, true)
+	PrintSlice(a1)
+	PrintSlice(a2)
+}
+
+func TestValueAfterAdjustUsingAdjustingMethods(t *testing.T) {
+	a1 := ValueAfterAdjustUsingAdjustingMethods("", 2, 100, 10, 100)
+	fmt.Println(a1)
+}
+
+func TestInvoiceJournalEntry(t *testing.T) {
+	AutoCompletionEntries = []AutoCompletion{{
+		AccountInvnetory: "book",
+		PriceRevenue:     12,
+		PriceTax:         0,
+		PriceDiscount: []Discount{{
+			Price:    5,
+			Quantity: 2,
+		}},
+	}}
+
+	a1, a2 := InvoiceJournalEntry("cash", 1, 4, []APQB{{"book", 5, -10, ""}}, EntryInfo{}, true)
+	_, inventory := DbRead[APQ](DbInventory)
+	_, journal := DbRead[Journal](DbJournal)
+	DbClose()
+	PrintFormatedAccounts()
+	PrintSlice(inventory)
+	PrintSlice(journal)
+	PrintSlice(a1)
+	Test(true, a2, nil)
+}
+
+func TestAutoComplete(t *testing.T) {
+	AutoCompletionEntries = []AutoCompletion{
+		{"book", 12, 0, []Discount{{5, 2}}},
+	}
+
+	a1 := AutoComplete([]APQA{{
+		Name:     "book",
+		Price:    0,
+		Quantity: -1,
+		Account:  Account{},
+	}}, "cash", 1)
+	e1 := [][]APQA{
+		{{"book", 0, -1, Account{IsCredit: false}}, {PrefixCost + "book", 0, 1, Account{IsCredit: false}}},
+		{{PrefixRevenue + "book", 12, 1, Account{IsCredit: true}}, {PrefixCost + "book", 5, 1, Account{IsCredit: false}}, {"cash", 1, 7, Account{IsCredit: false}}},
+	}
+	Test(true, a1, e1)
+
+	DbClose()
+	PrintSlice(a1)
+}
+
+func TestFilterJournalFromReverseEntry(t *testing.T) {
+	keys, journal := DbRead[Journal](DbJournal)
+	a1, a2 := FilterJournalFromReverseEntry(keys, journal)
+	DbClose()
 	PrintSlice(a1)
 	PrintSlice(a2)
 }

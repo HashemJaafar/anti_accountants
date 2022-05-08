@@ -18,7 +18,7 @@ type menuButtons struct {
 	page     *fyne.Container
 }
 
-func main1() {
+func main() {
 	// here i want to close the database after the app is closed
 	defer DbClose()
 
@@ -26,10 +26,10 @@ func main1() {
 	w := a.NewWindow("ANTI ACCOUNTANTS")
 	w.Resize(fyne.Size{Width: 500, Height: 500})
 
-	// p_journal_entry := PageJournalEntry()
+	pJournalEntry := PageJournalEntry()
 	pMenu, _ := PageMenu()
-	pLogin := PageLogin()
-	page := pLogin
+	// pLogin := PageLogin()
+	page := pJournalEntry
 
 	menuButton := widget.NewButton("menu", func() {
 		page = pMenu
@@ -37,43 +37,86 @@ func main1() {
 
 	appLayout := container.New(layout.NewBorderLayout(nil, menuButton, nil, nil), page, menuButton)
 
-	// page := container.New(layout.NeWMAxLayout(), pMenu)
 	w.SetContent(appLayout)
 	w.ShowAndRun()
 }
 
 func PageJournalEntry() *fyne.Container {
-	name := widget.NewEntry()
-	name.SetPlaceHolder("name")
-	notes := widget.NewEntry()
-	notes.SetPlaceHolder("notes")
-	checkName := widget.NewCheck("", func(bool) {})
-	checkNotes := widget.NewCheck("", func(bool) {})
-	cancelName := widget.NewButton("x", func() {})
-	cancelNotes := widget.NewButton("x", func() {})
-	c := container.New(layout.NewGridLayout(3), checkName, name, cancelName, checkNotes, notes, cancelNotes)
+	height := widget.NewLabel("").MinSize().Height
 
-	entry1 := widget.NewSelect([]string{"cash", "book"}, func(string) {})
-	entry1.PlaceHolder = "cash"
-	entry2 := widget.NewEntry()
-	entry2.SetPlaceHolder("barcode")
-	entry3 := widget.NewEntry()
-	entry3.SetPlaceHolder("PRICE")
-	entry4 := widget.NewEntry()
-	entry4.SetPlaceHolder("QUANTITY")
-	e := container.New(layout.NewGridLayout(4), entry1, entry2, entry3, entry4)
+	return container.NewVBox(
+		Widget4(height, "save"),
+		Widget4(height, "clear checked"),
+		Widget4(height, "clear nan checked"),
+		Widget3(height),
+		Widget1(height, "name"),
+		Widget1(height, "note"),
+		Widget1(height, "type of compound entry"),
+		Widget2(height),
+		Widget2(height),
+		Widget2(height),
+		Widget2(height),
+	)
+}
 
-	check := widget.NewCheck("", func(bool) {})
-	check.MinSize()
-	cancel := widget.NewButton("x", func() {})
-	cancel.MinSize()
-	entries := container.New(layout.NewGridLayout(3), check, e, cancel)
+func Widget3(height float32) *fyne.Container {
+	w1 := widget.NewButton("ok", nil)
+	w1.Resize(fyne.NewSize(50, height))
 
-	ButtonOk := widget.NewButton("ok", func() {})
-	ButtonAdd := widget.NewButton("add", func() {})
-	b := container.New(layout.NewGridLayout(2), ButtonOk, ButtonAdd)
+	w2 := widget.NewButton("add", nil)
+	w2.Resize(fyne.NewSize(50, height))
 
-	return container.New(layout.NewVBoxLayout(), c, entries, layout.NewSpacer(), b)
+	return container.New(&DynamicHBoxLayout{Width: 500, Height: height}, w1, w2)
+}
+
+func Widget4(height float32, placeHolder string) *fyne.Container {
+	w1 := widget.NewButton(placeHolder, nil)
+	w1.Resize(fyne.NewSize(50, height))
+
+	w2 := widget.NewCheck("do with ok", nil)
+	w2.Resize(fyne.NewSize(50, height))
+
+	return container.New(&DynamicHBoxLayout{Width: 500, Height: height}, w1, w2)
+}
+
+func Widget2(height float32) *fyne.Container {
+	w1 := widget.NewCheck("", nil)
+	w1.Resize(fyne.NewSize(10, height))
+
+	w2 := widget.NewSelect([]string{"cash", "book"}, nil)
+	w2.PlaceHolder = " "
+	w2.Resize(fyne.NewSize(20, height))
+
+	w3 := widget.NewEntry()
+	w3.SetPlaceHolder("barcode")
+	w3.Resize(fyne.NewSize(20, height))
+
+	w4 := widget.NewEntry()
+	w4.SetPlaceHolder("price")
+	w4.Resize(fyne.NewSize(20, height))
+
+	w5 := widget.NewEntry()
+	w5.SetPlaceHolder("quantity")
+	w5.Resize(fyne.NewSize(20, height))
+
+	w6 := widget.NewButton("x", nil)
+	w6.Resize(fyne.NewSize(10, height))
+
+	return container.New(&DynamicHBoxLayout{Width: 500, Height: height}, w1, w2, w3, w4, w5, w6)
+}
+
+func Widget1(height float32, placeHolder string) *fyne.Container {
+	w1 := widget.NewCheck("", nil)
+	w1.Resize(fyne.NewSize(10, height))
+
+	w2 := widget.NewEntry()
+	w2.SetPlaceHolder(placeHolder)
+	w2.Resize(fyne.NewSize(80, height))
+
+	w3 := widget.NewButton("x", nil)
+	w3.Resize(fyne.NewSize(10, height))
+
+	return container.New(&DynamicHBoxLayout{Width: 500, Height: height}, w1, w2, w3)
 }
 
 func PageMenu() (*fyne.Container, *fyne.Container) {
@@ -108,40 +151,20 @@ func PageMenu() (*fyne.Container, *fyne.Container) {
 
 func PageLogin() *fyne.Container {
 
-	employeeNew := widget.NewCheck("new", func(bool) {})
-	employeeName := widget.NewEntry()
-	employeeName.SetPlaceHolder("employee name")
-	employeeEntry := container.New(layout.NewGridLayout(2), employeeName, employeeNew)
+	entryNameEmployee := widget.NewEntry()
+	entryNameEmployee.SetPlaceHolder("employee name")
 
-	companyNew := widget.NewCheck("new", func(i bool) {
-		if i {
-			employeeNew.SetChecked(true)
-			employeeNew.Disable()
-			employeeNew.Refresh()
-		} else {
-			employeeNew.SetChecked(false)
-			employeeNew.Enable()
-			employeeNew.Refresh()
-		}
-	})
-	companyName := widget.NewEntry()
-	companyName.SetPlaceHolder("company name")
-	companyEntry := container.New(layout.NewGridLayout(2), companyName, companyNew)
+	entryNameCompany := widget.NewEntry()
+	entryNameCompany.SetPlaceHolder("company name")
 
-	password := widget.NewPasswordEntry()
-	password.SetPlaceHolder("password")
+	entryPassword := widget.NewPasswordEntry()
+	entryPassword.SetPlaceHolder("password")
 
-	errLabel := widget.NewLabel("")
+	labelErr := widget.NewLabel("")
 
-	login := widget.NewButton("login", func() {
-		CompanyName = companyName.Text
-		EmployeeName = employeeName.Text
-	})
+	buttonLogin := widget.NewButton("login", nil)
+	buttonCreateNewEmployee := widget.NewButton("create new employee", nil)
+	buttonCreateNewCompany := widget.NewButton("create new company", nil)
 
-	createNew := widget.NewButton("create new", func() {
-		CompanyName = companyName.Text
-		EmployeeName = employeeName.Text
-	})
-
-	return container.New(layout.NewVBoxLayout(), companyEntry, employeeEntry, password, errLabel, login, createNew)
+	return container.New(layout.NewVBoxLayout(), entryNameEmployee, entryNameCompany, entryPassword, labelErr, buttonLogin, buttonCreateNewEmployee, buttonCreateNewCompany)
 }

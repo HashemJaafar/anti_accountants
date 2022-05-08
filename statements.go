@@ -5,29 +5,32 @@ import (
 	"time"
 )
 
-func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []string, inNames bool) ([]map[string]map[string]map[string]map[string]map[string]float64, error) {
+func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []string, inNames, withoutReverseEntry bool) ([]map[string]map[string]map[string]map[string]map[string]float64, error) {
 	var statements []map[string]map[string]map[string]map[string]map[string]float64
 
 	SortTime(allEndDates, true)
 
 	keys, journal := DbRead[Journal](DbJournal)
+
+	if withoutReverseEntry {
+		keys, journal = FilterJournalFromReverseEntry(keys, journal)
+	}
+
 	journalTimes := ConvertByteSliceToTime(keys)
 
 	for _, v1 := range allEndDates {
 		trailingBalanceSheet := StatementStep1(journalTimes, journal, v1.AddDate(0, 0, -int(periodInDaysBeforeEndDate)), v1)
 		trailingBalanceSheet = StatementStep2(trailingBalanceSheet)
 		trailingBalanceSheet = StatementStep3(trailingBalanceSheet)
-		trailingBalanceSheet = StatementStep4(trailingBalanceSheet)
-		trailingBalanceSheet = StatementStep5(inNames, namesYouWant, trailingBalanceSheet)
-		statement := StatementStep6(trailingBalanceSheet)
-		StatementStep7(periodInDaysBeforeEndDate, statement)
-		StatementStep8(statement)
+		trailingBalanceSheet = StatementStep4(inNames, namesYouWant, trailingBalanceSheet)
+		statement := StatementStep5(trailingBalanceSheet)
+		StatementStep6(periodInDaysBeforeEndDate, statement)
+		StatementStep7(statement)
 		statements = append(statements, statement)
 	}
 
 	for _, v1 := range statements {
 		HorizontalAnalysis(v1, statements[0])
-		// 		prepare_statement(statement_current)
 		CalculatePrice(v1)
 	}
 
@@ -55,39 +58,6 @@ func StatementStep1(journalTimes []time.Time, journal []Journal, dateStart, date
 }
 
 func StatementStep2(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
-	// in this function i insert retained earnings account in column account 1
-
-	newStatement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
-
-	for k1, v1 := range oldStatement { //account1
-		accountStruct, _, _ := AccountStructFromName(k1)
-		for k2, v2 := range v1 { //account2
-			for k3, v3 := range v2 { //name
-				for k4, v4 := range v3 { //vpq
-					for k5, v5 := range v4 { //isBeforeDateStart
-						for k6, v6 := range v5 { //is_credit
-							// if the account is temporary account and the entry is before the date start
-							// then i insert retained earnings account in column account 1
-							// else i dont do anything
-							if accountStruct.IsTemporary && k5 {
-								m := InitializeMap6(newStatement, RetinedEarnings, k2, k3, k4, k5)
-								m[k6] += v6
-							} else {
-								// here i copy the map
-								m := InitializeMap6(newStatement, k1, k2, k3, k4, k5)
-								m[k6] += v6
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return newStatement
-}
-
-func StatementStep3(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
 	// in this function i insert the father accounts in column account1
 	// i sum the credit to credit and debit to debit .Like:
 	// if there is three accounts like this:
@@ -100,7 +70,7 @@ func StatementStep3(oldStatement map[string]map[string]map[string]map[string]map
 	newStatement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
 
 	for k1, v1 := range oldStatement { //account1
-		accountStruct, _, err := AccountStructFromName(k1)
+		account, _, err := FindAccountFromName(k1)
 		for k2, v2 := range v1 { //account2
 			for k3, v3 := range v2 { //name
 				for k4, v4 := range v3 { //vpq
@@ -111,7 +81,7 @@ func StatementStep3(oldStatement map[string]map[string]map[string]map[string]map
 							m[k6] += v6
 
 							if err == nil {
-								for _, v7 := range accountStruct.FathersAccountsName[IndexOfAccountNumber] {
+								for _, v7 := range account.FathersName[IndexOfAccountNumber] {
 									m = InitializeMap6(newStatement, v7, k2, k3, k4, k5)
 									m[k6] += v6
 								}
@@ -126,7 +96,7 @@ func StatementStep3(oldStatement map[string]map[string]map[string]map[string]map
 	return newStatement
 }
 
-func StatementStep4(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+func StatementStep3(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
 	// in this function i insert the father accounts and 'AllAccounts' key word in column account2
 	// i sum the credit to credit and debit to debit .Like:
 	// if there is three accounts like this:
@@ -138,7 +108,7 @@ func StatementStep4(oldStatement map[string]map[string]map[string]map[string]map
 
 	for k1, v1 := range oldStatement { //account1
 		for k2, v2 := range v1 { //account2
-			accountStruct, _, _ := AccountStructFromName(k2)
+			account, _, _ := FindAccountFromName(k2)
 			for k3, v3 := range v2 { //name
 				for k4, v4 := range v3 { //vpq
 					for k5, v5 := range v4 { //isBeforeDateStart
@@ -151,7 +121,7 @@ func StatementStep4(oldStatement map[string]map[string]map[string]map[string]map
 							m = InitializeMap6(newStatement, k1, AllAccounts, k3, k4, k5)
 							m[k6] += v6
 
-							for _, v7 := range accountStruct.FathersAccountsName[IndexOfAccountNumber] {
+							for _, v7 := range account.FathersName[IndexOfAccountNumber] {
 								m = InitializeMap6(newStatement, k1, v7, k3, k4, k5)
 								m[k6] += v6
 							}
@@ -165,7 +135,7 @@ func StatementStep4(oldStatement map[string]map[string]map[string]map[string]map
 	return newStatement
 }
 
-func StatementStep5(inNames bool, namesYouWant []string, oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+func StatementStep4(inNames bool, namesYouWant []string, oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
 	// in this function i insert the key word 'AllNames' and 'Names' in column name
 
 	newStatement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
@@ -199,14 +169,14 @@ func StatementStep5(inNames bool, namesYouWant []string, oldStatement map[string
 	return newStatement
 }
 
-func StatementStep6(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[string]float64 {
-	// in this function i insert the type_of_vpq and remove column is before_date_start and is_credit
+func StatementStep5(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[string]float64 {
+	// in this function i insert the type_of_vpq and remove column isBeforeDateStart and is_credit
 
 	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
 	newStatement := map[string]map[string]map[string]map[string]map[string]float64{}
 
 	for k1, v1 := range oldStatement { //account1
-		accountStruct1, _, _ := AccountStructFromName(k1)
+		accountStruct1, _, _ := FindAccountFromName(k1)
 		for k2, v2 := range v1 { //account2
 			for k3, v3 := range v2 { //name
 				for k4, v4 := range v3 { //vpq
@@ -241,7 +211,7 @@ func StatementStep6(oldStatement map[string]map[string]map[string]map[string]map
 	return newStatement
 }
 
-func StatementStep7(days uint, oldStatement map[string]map[string]map[string]map[string]map[string]float64) {
+func StatementStep6(days uint, oldStatement map[string]map[string]map[string]map[string]map[string]float64) {
 	// in this function we make vertical analysis of the statement
 
 	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
@@ -264,7 +234,7 @@ func StatementStep7(days uint, oldStatement map[string]map[string]map[string]map
 	}
 }
 
-func StatementStep8(oldStatement map[string]map[string]map[string]map[string]map[string]float64) {
+func StatementStep7(oldStatement map[string]map[string]map[string]map[string]map[string]float64) {
 	// in this function i complete vertical analysis of the statement
 	// but here i calculate the percentage of the account from account father
 
@@ -331,11 +301,11 @@ func StatementFilter(oldStatement map[string]map[string]map[string]map[string]ma
 	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
 	for k1, v1 := range oldStatement { //account1
 		if f.Account1.Account.Filter(k1) {
-			account1, _, err := AccountStructFromName(k1)
+			account1, _, err := FindAccountFromName(k1)
 			if f.Account1.Filter(account1, err) {
 				for k2, v2 := range v1 { //account2
 					if f.Account2.Account.Filter(k2) {
-						account2, _, err := AccountStructFromName(k2)
+						account2, _, err := FindAccountFromName(k2)
 						if f.Account2.Filter(account1, err) {
 							for k3, v3 := range v2 { //name
 								if f.Name.Filter(k3) {
@@ -348,7 +318,7 @@ func StatementFilter(oldStatement map[string]map[string]map[string]map[string]ma
 													newStatement = append(newStatement, StatmentWithAccount{
 														Account1: account1,
 														Account2: account2,
-														Statment: FilteredStatement{k1, k2, k3, k4, k5, v5},
+														Statment: Statement{k1, k2, k3, k4, k5, v5},
 													})
 												}
 											}
@@ -410,12 +380,12 @@ func SortByLevel(s []StatmentWithAccount) []StatmentWithAccount {
 	for k1 := range s {
 		for k2 := range s {
 			if k1 < k2 &&
-				!IsItHighThanByOrder(s[k1].Account1.AccountNumber[IndexOfAccountNumber], s[k2].Account1.AccountNumber[IndexOfAccountNumber]) {
+				!IsItHighThanByOrder(s[k1].Account1.Number[IndexOfAccountNumber], s[k2].Account1.Number[IndexOfAccountNumber]) {
 				Swap(s, k1, k2) // account1
 
 				if s[k1].Statment.Account1 == s[k2].Statment.Account1 &&
 					(s[k1].Statment.Account2 == AllAccounts || s[k2].Statment.Account2 == AllAccounts ||
-						!IsItHighThanByOrder(s[k1].Account2.AccountNumber[IndexOfAccountNumber], s[k2].Account2.AccountNumber[IndexOfAccountNumber])) {
+						!IsItHighThanByOrder(s[k1].Account2.Number[IndexOfAccountNumber], s[k2].Account2.Number[IndexOfAccountNumber])) {
 					Swap(s, k1, k2) // account2
 
 					if s[k1].Statment.Account2 == s[k2].Statment.Account2 &&
@@ -442,15 +412,15 @@ func SortByLevel(s []StatmentWithAccount) []StatmentWithAccount {
 
 func MakeSpaceBeforeAccountInStatementStruct(oldStatement []StatmentWithAccount) {
 	for k1, v1 := range oldStatement {
-		oldStatement[k1].Statment.Account1 = strings.Repeat("  ", int(v1.Account1.AccountLevels[IndexOfAccountNumber])) + v1.Statment.Account1
+		oldStatement[k1].Statment.Account1 = strings.Repeat("  ", int(v1.Account1.Levels[IndexOfAccountNumber])) + v1.Statment.Account1
 		if v1.Statment.Account2 != AllAccounts {
-			oldStatement[k1].Statment.Account2 = strings.Repeat("  ", int(v1.Account2.AccountLevels[IndexOfAccountNumber])) + v1.Statment.Account2
+			oldStatement[k1].Statment.Account2 = strings.Repeat("  ", int(v1.Account2.Levels[IndexOfAccountNumber])) + v1.Statment.Account2
 		}
 	}
 }
 
-func ConvertStatmentWithAccountToFilteredStatement(oldStatement []StatmentWithAccount) []FilteredStatement {
-	var newStatement []FilteredStatement
+func ConvertStatmentWithAccountToFilteredStatement(oldStatement []StatmentWithAccount) []Statement {
+	var newStatement []Statement
 	for _, v1 := range oldStatement {
 		newStatement = append(newStatement, v1.Statment)
 	}

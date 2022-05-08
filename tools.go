@@ -14,12 +14,12 @@ import (
 	"time"
 )
 
-func CutTheSlice[t any](s []t, a int) []t { return s[:len(s)-a] }
-func Remove[t any](s []t, a int) []t      { return append(s[:a], s[a+1:]...) }
-func Swap[t any](s []t, a, b int)         { s[a], s[b] = s[b], s[a] }
+func CutTheSlice[t any](a []t, b int) []t { return a[:len(a)-b] }
+func Remove[t any](a []t, b int) []t      { return append(a[:b], a[b+1:]...) }
+func Swap[t any](a []t, b, c int)         { a[b], a[c] = a[c], a[b] }
 
+// Now this function to get the current time in the format of TimeLayout to make the error less likely
 func Now() []byte {
-	// i use this function to get the current time in the format of TimeLayout to make the error less likely
 	return []byte(time.Now().Format(TimeLayout))
 }
 
@@ -92,20 +92,12 @@ func IsIn[t comparable](element t, elements []t) bool {
 }
 
 func IsInfIn(numbers ...float64) bool {
-	for _, a := range numbers {
-		if math.IsInf(a, 0) {
+	for _, v1 := range numbers {
+		if math.IsInf(v1, 0) {
 			return true
 		}
 	}
 	return false
-}
-
-func Pack[t any](lenNewSlice int, slice []t) []t {
-	newSlice := make([]t, lenNewSlice)
-	for indexa, a := range slice {
-		newSlice[indexa] = a
-	}
-	return newSlice
 }
 
 func ReturnSameSignOfNumberSign(numberSign, number float64) float64 {
@@ -126,21 +118,21 @@ func Abs[t Number](n t) t {
 func ReturnSetAndDuplicatesSlices[t any](slice []t) ([]t, []t) {
 	var setOfElems, duplicatedElement []t
 big_loop:
-	for _, element := range slice {
-		for _, b := range setOfElems {
-			if reflect.DeepEqual(b, element) {
-				duplicatedElement = append(duplicatedElement, element)
+	for _, v1 := range slice {
+		for _, v2 := range setOfElems {
+			if reflect.DeepEqual(v2, v1) {
+				duplicatedElement = append(duplicatedElement, v1)
 				continue big_loop
 			}
 		}
-		setOfElems = append(setOfElems, element)
+		setOfElems = append(setOfElems, v1)
 	}
 	return setOfElems, duplicatedElement
 }
 
-func ReverseSlice[t any](s []t) {
-	for a, b := 0, len(s)-1; a < b; a, b = a+1, b-1 {
-		Swap(s, a, b)
+func ReverseSlice[t any](a []t) {
+	for k1, k2 := 0, len(a)-1; k1 < k2; k1, k2 = k1+1, k2-1 {
+		Swap(a, k1, k2)
 	}
 }
 
@@ -211,12 +203,12 @@ func Transpose[t any](slice [][]t) [][]t {
 	xl := len(slice[0])
 	yl := len(slice)
 	result := make([][]t, xl)
-	for a := range result {
-		result[a] = make([]t, yl)
+	for k1 := range result {
+		result[k1] = make([]t, yl)
 	}
-	for a := 0; a < xl; a++ {
-		for b := 0; b < yl; b++ {
-			result[a][b] = slice[b][a]
+	for k1 := 0; k1 < xl; k1++ {
+		for k2 := 0; k2 < yl; k2++ {
+			result[k1][k2] = slice[k2][k1]
 		}
 	}
 	return result
@@ -224,8 +216,8 @@ func Transpose[t any](slice [][]t) [][]t {
 
 func Unpack[t any](slice [][]t) []t {
 	var result []t
-	for _, element := range slice {
-		result = append(result, element...)
+	for _, v1 := range slice {
+		result = append(result, v1...)
 	}
 	return result
 }
@@ -305,29 +297,32 @@ func (s FilterString) Filter(input string) bool {
 }
 
 func (s FilterAccount) Filter(account Account, err error) bool {
+	if !s.IsFilter {
+		return true
+	}
+
 	return (err != nil) || // here if the account is not listed in the account list like AllAccounts it will show in statment
-		(s.IsLowLevelAccount.Filter(account.IsLowLevelAccount) &&
+		(s.IsLowLevel.Filter(account.IsLowLevel) &&
 			s.IsCredit.Filter(account.IsCredit) &&
-			s.IsTemporary.Filter(account.IsTemporary) &&
-			s.FathersAccountsName.Filter(account.AccountName, account.FathersAccountsName[IndexOfAccountNumber]) &&
-			s.AccountLevels.Filter(account.AccountLevels[IndexOfAccountNumber]))
+			s.FathersName.Filter(account.Name, account.FathersName[IndexOfAccountNumber]) &&
+			s.Levels.Filter(account.Levels[IndexOfAccountNumber]))
 }
 
 func (s FilterFathersAccountsName) Filter(accountName string, fathersAccountsNameForAccount []string) bool {
 	if !s.IsFilter {
 		return true
 	}
-	for _, v1 := range s.FathersAccountsName {
+	for _, v1 := range s.FathersName {
 		if v1 == accountName { // if accountName is in the slice
 			return s.InAccountName
 		}
 		for _, v2 := range fathersAccountsNameForAccount {
 			if v1 == v2 {
-				return s.InFathersAccountsName
+				return s.InFathersName
 			}
 		}
 	}
-	return !s.InFathersAccountsName
+	return !s.InFathersName
 }
 
 func (s FilterSliceUint) Filter(input uint) bool {
@@ -404,10 +399,34 @@ func PrintMap2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
 	PrintTable.Flush()
 }
 
-func PrintFilteredStatement(slice []FilteredStatement) {
+func PrintStatement(slice []Statement) {
 	fmt.Fprintln(PrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "Number")
 	for _, v1 := range slice {
 		fmt.Fprintln(PrintTable, v1.Account1, "\t", v1.Account2, "\t", v1.Name, "\t", v1.Vpq, "\t", v1.TypeOfVpq, "\t", v1.Number)
+	}
+	PrintTable.Flush()
+}
+
+func PrintJournal(slice []Journal) {
+	for _, v1 := range slice {
+		fmt.Fprintln(PrintTable,
+			"\t", v1.IsReverse,
+			"\t", v1.IsReversed,
+			"\t", v1.ReverseEntryNumberCompound,
+			"\t", v1.ReverseEntryNumberSimple,
+			"\t", v1.EntryNumberCompound,
+			"\t", v1.EntryNumberSimple,
+			"\t", v1.Value,
+			"\t", v1.PriceDebit,
+			"\t", v1.PriceCredit,
+			"\t", v1.QuantityDebit,
+			"\t", v1.QuantityCredit,
+			"\t", v1.AccountDebit,
+			"\t", v1.AccountCredit,
+			"\t", v1.Notes,
+			"\t", v1.Name,
+			"\t", v1.Employee,
+			"\t", v1.TypeOfCompoundEntry)
 	}
 	PrintTable.Flush()
 }

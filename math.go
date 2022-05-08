@@ -10,12 +10,12 @@ func Logarithm(a, b float64) float64 { return math.Log(a) / math.Log(b) }
 
 func CheckMapKeysForEquations(equations [][]string, m map[string]float64) error {
 	var elements []string
-	for _, equation := range equations {
-		elements = append(elements, equation[0], equation[1], equation[3])
+	for _, v1 := range equations {
+		elements = append(elements, v1[0], v1[1], v1[3])
 	}
 	elements, _ = ReturnSetAndDuplicatesSlices(elements)
-	for keyb := range m {
-		if !IsIn(keyb, elements) {
+	for k1 := range m {
+		if !IsIn(k1, elements) {
 			return ErrorNotListed
 		}
 	}
@@ -54,9 +54,9 @@ func EquationsSolver(print, checkIfKeysInTheEquations bool, m map[string]float64
 			return err
 		}
 	}
-	for a := 0; a <= len(equations)+1; a++ {
-		for _, equation := range equations {
-			EquationSolver(print, m, equation[0], equation[1], equation[2], equation[3])
+	for k1 := 0; k1 <= len(equations)+1; k1++ {
+		for _, v2 := range equations {
+			EquationSolver(print, m, v2[0], v2[1], v2[2], v2[3])
 		}
 	}
 	PrintTable.Flush()
@@ -97,11 +97,11 @@ func HighLow(points [][2]float64) float64 {
 
 func LeastSquaresRegression(points [][2]float64) (float64, float64) {
 	var sumX, sumY, sumXQuadratic, sumXY float64
-	for _, i := range points {
-		sumX += i[0]
-		sumY += i[1]
-		sumXQuadratic += math.Pow(i[0], 2)
-		sumXY += i[0] * i[1]
+	for _, v1 := range points {
+		sumX += v1[0]
+		sumY += v1[1]
+		sumXQuadratic += math.Pow(v1[0], 2)
+		sumXY += v1[0] * v1[1]
 	}
 	n := float64(len(points))
 	m := (n*sumXY - sumX*sumY) / ((n * sumXQuadratic) - math.Pow(sumX, 2))
@@ -111,10 +111,10 @@ func LeastSquaresRegression(points [][2]float64) (float64, float64) {
 
 func Max(points [][2]float64) (float64, float64) {
 	x, y := FirstPoint(points)
-	for _, i := range points {
-		if i[0] > x {
-			x = i[0]
-			y = i[1]
+	for _, v1 := range points {
+		if v1[0] > x {
+			x = v1[0]
+			y = v1[1]
 		}
 	}
 	return x, y
@@ -122,10 +122,10 @@ func Max(points [][2]float64) (float64, float64) {
 
 func Min(points [][2]float64) (float64, float64) {
 	x, y := FirstPoint(points)
-	for _, i := range points {
-		if i[0] < x {
-			x = i[0]
-			y = i[1]
+	for _, v1 := range points {
+		if v1[0] < x {
+			x = v1[0]
+			y = v1[1]
 		}
 	}
 	return x, y
@@ -135,15 +135,4 @@ func PrintEquation(print bool, m map[string]float64, a, b, sign, c string) {
 	if print {
 		fmt.Fprintln(PrintTable, a, "\t", m[a], "\t", " = ", "\t", b, "\t", m[b], "\t", sign, "\t", c, "\t", m[c])
 	}
-}
-
-func XUnderX(points [][2]float64, xMax float64) (float64, float64) {
-	x, y := 0.0, 0.0
-	for _, i := range points {
-		if i[0] > x && i[0] <= xMax {
-			x = i[0]
-			y = i[1]
-		}
-	}
-	return x, y
 }

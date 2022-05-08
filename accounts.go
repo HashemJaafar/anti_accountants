@@ -7,7 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-func AccountStructFromBarcode(barcode string) (Account, int, error) {
+func FindAccountFromBarcode(barcode string) (Account, int, error) {
 	for k1, v1 := range Accounts {
 		if IsIn(barcode, v1.Barcode) {
 			return v1, k1, nil
@@ -16,21 +16,30 @@ func AccountStructFromBarcode(barcode string) (Account, int, error) {
 	return Account{}, 0, ErrorNotListed
 }
 
-func AccountStructFromName(accountName string) (Account, int, error) {
+func FindAccountFromName(accountName string) (Account, int, error) {
 	for k1, v1 := range Accounts {
-		if v1.AccountName == accountName {
+		if accountName == v1.Name {
 			return v1, k1, nil
 		}
 	}
 	return Account{}, 0, ErrorNotListed
 }
 
+func FindAutoCompletionFromName(accountName string) (AutoCompletion, int, error) {
+	for k1, v1 := range AutoCompletionEntries {
+		if accountName == v1.AccountInvnetory {
+			return v1, k1, nil
+		}
+	}
+	return AutoCompletion{}, 0, ErrorNotListed
+}
+
 func AddAccount(account Account) error {
-	account.AccountName = FormatTheString(account.AccountName)
-	if account.AccountName == "" {
+	account.Name = FormatTheString(account.Name)
+	if account.Name == "" {
 		return ErrorAccountNameIsEmpty
 	}
-	_, _, err := AccountStructFromName(account.AccountName)
+	_, _, err := FindAccountFromName(account.Name)
 	if err == nil {
 		return ErrorAccountNameIsUsed
 	}
@@ -50,10 +59,10 @@ func CheckIfAccountNumberDuplicated() []error {
 	for k1 := 0; k1 < maxLen; k1++ {
 	big_loop:
 		for k2, v2 := range Accounts {
-			if len(v2.AccountNumber[k1]) > 0 {
-				for indexb, b := range Accounts {
-					if k2 != indexb && reflect.DeepEqual(v2.AccountNumber[k1], b.AccountNumber[k1]) {
-						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", v2.AccountNumber[k1], v2))
+			if len(v2.Number[k1]) > 0 {
+				for k3, v3 := range Accounts {
+					if k2 != k3 && reflect.DeepEqual(v2.Number[k1], v3.Number[k1]) {
+						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", v2.Number[k1], v2))
 						continue big_loop
 					}
 				}
@@ -70,15 +79,15 @@ func CheckIfLowLevelAccountForAll() []error {
 	for k1 := 1; k1 < maxLen; k1++ {
 	big_loop:
 		for k2, v2 := range Accounts {
-			if len(v2.AccountNumber[k1]) > 0 {
+			if len(v2.Number[k1]) > 0 {
 				for _, v3 := range Accounts {
-					if len(v3.AccountNumber[k1]) > 0 {
-						if IsItSubAccountUsingNumber(v2.AccountNumber[k1], v3.AccountNumber[k1]) {
+					if len(v3.Number[k1]) > 0 {
+						if IsItSubAccountUsingNumber(v2.Number[k1], v3.Number[k1]) {
 							continue big_loop
 						}
 					}
 				}
-				if !Accounts[k2].IsLowLevelAccount {
+				if !Accounts[k2].IsLowLevel {
 					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", Accounts[k2]))
 				}
 			}
@@ -93,13 +102,13 @@ func CheckIfTheTreeConnected() []error {
 	for k1 := 0; k1 < maxLen; k1++ {
 	big_loop:
 		for _, v2 := range Accounts {
-			if len(v2.AccountNumber[k1]) > 1 {
+			if len(v2.Number[k1]) > 1 {
 				for _, v3 := range Accounts {
-					if IsItTheFather(v3.AccountNumber[k1], v2.AccountNumber[k1]) {
+					if IsItTheFather(v3.Number[k1], v2.Number[k1]) {
 						continue big_loop
 					}
 				}
-				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", v2.AccountNumber[k1], v2))
+				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", v2.Number[k1], v2))
 			}
 		}
 	}
@@ -115,8 +124,8 @@ func CheckTheTree() []error {
 }
 
 func EditAccount(isDelete bool, index int, account Account) {
-	newAccountName := FormatTheString(account.AccountName)
-	oldAccountName := Accounts[index].AccountName
+	newAccountName := FormatTheString(account.Name)
+	oldAccountName := Accounts[index].Name
 
 	// here i will search for oldAccountName in journal if not used i can delete it or chenge it
 	if !IsUsedInJournal(oldAccountName) {
@@ -127,17 +136,17 @@ func EditAccount(isDelete bool, index int, account Account) {
 			return
 		}
 
-		Accounts[index].IsLowLevelAccount = account.IsLowLevelAccount
+		Accounts[index].IsLowLevel = account.IsLowLevel
 		Accounts[index].IsCredit = account.IsCredit
 	}
 
 	if oldAccountName != newAccountName && newAccountName != "" {
 		// if the account not used in journal then the account is not used in inventory then
 		// i will search for the account newAccountName in accounts database if it is not used then i can chenge the name
-		_, _, err := AccountStructFromName(newAccountName)
+		_, _, err := FindAccountFromName(newAccountName)
 		if err != nil {
 			ChangeAccountName(oldAccountName, newAccountName)
-			Accounts[index].AccountName = newAccountName
+			Accounts[index].Name = newAccountName
 		}
 	}
 
@@ -145,15 +154,10 @@ func EditAccount(isDelete bool, index int, account Account) {
 		Accounts[index].Barcode = account.Barcode
 	}
 
-	Accounts[index].IsTemporary = account.IsTemporary
 	Accounts[index].CostFlowType = account.CostFlowType
 	Accounts[index].Notes = account.Notes
 	Accounts[index].Image = account.Image
-	Accounts[index].AccountNumber = account.AccountNumber
-	Accounts[index].AlertForMinimumQuantityByTurnoverInDays = account.AlertForMinimumQuantityByTurnoverInDays
-	Accounts[index].AlertForMinimumQuantityByQuintity = account.AlertForMinimumQuantityByQuintity
-	Accounts[index].TargetBalance = account.TargetBalance
-	Accounts[index].IfTheTargetBalanceIsLessIsGood = account.IfTheTargetBalanceIsLessIsGood
+	Accounts[index].Number = account.Number
 
 	SetTheAccounts()
 	DbInsertIntoAccounts()
@@ -161,10 +165,10 @@ func EditAccount(isDelete bool, index int, account Account) {
 
 func FormatSliceOfSliceOfStringToString(a [][]string) string {
 	var str string
-	for _, b := range a {
+	for _, v1 := range a {
 		str += "{"
-		for _, c := range b {
-			str += "\"" + c + "\","
+		for _, v2 := range v1 {
+			str += "\"" + v2 + "\","
 		}
 		str += "}\t,"
 	}
@@ -173,10 +177,10 @@ func FormatSliceOfSliceOfStringToString(a [][]string) string {
 
 func FormatSliceOfSliceOfUintToString(a [][]uint) string {
 	var str string
-	for _, b := range a {
+	for _, v1 := range a {
 		str += "{"
-		for _, c := range b {
-			str += fmt.Sprint(c) + ","
+		for _, v2 := range v1 {
+			str += fmt.Sprint(v2) + ","
 		}
 		str += "}\t,"
 	}
@@ -185,16 +189,16 @@ func FormatSliceOfSliceOfUintToString(a [][]uint) string {
 
 func FormatSliceOfUintToString(a []uint) string {
 	var str string
-	for _, b := range a {
-		str += fmt.Sprint(b) + ","
+	for _, v1 := range a {
+		str += fmt.Sprint(v1) + ","
 	}
 	return "[]uint{" + str + "}"
 }
 
 func FormatStringSliceToString(a []string) string {
 	var str string
-	for _, b := range a {
-		str += "\"" + b + "\","
+	for _, v1 := range a {
+		str += "\"" + v1 + "\","
 	}
 	return "[]string{" + str + "}"
 }
@@ -213,10 +217,10 @@ func IsBarcodesUsed(barcode []string) bool {
 func IsItHighThanByOrder(accountNumber1, accountNumber2 []uint) bool {
 	l1 := len(accountNumber1)
 	l2 := len(accountNumber2)
-	for index := 0; index < Smallest(l1, l2); index++ {
-		if accountNumber1[index] < accountNumber2[index] {
+	for k1 := 0; k1 < Smallest(l1, l2); k1++ {
+		if accountNumber1[k1] < accountNumber2[k1] {
 			return true
-		} else if accountNumber1[index] > accountNumber2[index] {
+		} else if accountNumber1[k1] > accountNumber2[k1] {
 			return false
 		}
 	}
@@ -239,17 +243,17 @@ func IsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumbe
 }
 
 func IsItSubAccountUsingName(higherLevelAccount, lowerLevelAccount string) bool {
-	a1, _, _ := AccountStructFromName(higherLevelAccount)
-	a2, _, _ := AccountStructFromName(lowerLevelAccount)
-	return IsItSubAccountUsingNumber(a1.AccountNumber[IndexOfAccountNumber], a2.AccountNumber[IndexOfAccountNumber])
+	a1, _, _ := FindAccountFromName(higherLevelAccount)
+	a2, _, _ := FindAccountFromName(lowerLevelAccount)
+	return IsItSubAccountUsingNumber(a1.Number[IndexOfAccountNumber], a2.Number[IndexOfAccountNumber])
 }
 
 func IsItSubAccountUsingNumber(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
 	if !IsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumber) {
 		return false
 	}
-	for i, h := range higherLevelAccountNumber {
-		if h != lowerLevelAccountNumber[i] {
+	for k1, v1 := range higherLevelAccountNumber {
+		if v1 != lowerLevelAccountNumber[k1] {
 			return false
 		}
 	}
@@ -265,8 +269,8 @@ func IsItTheFather(higherLevelAccountNumber, lowerLevelAccountNumber []uint) boo
 
 func IsUsedInJournal(accountName string) bool {
 	_, journal := DbRead[Journal](DbJournal)
-	for _, i := range journal {
-		if accountName == i.AccountCredit || accountName == i.AccountDebit {
+	for _, v1 := range journal {
+		if accountName == v1.AccountCredit || accountName == v1.AccountDebit {
 			return true
 		}
 	}
@@ -275,10 +279,10 @@ func IsUsedInJournal(accountName string) bool {
 
 func MaxLenForAccountNumber() int {
 	var maxLen int
-	for _, a := range Accounts {
+	for _, v1 := range Accounts {
 		var length int
-		for _, b := range a.AccountNumber {
-			if len(b) > 0 {
+		for _, v2 := range v1.Number {
+			if len(v2) > 0 {
 				length++
 			}
 		}
@@ -291,25 +295,19 @@ func MaxLenForAccountNumber() int {
 
 func PrintFormatedAccounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	for _, a := range Accounts {
-		isLowLevelAccount := a.IsLowLevelAccount
-		isCredit := "\t," + fmt.Sprint(a.IsCredit)
-		isTemporary := "\t," + fmt.Sprint(a.IsTemporary)
-		costFlowType := "\t,\"" + a.CostFlowType + "\""
-		accountName := "\t,\"" + a.AccountName + "\""
-		notes := "\t,\"" + a.Notes + "\""
-		image := "\t," + FormatStringSliceToString(a.Image)
-		barcodes := "\t," + FormatStringSliceToString(a.Barcode)
-		accountNumber := "\t," + FormatSliceOfSliceOfUintToString(a.AccountNumber)
-		accountLevels := "\t," + FormatSliceOfUintToString(a.AccountLevels)
-		fathersAccountsName := "\t," + FormatSliceOfSliceOfStringToString(a.FathersAccountsName)
-		alertForMinimumQuantityByTurnoverInDays := "\t," + fmt.Sprint(a.AlertForMinimumQuantityByTurnoverInDays)
-		alertForMinimumQuantityByQuintity := "\t," + fmt.Sprint(a.AlertForMinimumQuantityByQuintity)
-		targetBalance := "\t," + fmt.Sprint(a.TargetBalance)
-		ifTheTargetBalanceIsLessIsGood := "\t," + fmt.Sprint(a.IfTheTargetBalanceIsLessIsGood)
-		fmt.Fprintln(p, "{", isLowLevelAccount, isCredit, isTemporary, costFlowType, accountName, notes,
-			image, barcodes, accountNumber, accountLevels, fathersAccountsName,
-			alertForMinimumQuantityByTurnoverInDays, alertForMinimumQuantityByQuintity, targetBalance, ifTheTargetBalanceIsLessIsGood, "},")
+	for _, v1 := range Accounts {
+		isLowLevelAccount := v1.IsLowLevel
+		isCredit := "\t," + fmt.Sprint(v1.IsCredit)
+		costFlowType := "\t,\"" + v1.CostFlowType + "\""
+		accountName := "\t,\"" + v1.Name + "\""
+		notes := "\t,\"" + v1.Notes + "\""
+		image := "\t," + FormatStringSliceToString(v1.Image)
+		barcodes := "\t," + FormatStringSliceToString(v1.Barcode)
+		accountNumber := "\t," + FormatSliceOfSliceOfUintToString(v1.Number)
+		accountLevels := "\t," + FormatSliceOfUintToString(v1.Levels)
+		fathersAccountsName := "\t," + FormatSliceOfSliceOfStringToString(v1.FathersName)
+		fmt.Fprintln(p, "{", isLowLevelAccount, isCredit, costFlowType, accountName, notes,
+			image, barcodes, accountNumber, accountLevels, fathersAccountsName, "},")
 	}
 	p.Flush()
 }
@@ -319,20 +317,19 @@ func SetTheAccounts() {
 
 	for k1, v1 := range Accounts {
 		// init the slices
-		Accounts[k1].FathersAccountsName = make([][]string, maxLen)
-		Accounts[k1].AccountNumber = make([][]uint, maxLen)
-		Accounts[k1].AccountLevels = make([]uint, maxLen)
-		for k2, v2 := range v1.AccountNumber {
+		Accounts[k1].FathersName = make([][]string, maxLen)
+		Accounts[k1].Number = make([][]uint, maxLen)
+		Accounts[k1].Levels = make([]uint, maxLen)
+		for k2, v2 := range v1.Number {
 			if k2 < maxLen {
-				Accounts[k1].AccountNumber[k2] = v2
-				Accounts[k1].AccountLevels[k2] = uint(len(v2))
+				Accounts[k1].Number[k2] = v2
+				Accounts[k1].Levels[k2] = uint(len(v2))
 			}
 		}
 
 		// set high level account to permanent
 		// set cost flow type . the cost flow should be used for every low level account
-		if !v1.IsLowLevelAccount {
-			Accounts[k1].IsTemporary = false
+		if !v1.IsLowLevel {
 			Accounts[k1].CostFlowType = ""
 		} else if !IsIn(v1.CostFlowType, CostFlowType) {
 			Accounts[k1].CostFlowType = Fifo
@@ -342,11 +339,11 @@ func SetTheAccounts() {
 	// here i set the father and grandpa accounts name
 	for k1 := 0; k1 < maxLen; k1++ {
 		for k2, v2 := range Accounts { // here i loop over account
-			if len(v2.AccountNumber[k1]) > 1 {
+			if len(v2.Number[k1]) > 1 {
 				for _, v3 := range Accounts { // but here i loop over account to find the father or grandpa account
-					if len(v3.AccountNumber[k1]) > 0 {
-						if IsItSubAccountUsingNumber(v3.AccountNumber[k1], v2.AccountNumber[k1]) {
-							Accounts[k2].FathersAccountsName[k1] = append(Accounts[k2].FathersAccountsName[k1], v3.AccountName)
+					if len(v3.Number[k1]) > 0 {
+						if IsItSubAccountUsingNumber(v3.Number[k1], v2.Number[k1]) {
+							Accounts[k2].FathersName[k1] = append(Accounts[k2].FathersName[k1], v3.Name)
 						}
 					}
 				}
@@ -357,18 +354,99 @@ func SetTheAccounts() {
 	// here i sort the accounts by there account number
 	for k1 := range Accounts {
 		for k2 := range Accounts {
-			if k1 < k2 && !IsItHighThanByOrder(Accounts[k1].AccountNumber[IndexOfAccountNumber], Accounts[k2].AccountNumber[IndexOfAccountNumber]) {
+			if k1 < k2 && !IsItHighThanByOrder(Accounts[k1].Number[IndexOfAccountNumber], Accounts[k2].Number[IndexOfAccountNumber]) {
 				Swap(Accounts, k1, k2)
 			}
 		}
 	}
 }
 
-func SetRetainedEarningsAccount(account Account) Account {
-	// in this function i fix the account field to the retained earnings account
-	// just to know the RETAINED_EARNINGS is low level account but i dont want to use it in journal
-	account.IsLowLevelAccount = true
-	account.IsCredit = true
-	account.IsTemporary = false
-	return account
+func AddAutoCompletion(a AutoCompletion) error {
+	account, isExist, err := AccountTerms(a.AccountInvnetory, true, false)
+	if isExist && err != nil {
+		return err
+	}
+	accountCost, isExistCost, err := AccountTerms(PrefixCost+a.AccountInvnetory, true, false)
+	if isExistCost && err != nil {
+		return err
+	}
+	accountDiscount, isExistDiscount, err := AccountTerms(PrefixDiscount+a.AccountInvnetory, true, false)
+	if isExistDiscount && err != nil {
+		return err
+	}
+	accountTaxExpenses, isExistTaxExpenses, err := AccountTerms(PrefixTaxExpenses+a.AccountInvnetory, true, false)
+	if isExistTaxExpenses && err != nil {
+		return err
+	}
+	accountTaxLiability, isExistTaxLiability, err := AccountTerms(PrefixTaxLiability+a.AccountInvnetory, true, true)
+	if isExistTaxLiability && err != nil {
+		return err
+	}
+	accountRevenue, isExistRevenue, err := AccountTerms(PrefixRevenue+a.AccountInvnetory, true, true)
+	if isExistRevenue && err != nil {
+		return err
+	}
+
+	if !isExist {
+		AddAccount(account)
+	}
+	if !isExistCost {
+		AddAccount(accountCost)
+	}
+	if !isExistDiscount {
+		AddAccount(accountDiscount)
+	}
+	if !isExistTaxExpenses {
+		AddAccount(accountTaxExpenses)
+	}
+	if !isExistTaxLiability {
+		AddAccount(accountTaxLiability)
+	}
+	if !isExistRevenue {
+		AddAccount(accountRevenue)
+	}
+
+	a.PriceRevenue = Abs(a.PriceRevenue)
+	a.PriceTax = Abs(a.PriceTax)
+	for k1, v1 := range a.PriceDiscount {
+		a.PriceDiscount[k1].Price = Abs(v1.Price)
+		a.PriceDiscount[k1].Quantity = Abs(v1.Quantity)
+	}
+
+	DbUpdate(DbAutoCompletionEntries, []byte(a.AccountInvnetory), a)
+	_, AutoCompletionEntries = DbRead[AutoCompletion](DbAutoCompletionEntries)
+
+	return nil
+}
+
+func AccountTerms(accountName string, isLowLevel, isCredit bool) (Account, bool, error) {
+	accountName = FormatTheString(accountName)
+	account, _, err := FindAccountFromName(accountName)
+	newAccount := Account{IsLowLevel: isLowLevel, IsCredit: isCredit, Name: accountName}
+
+	if err != nil {
+		return newAccount, false, err
+	}
+
+	if isLowLevel {
+		if !account.IsLowLevel {
+			return newAccount, true, fmt.Errorf("(%v) should be Low Level account", account.Name)
+		}
+	} else {
+		if account.IsLowLevel {
+			return newAccount, true, fmt.Errorf("(%v) should not be Low Level account", account.Name)
+		}
+	}
+
+	if isCredit {
+		if !account.IsCredit {
+			return newAccount, true, fmt.Errorf("(%v) should be credit account", account.Name)
+		}
+	} else {
+		if account.IsCredit {
+			return newAccount, true, fmt.Errorf("(%v) should not be credit account", account.Name)
+		}
+	}
+
+	return newAccount, true, nil
 }
