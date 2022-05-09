@@ -400,9 +400,9 @@ func PrintMap2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
 }
 
 func PrintStatement(slice []Statement) {
-	fmt.Fprintln(PrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "Number")
+	fmt.Fprintln(PrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "ChangeOrRatioOrBalance", "\t", "Number")
 	for _, v1 := range slice {
-		fmt.Fprintln(PrintTable, v1.Account1, "\t", v1.Account2, "\t", v1.Name, "\t", v1.Vpq, "\t", v1.TypeOfVpq, "\t", v1.Number)
+		fmt.Fprintln(PrintTable, v1.Account1, "\t", v1.Account2, "\t", v1.Name, "\t", v1.Vpq, "\t", v1.TypeOfVpq, "\t", v1.ChangeOrRatioOrBalance, "\t", v1.Number)
 	}
 	PrintTable.Flush()
 }

@@ -28,16 +28,21 @@ const (
 	Price    = "Price"
 	Quantity = "Quantity"
 	// type_of_vpq
-	BeginningBalance        = "BeginningBalance"
-	EndingBalance           = "EndingBalance"
-	Inflow                  = "Inflow"
-	Outflow                 = "Outflow"
-	Flow                    = "Flow"
+	FlowInBeginning         = "FlowInBeginning"
+	FlowOutBeginning        = "FlowOutBeginning"
+	FlowBeginning           = "FlowBeginning"
+	FlowInPeriod            = "FlowInPeriod"
+	FlowOutPeriod           = "FlowOutPeriod"
+	FlowPeriod              = "FlowPeriod"
+	FlowInEnding            = "FlowInEnding"
+	FlowOutEnding           = "FlowOutEnding"
+	FlowEnding              = "FlowEnding"
 	Average                 = "Average"
 	Turnover                = "Turnover"
 	TurnoverDays            = "TurnoverDays"
 	GrowthRatio             = "GrowthRatio"
 	NamePercent             = "NamePercent"
+	Balance                 = "Balance"
 	ChangeSinceBasePeriod   = "ChangeSinceBasePeriod"
 	GrowthRatioToBasePeriod = "GrowthRatioToBasePeriod"
 	// key words for statment columns in financial statement
@@ -195,12 +200,13 @@ type Journal struct {
 	TypeOfCompoundEntry        string  // the type of the compound entry like: invoice, payment, receipt
 }
 type Statement struct {
-	Account1  string
-	Account2  string
-	Name      string
-	Vpq       string
-	TypeOfVpq string
-	Number    float64
+	Account1               string
+	Account2               string
+	Name                   string
+	Vpq                    string
+	TypeOfVpq              string
+	ChangeOrRatioOrBalance string
+	Number                 float64
 }
 type StatmentWithAccount struct {
 	Account1 Account
@@ -208,12 +214,13 @@ type StatmentWithAccount struct {
 	Statment Statement
 }
 type FilterStatement struct {
-	Account1  FilterAccount
-	Account2  FilterAccount
-	Name      FilterString
-	Vpq       FilterString
-	TypeOfVpq FilterString
-	Number    FilterNumber
+	Account1               FilterAccount
+	Account2               FilterAccount
+	Name                   FilterString
+	Vpq                    FilterString
+	TypeOfVpq              FilterString
+	ChangeOrRatioOrBalance FilterString
+	Number                 FilterNumber
 }
 type FilterJournal struct {
 	Date                       FilterDate

@@ -78,7 +78,6 @@ func TestCalculatePrice(t *testing.T) {
 	i2 = StatementStep4(true, []string{"yasa"}, i2)
 	i3 := StatementStep5(i2)
 	StatementStep6(365, i3)
-	CalculatePrice(i3)
 	PrintMap5(i3)
 }
 
@@ -109,6 +108,7 @@ func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
 	DbClose()
 	a1 := StatementFilter(i1[0], FilterStatement{
 		Account1: FilterAccount{
+			IsFilter:    false,
 			IsLowLevel:  FilterBool{IsFilter: true, BoolValue: true},
 			IsCredit:    FilterBool{IsFilter: false, BoolValue: false},
 			Account:     FilterString{IsFilter: false, Way: "", Slice: []string{}},
@@ -116,16 +116,18 @@ func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
 			Levels:      FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
 		},
 		Account2: FilterAccount{
+			IsFilter:    false,
 			IsLowLevel:  FilterBool{IsFilter: false, BoolValue: false},
 			IsCredit:    FilterBool{IsFilter: false, BoolValue: false},
 			Account:     FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllAccounts}},
 			FathersName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersName: false, FathersName: []string{}},
 			Levels:      FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
 		},
-		Name:      FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllNames, Names}},
-		Vpq:       FilterString{IsFilter: true, Way: InSlice, Slice: []string{Value}},
-		TypeOfVpq: FilterString{IsFilter: true, Way: InSlice, Slice: []string{EndingBalance}},
-		Number:    FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
+		Name:                   FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllNames, Names}},
+		Vpq:                    FilterString{IsFilter: true, Way: InSlice, Slice: []string{Value}},
+		TypeOfVpq:              FilterString{IsFilter: true, Way: InSlice, Slice: []string{FlowEnding}},
+		ChangeOrRatioOrBalance: FilterString{},
+		Number:                 FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
 	})
 
 	a1 = StatementFilterByGreedyAlgorithm(a1, true, 0.7)
@@ -155,7 +157,7 @@ func TestSortByLevel(t *testing.T) {
 		// },
 		// Name:      FilterString{IsFilter: false, Way: InSlice, Slice: []string{AllNames, Names}},
 		// Vpq:       FilterString{IsFilter: false, Way: InSlice, Slice: []string{Value}},
-		// TypeOfVpq: FilterString{IsFilter: false, Way: InSlice, Slice: []string{EndingBalance}},
+		// TypeOfVpq: FilterString{IsFilter: false, Way: InSlice, Slice: []string{FlowEnding}},
 		// Number:    FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
 	})
 
@@ -169,23 +171,26 @@ func TestMakeSpaceBeforeAccountInStatementStruct(t *testing.T) {
 	DbClose()
 	a1 := StatementFilter(i1[0], FilterStatement{
 		Account1: FilterAccount{
+			IsFilter:    true,
 			IsLowLevel:  FilterBool{IsFilter: false, BoolValue: false},
 			IsCredit:    FilterBool{IsFilter: false, BoolValue: false},
 			Account:     FilterString{IsFilter: false, Way: "", Slice: []string{}},
-			FathersName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersName: false, FathersName: []string{"assets"}},
+			FathersName: FilterFathersAccountsName{IsFilter: true, InAccountName: true, InFathersName: true, FathersName: []string{"owner's equity"}},
 			Levels:      FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
 		},
 		Account2: FilterAccount{
+			IsFilter:    false,
 			IsLowLevel:  FilterBool{IsFilter: false, BoolValue: false},
 			IsCredit:    FilterBool{IsFilter: false, BoolValue: false},
 			Account:     FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllAccounts}},
 			FathersName: FilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersName: false, FathersName: []string{}},
 			Levels:      FilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
 		},
-		Name:      FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllNames, Names}},
-		Vpq:       FilterString{IsFilter: true, Way: InSlice, Slice: []string{Value}},
-		TypeOfVpq: FilterString{IsFilter: true, Way: InSlice, Slice: []string{Outflow}},
-		Number:    FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
+		Name:                   FilterString{IsFilter: true, Way: InSlice, Slice: []string{AllNames, Names}},
+		Vpq:                    FilterString{IsFilter: true, Way: InSlice, Slice: []string{Value}},
+		TypeOfVpq:              FilterString{IsFilter: true, Way: InSlice, Slice: []string{FlowEnding}},
+		ChangeOrRatioOrBalance: FilterString{IsFilter: true, Way: InSlice, Slice: []string{Balance}},
+		Number:                 FilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
 	})
 
 	a1 = SortByLevel(a1)

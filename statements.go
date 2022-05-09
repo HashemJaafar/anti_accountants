@@ -5,8 +5,16 @@ import (
 	"time"
 )
 
-func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []string, inNames, withoutReverseEntry bool) ([]map[string]map[string]map[string]map[string]map[string]float64, error) {
-	var statements []map[string]map[string]map[string]map[string]map[string]float64
+// the columns is:account1,account2,name,vpq,isBeforeDateStart,is_credit,number
+type statement1 map[string]map[string]map[string]map[string]map[bool]map[bool]float64
+
+// the columns is:account1,account2,name,vpq,type_of_vpq,number
+type statement2 map[string]map[string]map[string]map[string]map[string]float64
+
+// the columns is:account1,account2,name,vpq,type_of_vpq,Change_or_Ratio_or_balance,number
+type statement3 map[string]map[string]map[string]map[string]map[string]map[string]float64
+
+func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []string, inNames, withoutReverseEntry bool) ([]statement3, error) {
 
 	SortTime(allEndDates, true)
 
@@ -18,6 +26,7 @@ func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint
 
 	journalTimes := ConvertByteSliceToTime(keys)
 
+	var statements1 []statement2
 	for _, v1 := range allEndDates {
 		trailingBalanceSheet := StatementStep1(journalTimes, journal, v1.AddDate(0, 0, -int(periodInDaysBeforeEndDate)), v1)
 		trailingBalanceSheet = StatementStep2(trailingBalanceSheet)
@@ -26,23 +35,23 @@ func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint
 		statement := StatementStep5(trailingBalanceSheet)
 		StatementStep6(periodInDaysBeforeEndDate, statement)
 		StatementStep7(statement)
-		statements = append(statements, statement)
+		statements1 = append(statements1, statement)
 	}
 
-	for _, v1 := range statements {
-		HorizontalAnalysis(v1, statements[0])
-		CalculatePrice(v1)
+	var statements2 []statement3
+	for _, v1 := range statements1 {
+		statement := StatementStep8(v1, statements1[0])
+		StatementStep9(statement)
+		statements2 = append(statements2, statement)
 	}
 
-	return statements, nil
+	return statements2, nil
 }
 
-func StatementStep1(journalTimes []time.Time, journal []Journal, dateStart, dateEnd time.Time) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+func StatementStep1(journalTimes []time.Time, journal []Journal, dateStart, dateEnd time.Time) statement1 {
 	// in this function we create the statement map
 
-	// the sequanse of the columns is:account1,account2,name,vpq,isBeforeDateStart,is_credit,number
-	newStatement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
-
+	newStatement := statement1{}
 	for k1, v1 := range journal {
 		switch {
 		case journalTimes[k1].Before(dateStart):
@@ -57,7 +66,7 @@ func StatementStep1(journalTimes []time.Time, journal []Journal, dateStart, date
 	return newStatement
 }
 
-func StatementStep2(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+func StatementStep2(oldStatement statement1) statement1 {
 	// in this function i insert the father accounts in column account1
 	// i sum the credit to credit and debit to debit .Like:
 	// if there is three accounts like this:
@@ -67,7 +76,7 @@ func StatementStep2(oldStatement map[string]map[string]map[string]map[string]map
 	// i will sum the debit side of the equipment and depreciation to debit side of assets
 	// and the credit side of the equipment and depreciation to credit side of assets
 
-	newStatement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
+	newStatement := statement1{}
 
 	for k1, v1 := range oldStatement { //account1
 		account, _, err := FindAccountFromName(k1)
@@ -96,7 +105,7 @@ func StatementStep2(oldStatement map[string]map[string]map[string]map[string]map
 	return newStatement
 }
 
-func StatementStep3(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+func StatementStep3(oldStatement statement1) statement1 {
 	// in this function i insert the father accounts and 'AllAccounts' key word in column account2
 	// i sum the credit to credit and debit to debit .Like:
 	// if there is three accounts like this:
@@ -104,7 +113,7 @@ func StatementStep3(oldStatement map[string]map[string]map[string]map[string]map
 	// i will sum the debit side of the equipment and depreciation to debit side of assets
 	// and the credit side of the equipment and depreciation to credit side of assets
 
-	newStatement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
+	newStatement := statement1{}
 
 	for k1, v1 := range oldStatement { //account1
 		for k2, v2 := range v1 { //account2
@@ -135,10 +144,10 @@ func StatementStep3(oldStatement map[string]map[string]map[string]map[string]map
 	return newStatement
 }
 
-func StatementStep4(inNames bool, namesYouWant []string, oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[bool]map[bool]float64 {
+func StatementStep4(inNames bool, namesYouWant []string, oldStatement statement1) statement1 {
 	// in this function i insert the key word 'AllNames' and 'Names' in column name
 
-	newStatement := map[string]map[string]map[string]map[string]map[bool]map[bool]float64{}
+	newStatement := statement1{}
 
 	for k1, v1 := range oldStatement { //account1
 		for k2, v2 := range v1 { //account2
@@ -169,12 +178,10 @@ func StatementStep4(inNames bool, namesYouWant []string, oldStatement map[string
 	return newStatement
 }
 
-func StatementStep5(oldStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64) map[string]map[string]map[string]map[string]map[string]float64 {
+func StatementStep5(oldStatement statement1) statement2 {
 	// in this function i insert the type_of_vpq and remove column isBeforeDateStart and is_credit
 
-	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
-	newStatement := map[string]map[string]map[string]map[string]map[string]float64{}
-
+	newStatement := statement2{}
 	for k1, v1 := range oldStatement { //account1
 		accountStruct1, _, _ := FindAccountFromName(k1)
 		for k2, v2 := range v1 { //account2
@@ -183,22 +190,22 @@ func StatementStep5(oldStatement map[string]map[string]map[string]map[string]map
 					for k5, v5 := range v4 { //isBeforeDateStart
 						for k6, v6 := range v5 { //is_credit
 							if k5 {
-								// here i insert BeginningBalance
+								// here i insert FlowInBeginning and FlowOutBeginning
 								if accountStruct1.IsCredit == k6 {
 									m := InitializeMap5(newStatement, k1, k2, k3, k4)
-									m[BeginningBalance] += v6
+									m[FlowInBeginning] += v6
 								} else {
 									m := InitializeMap5(newStatement, k1, k2, k3, k4)
-									m[BeginningBalance] -= v6
+									m[FlowOutBeginning] += v6
 								}
 							} else {
-								// here i insert Inflow and Outflow
+								// here i insert FlowInPeriod and FlowOutPeriod
 								if accountStruct1.IsCredit == k6 {
 									m := InitializeMap5(newStatement, k1, k2, k3, k4)
-									m[Inflow] += v6
+									m[FlowInPeriod] += v6
 								} else {
 									m := InitializeMap5(newStatement, k1, k2, k3, k4)
-									m[Outflow] += v6
+									m[FlowOutPeriod] += v6
 								}
 							}
 						}
@@ -211,72 +218,82 @@ func StatementStep5(oldStatement map[string]map[string]map[string]map[string]map
 	return newStatement
 }
 
-func StatementStep6(days uint, oldStatement map[string]map[string]map[string]map[string]map[string]float64) {
+func StatementStep6(days uint, oldStatement statement2) {
 	// in this function we make vertical analysis of the statement
 
-	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
 	for _, v1 := range oldStatement { //account1
 		for _, v2 := range v1 { //account2
 			for _, v3 := range v2 { //name
 				for _, v4 := range v3 { //vpq
-					v4[Flow] = v4[Inflow] - v4[Outflow]
-					// here i calculate the ending balance of the account by sum the Flow with BeginningBalance
-					// because the Inflow is the same of the increase of the account
-					// and Outflow is the same of the decrease of the account
-					v4[EndingBalance] = v4[BeginningBalance] + v4[Flow]
-					v4[Average] = (v4[EndingBalance] + v4[BeginningBalance]) / 2
-					v4[Turnover] = v4[Outflow] / v4[Average]
+					v4[FlowInEnding] = v4[FlowInPeriod] + v4[FlowInBeginning]
+					v4[FlowOutEnding] = v4[FlowOutPeriod] + v4[FlowOutBeginning]
+
+					v4[FlowBeginning] = v4[FlowInBeginning] - v4[FlowOutBeginning]
+					v4[FlowPeriod] = v4[FlowInPeriod] - v4[FlowOutPeriod]
+					v4[FlowEnding] = v4[FlowInEnding] - v4[FlowOutEnding]
+
+					v4[Average] = (v4[FlowEnding] + v4[FlowBeginning]) / 2
+					v4[Turnover] = v4[FlowOutPeriod] / v4[Average]
 					v4[TurnoverDays] = float64(days) / v4[Turnover]
-					v4[GrowthRatio] = v4[EndingBalance] / v4[BeginningBalance]
+					v4[GrowthRatio] = v4[FlowEnding] / v4[FlowBeginning]
 				}
 			}
 		}
 	}
 }
 
-func StatementStep7(oldStatement map[string]map[string]map[string]map[string]map[string]float64) {
+func StatementStep7(oldStatement statement2) {
 	// in this function i complete vertical analysis of the statement
-	// but here i calculate the percentage of the account from account father
+	// but here i calculate the percentage of the name from the account
 
-	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
 	for _, v1 := range oldStatement { //account1
 		for _, v2 := range v1 { //account2
 			for _, v3 := range v2 { //name
 				for k4, v4 := range v3 { //vpq
-					v4[NamePercent] = v4[EndingBalance] / v2[AllNames][k4][EndingBalance]
+					v4[NamePercent] = v4[FlowEnding] / v2[AllNames][k4][FlowEnding]
 				}
 			}
 		}
 	}
 }
 
-func HorizontalAnalysis(oldStatement, baseStatement map[string]map[string]map[string]map[string]map[string]float64) {
-	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
+func StatementStep8(oldStatement, baseStatement statement2) statement3 {
+	newStatement := statement3{}
+
 	for k1, v1 := range oldStatement { //account1
 		for k2, v2 := range v1 { //account2
 			for k3, v3 := range v2 { //name
 				for k4, v4 := range v3 { //vpq
-					v4[ChangeSinceBasePeriod] = v4[EndingBalance] - baseStatement[k1][k2][k3][k4][EndingBalance]
-					v4[GrowthRatioToBasePeriod] = v4[EndingBalance] / baseStatement[k1][k2][k3][k4][EndingBalance]
+					for k5, v5 := range v4 { //type_of_vpq
+						m := InitializeMap6(newStatement, k1, k2, k3, k4, k5)
+						m[Balance] = v5
+						m[ChangeSinceBasePeriod] = v5 - baseStatement[k1][k2][k3][k4][k5]
+						m[GrowthRatioToBasePeriod] = v5 / baseStatement[k1][k2][k3][k4][k5]
+					}
 				}
 			}
 		}
 	}
+	return newStatement
 }
 
-func CalculatePrice(oldStatement map[string]map[string]map[string]map[string]map[string]float64) {
+func StatementStep9(oldStatement statement3) {
 	// in this function we calculate the Price
 
-	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
 	for _, v1 := range oldStatement { //account1
 		for _, v2 := range v1 { //account2
 			for _, v3 := range v2 { //name
 				if v3[Price] == nil {
-					v3[Price] = map[string]float64{}
+					v3[Price] = map[string]map[string]float64{}
 				}
 				for _, v4 := range v3 { //vpq
-					for k5 := range v4 { //type_of_vpq
-						v3[Price][k5] = v3[Value][k5] / v3[Quantity][k5]
+					for k5, v5 := range v4 { //type_of_vpq
+						if v3[Price][k5] == nil {
+							v3[Price][k5] = map[string]float64{}
+						}
+						for k6 := range v5 { //Change_or_Ratio_or_balance
+							v3[Price][k5][k6] = v3[Value][k5][k6] / v3[Quantity][k5][k6]
+						}
 					}
 				}
 			}
@@ -284,7 +301,7 @@ func CalculatePrice(oldStatement map[string]map[string]map[string]map[string]map
 	}
 }
 
-func FillNewStatement(newStatement map[string]map[string]map[string]map[string]map[bool]map[bool]float64, v1 Journal, isBeforeDateStart bool) {
+func FillNewStatement(newStatement statement1, v1 Journal, isBeforeDateStart bool) {
 	m := InitializeMap6(newStatement, v1.AccountCredit, v1.AccountDebit, v1.Name, Value, isBeforeDateStart)
 	m[true] += v1.Value
 	m = InitializeMap6(newStatement, v1.AccountCredit, v1.AccountDebit, v1.Name, Quantity, isBeforeDateStart)
@@ -295,10 +312,9 @@ func FillNewStatement(newStatement map[string]map[string]map[string]map[string]m
 	m[false] += Abs(v1.QuantityDebit)
 }
 
-func StatementFilter(oldStatement map[string]map[string]map[string]map[string]map[string]float64, f FilterStatement) []StatmentWithAccount {
+func StatementFilter(oldStatement statement3, f FilterStatement) []StatmentWithAccount {
 	var newStatement []StatmentWithAccount
 
-	// the sequanse of the columns is:account1,account2,name,vpq,type_of_vpq,number
 	for k1, v1 := range oldStatement { //account1
 		if f.Account1.Account.Filter(k1) {
 			account1, _, err := FindAccountFromName(k1)
@@ -312,14 +328,20 @@ func StatementFilter(oldStatement map[string]map[string]map[string]map[string]ma
 									for k4, v4 := range v3 { //vpq
 										if f.Vpq.Filter(k4) {
 											for k5, v5 := range v4 { //type_of_vpq
-												if f.TypeOfVpq.Filter(k5) && f.Number.Filter(v5) {
+												if f.TypeOfVpq.Filter(k5) {
+													for k6, v6 := range v5 { //Change_or_Ratio_or_balance
+														if f.ChangeOrRatioOrBalance.Filter(k6) {
+															if f.Number.Filter(v6) {
 
-													// here i prefer to show the account struct in the statment to use it later in sorting the account
-													newStatement = append(newStatement, StatmentWithAccount{
-														Account1: account1,
-														Account2: account2,
-														Statment: Statement{k1, k2, k3, k4, k5, v5},
-													})
+																// here i prefer to show the account struct in the statment to use it later in sorting the account
+																newStatement = append(newStatement, StatmentWithAccount{
+																	Account1: account1,
+																	Account2: account2,
+																	Statment: Statement{k1, k2, k3, k4, k5, k6, v6},
+																})
+															}
+														}
+													}
 												}
 											}
 										}
@@ -335,28 +357,28 @@ func StatementFilter(oldStatement map[string]map[string]map[string]map[string]ma
 	return newStatement
 }
 
-func StatementFilterByGreedyAlgorithm(oldStatement []StatmentWithAccount, isPercent bool, targetUnits float64) []StatmentWithAccount {
-	if targetUnits == 0 {
+func StatementFilterByGreedyAlgorithm(oldStatement []StatmentWithAccount, isPercent bool, numberTarget float64) []StatmentWithAccount {
+	if numberTarget == 0 {
 		return oldStatement
 	}
 
-	var totalUnits float64
+	var numberTotal float64
 	if isPercent {
 		// here i sum the numbers to find the total amount to calculate the percentage in units
 		for _, v1 := range oldStatement {
-			totalUnits += v1.Statment.Number
+			numberTotal += v1.Statment.Number
 		}
 		// here i convert the percent to a units
-		targetUnits = totalUnits * targetUnits
+		numberTarget = numberTotal * numberTarget
 	}
 
 	SortStatementNumber(oldStatement, true)
 	var newStatement []StatmentWithAccount
-	var currentUnits float64
+	var numberCurrent float64
 	for _, v1 := range oldStatement {
-		if currentUnits < targetUnits {
+		if numberCurrent < numberTarget {
 			newStatement = append(newStatement, v1)
-			currentUnits += v1.Statment.Number
+			numberCurrent += v1.Statment.Number
 		}
 	}
 	return newStatement
@@ -406,7 +428,6 @@ func SortByLevel(s []StatmentWithAccount) []StatmentWithAccount {
 			}
 		}
 	}
-
 	return s
 }
 
@@ -458,35 +479,3 @@ func StatementAnalysis(i FinancialAnalysis) FinancialAnalysisStatement {
 		EarningsPerShare:                 earningsPerShare,
 		PriceEarningsRatio:               priceEarningsRatio}
 }
-
-// func ANALYSIS(statements []map[string]map[string]map[string]map[string]map[string]float64) []FinancialAnalysisStatement {
-// 	var all_analysis []FinancialAnalysisStatement
-// 	for _, statement := range statements {
-// 		analysis := FINANCIAL_ANALYSIS_STATEMENT_func(FinancialAnalysis{
-// 			CURRENT_ASSETS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CURRENT_ASSETS]["names"]["VALUE"]["ending_balance"],
-// 			CURRENT_LIABILITIES:                 statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CURRENT_LIABILITIES]["names"]["VALUE"]["ending_balance"],
-// 			CASH:                                statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS]["names"]["VALUE"]["ending_balance"],
-// 			SHORT_TERM_INVESTMENTS:              statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.SHORT_TERM_INVESTMENTS]["names"]["VALUE"]["ending_balance"],
-// 			NET_RECEIVABLES:                     statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["VALUE"]["ending_balance"],
-// 			NET_CREDIT_SALES:                    statement[PRIMARY_ACCOUNTS_NAMES.SALES][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["VALUE"]["flow"],
-// 			AVERAGE_NET_RECEIVABLES:             statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.RECEIVABLES]["names"]["VALUE"]["average"],
-// 			COST_OF_GOODS_SOLD:                  statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.COST_OF_GOODS_SOLD]["names"]["VALUE"]["ending_balance"],
-// 			AVERAGE_INVENTORY:                   statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INVENTORY]["names"]["VALUE"]["average"],
-// 			NET_INCOME:                          statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INCOME_STATEMENT]["names"]["VALUE"]["ending_balance"],
-// 			NET_SALES:                           statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.SALES]["names"]["VALUE"]["ending_balance"],
-// 			AVERAGE_ASSETS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.ASSETS]["names"]["VALUE"]["average"],
-// 			AVERAGE_EQUITY:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.EQUITY]["names"]["VALUE"]["average"],
-// 			PREFERRED_DIVIDENDS:                 0,
-// 			AVERAGE_COMMON_STOCKHOLDERS_EQUITY:  0,
-// 			MARKET_PRICE_PER_SHARES_OUTSTANDING: 0,
-// 			CASH_DIVIDENDS:                      statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.DIVIDENDS]["names"]["VALUE"]["flow"],
-// 			TOTAL_DEBT:                          statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.LIABILITIES]["names"]["VALUE"]["ending_balance"],
-// 			TOTAL_ASSETS:                        statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.ASSETS]["names"]["VALUE"]["ending_balance"],
-// 			EBITDA:                              statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.EBITDA]["names"]["VALUE"]["ending_balance"],
-// 			INTEREST_EXPENSE:                    statement[PRIMARY_ACCOUNTS_NAMES.CASH_AND_CASH_EQUIVALENTS][PRIMARY_ACCOUNTS_NAMES.INTEREST_EXPENSE]["names"]["VALUE"]["ending_balance"],
-// 			WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING: 0,
-// 		})
-// 		all_analysis = append(all_analysis, analysis)
-// 	}
-// 	return all_analysis
-// }

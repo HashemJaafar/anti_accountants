@@ -18,24 +18,27 @@ type menuButtons struct {
 	page     *fyne.Container
 }
 
-func main() {
+func main1() {
 	// here i want to close the database after the app is closed
 	defer DbClose()
 
 	a := app.New()
 	w := a.NewWindow("ANTI ACCOUNTANTS")
 	w.Resize(fyne.Size{Width: 500, Height: 500})
+	w.SetFixedSize(true)
 
-	pJournalEntry := PageJournalEntry()
-	pMenu, _ := PageMenu()
-	// pLogin := PageLogin()
-	page := pJournalEntry
+	page := PageJournalEntry()
 
-	menuButton := widget.NewButton("menu", func() {
-		page = pMenu
-	})
-
+	menuButton := widget.NewButton("menu", nil)
 	appLayout := container.New(layout.NewBorderLayout(nil, menuButton, nil, nil), page, menuButton)
+
+	menuButton.OnTapped = func() {
+		page, newPage := PageMenu()
+		println(newPage)
+		appLayout = container.New(layout.NewBorderLayout(nil, menuButton, nil, nil), page, menuButton)
+		w.SetContent(appLayout)
+		page.Refresh()
+	}
 
 	w.SetContent(appLayout)
 	w.ShowAndRun()
@@ -137,7 +140,7 @@ func PageMenu() (*fyne.Container, *fyne.Container) {
 			return len(pages)
 		},
 		func() fyne.CanvasObject {
-			button := widget.NewButton("", func() {})
+			button := widget.NewButton("", nil)
 			button.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
 			return button
 		},
@@ -151,20 +154,20 @@ func PageMenu() (*fyne.Container, *fyne.Container) {
 
 func PageLogin() *fyne.Container {
 
-	entryNameEmployee := widget.NewEntry()
-	entryNameEmployee.SetPlaceHolder("employee name")
+	w1 := widget.NewEntry()
+	w1.SetPlaceHolder("company name")
 
-	entryNameCompany := widget.NewEntry()
-	entryNameCompany.SetPlaceHolder("company name")
+	w2 := widget.NewEntry()
+	w2.SetPlaceHolder("employee name")
 
-	entryPassword := widget.NewPasswordEntry()
-	entryPassword.SetPlaceHolder("password")
+	w3 := widget.NewPasswordEntry()
+	w3.SetPlaceHolder("password")
 
-	labelErr := widget.NewLabel("")
+	w4 := widget.NewLabel("")
 
-	buttonLogin := widget.NewButton("login", nil)
-	buttonCreateNewEmployee := widget.NewButton("create new employee", nil)
-	buttonCreateNewCompany := widget.NewButton("create new company", nil)
+	w5 := widget.NewButton("login", nil)
+	w6 := widget.NewButton("create new employee", nil)
+	w7 := widget.NewButton("create new company", nil)
 
-	return container.New(layout.NewVBoxLayout(), entryNameEmployee, entryNameCompany, entryPassword, labelErr, buttonLogin, buttonCreateNewEmployee, buttonCreateNewCompany)
+	return container.New(layout.NewVBoxLayout(), w1, w2, w3, w4, w5, w6, w7)
 }
