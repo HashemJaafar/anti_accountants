@@ -16,8 +16,6 @@ type statement3 map[string]map[string]map[string]map[string]map[string]map[strin
 
 func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []string, inNames, withoutReverseEntry bool) ([]statement3, error) {
 
-	SortTime(allEndDates, true)
-
 	keys, journal := DbRead[Journal](DbJournal)
 
 	if withoutReverseEntry {
@@ -27,6 +25,7 @@ func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint
 	journalTimes := ConvertByteSliceToTime(keys)
 
 	var statements1 []statement2
+	SortTime(allEndDates, true)
 	for _, v1 := range allEndDates {
 		trailingBalanceSheet := StatementStep1(journalTimes, journal, v1.AddDate(0, 0, -int(periodInDaysBeforeEndDate)), v1)
 		trailingBalanceSheet = StatementStep2(trailingBalanceSheet)
@@ -421,6 +420,11 @@ func SortByLevel(s []StatmentWithAccount) []StatmentWithAccount {
 							if s[k1].Statment.Vpq == s[k2].Statment.Vpq &&
 								s[k1].Statment.TypeOfVpq > s[k2].Statment.TypeOfVpq {
 								Swap(s, k1, k2) // typeOfVpq
+
+								if s[k1].Statment.TypeOfVpq == s[k2].Statment.TypeOfVpq &&
+									s[k1].Statment.ChangeOrRatioOrBalance > s[k2].Statment.ChangeOrRatioOrBalance {
+									Swap(s, k1, k2) // ChangeOrRatioOrBalance
+								}
 							}
 						}
 					}

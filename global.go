@@ -109,8 +109,8 @@ var (
 	EmployeeName         = "hashem"
 	IndexOfAccountNumber = 0
 	// global accounts
-	InvoiceDiscount      = FormatTheString("Invoice Discount")
-	InvoiceDiscountsList []Discount
+	InvoiceDiscount      = FormatTheString("Invoice PQ")
+	InvoiceDiscountsList []PQ
 
 	// pathes
 	DbPathAccounts              = "./db/" + CompanyName + "/accounts"
@@ -347,12 +347,27 @@ type OneStepDistribution struct {
 	To                     map[string]float64
 }
 type AutoCompletion struct {
-	AccountInvnetory string     // the account name that call the auto completion
-	PriceRevenue     float64    // if it is empty it will be deleted
-	PriceTax         float64    // if it is empty it will be deleted
-	PriceDiscount    []Discount // if it is empty it will be deleted
+	AccountInvnetory string  // the account name that call the auto completion
+	PriceRevenue     float64 // if it is empty it will be deleted
+	PriceTax         float64 // if it is empty it will be deleted
+	PriceDiscount    []PQ    // if it is empty it will be deleted
 }
-type Discount struct {
+type PQ struct {
 	Price    float64
+	Quantity float64
+}
+
+type Cvp struct {
+	VariableCost       float64
+	FixedCost          float64
+	MixedCost          float64
+	Sales              float64
+	Profit             float64
+	ContributionMargin float64
+}
+
+type AVQ struct {
+	Name     string
+	Value    float64
 	Quantity float64
 }

@@ -430,3 +430,13 @@ func PrintJournal(slice []Journal) {
 	}
 	PrintTable.Flush()
 }
+
+func PrintCvp(a Cvp) {
+	fmt.Fprintln(PrintTable, "VariableCost", "\t", a.VariableCost)
+	fmt.Fprintln(PrintTable, "FixedCost", "\t", a.FixedCost)
+	fmt.Fprintln(PrintTable, "MixedCost", "\t", a.MixedCost)
+	fmt.Fprintln(PrintTable, "Sales", "\t", a.Sales)
+	fmt.Fprintln(PrintTable, "Profit", "\t", a.Profit)
+	fmt.Fprintln(PrintTable, "ContributionMargin", "\t", a.ContributionMargin)
+	PrintTable.Flush()
+}

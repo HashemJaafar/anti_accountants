@@ -132,7 +132,8 @@ func TestStage1(t *testing.T) {
 }
 
 func TestReverseEntries(t *testing.T) {
-	ReverseEntries(8, 0, "hashem")
+	keys, journal := FindEntryFromNumber(8, 0)
+	ReverseEntries(keys, journal, "hashem")
 	DbClose()
 }
 
@@ -208,7 +209,7 @@ func TestInvoiceJournalEntry(t *testing.T) {
 		AccountInvnetory: "book",
 		PriceRevenue:     12,
 		PriceTax:         0,
-		PriceDiscount: []Discount{{
+		PriceDiscount: []PQ{{
 			Price:    5,
 			Quantity: 2,
 		}},
@@ -227,7 +228,7 @@ func TestInvoiceJournalEntry(t *testing.T) {
 
 func TestAutoComplete(t *testing.T) {
 	AutoCompletionEntries = []AutoCompletion{
-		{"book", 12, 0, []Discount{{5, 2}}},
+		{"book", 12, 0, []PQ{{5, 2}}},
 	}
 
 	a1 := AutoComplete([]APQA{{
@@ -252,4 +253,12 @@ func TestFilterJournalFromReverseEntry(t *testing.T) {
 	DbClose()
 	PrintSlice(a1)
 	PrintSlice(a2)
+}
+
+func TestConvertJournalToAPQA(t *testing.T) {
+	_, journal := FindEntryFromNumber(8, 0)
+	DbClose()
+	a1 := ConvertJournalToAPQA(journal)
+	PrintSlice(a1)
+	PrintJournal(journal)
 }

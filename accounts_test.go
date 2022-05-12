@@ -304,7 +304,7 @@ func TestSetTheAccounts(t *testing.T) {
 }
 
 func TestAddAutoCompletion(t *testing.T) {
-	a1 := AddAutoCompletion(AutoCompletion{"book2", 5, 0, []Discount{}})
+	a1 := AddAutoCompletion(AutoCompletion{"book2", 5, 0, []PQ{}})
 	DbClose()
 	PrintSlice(AutoCompletionEntries)
 	Test(true, a1, nil)

@@ -319,29 +319,16 @@ func Stage1(entries []APQB, isInvoice bool) []APQA {
 	return newEntries
 }
 
-func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee string) {
-	var entries []Journal
-	var entriesKeys [][]byte
-	keys, journal := DbRead[Journal](DbJournal)
-	for k1, v1 := range journal {
-		if v1.EntryNumberCompound == entryNumberCompound && (entryNumberSimple == 0 || v1.EntryNumberSimple == entryNumberSimple) && v1.IsReversed == false {
-			entries = append(entries, v1)
-			entriesKeys = append(entriesKeys, keys[k1])
-		}
-	}
-
+func ReverseEntries(entriesKeys [][]byte, entries []Journal, nameEmployee string) {
 	var entryToReverse []Journal
 	for k1, v1 := range entries {
-		// here i check if the credit side credit nature then it will be negative Quantity and vice versa
-		accountStructCredit, _, _ := FindAccountFromName(v1.AccountCredit)
-		if accountStructCredit.IsCredit {
-			v1.QuantityCredit *= -1
+		if v1.IsReversed {
+			continue
 		}
-		// here i check if the debit side debit nature then it will be negative Quantity and vice versa
-		accountStructDebit, _, _ := FindAccountFromName(v1.AccountDebit)
-		if !accountStructDebit.IsCredit {
-			v1.QuantityDebit *= -1
-		}
+		account, _, _ := FindAccountFromName(v1.AccountCredit)
+		v1.QuantityCredit = FigerTheSignOfNumber(account.IsCredit, true, v1.QuantityCredit)
+		account, _, _ = FindAccountFromName(v1.AccountDebit)
+		v1.QuantityDebit = FigerTheSignOfNumber(account.IsCredit, false, v1.QuantityDebit)
 
 		// here i check if the account can be negative by seeing the difference in Quantity after the find the cost in inventory.
 		// because i dont want to make the account negative balance
@@ -380,6 +367,62 @@ func ReverseEntries(entryNumberCompound, entryNumberSimple int, nameEmployee str
 
 	// and then i insert to database
 	InsertToDatabaseJournal(entryToReverse)
+}
+
+func FindEntryFromNumber(entryNumberCompound int, entryNumberSimple int) ([][]byte, []Journal) {
+	var entries []Journal
+	var entriesKeys [][]byte
+	keys, journal := DbRead[Journal](DbJournal)
+	for k1, v1 := range journal {
+		if v1.EntryNumberCompound == entryNumberCompound && (entryNumberSimple == 0 || v1.EntryNumberSimple == entryNumberSimple) {
+			entries = append(entries, v1)
+			entriesKeys = append(entriesKeys, keys[k1])
+		}
+	}
+	return entriesKeys, entries
+}
+
+func ConvertJournalToAPQA(entries []Journal) []APQA {
+	var newEntries []APQA
+	for _, v1 := range entries {
+		account, _, _ := FindAccountFromName(v1.AccountDebit)
+		newEntries = append(newEntries, APQA{
+			Name:     v1.AccountDebit,
+			Price:    v1.PriceDebit,
+			Quantity: FigerTheSignOfNumber(account.IsCredit, false, v1.QuantityDebit),
+			Account:  account,
+		})
+
+		account, _, _ = FindAccountFromName(v1.AccountCredit)
+		newEntries = append(newEntries, APQA{
+			Name:     v1.AccountCredit,
+			Price:    v1.PriceCredit,
+			Quantity: FigerTheSignOfNumber(account.IsCredit, true, v1.QuantityCredit),
+			Account:  account,
+		})
+	}
+	return GroupByAccount(newEntries)
+}
+
+func ConvertAPQAToAPQB(entries []APQA) []APQB {
+	var newEntries []APQB
+	for _, v1 := range entries {
+		newEntries = append(newEntries, APQB{
+			Name:     v1.Name,
+			Price:    v1.Price,
+			Quantity: v1.Quantity,
+			Barcode:  v1.Account.Barcode[0],
+		})
+	}
+	return newEntries
+}
+func ExtractEntryInfoFromJournal(entry Journal) EntryInfo {
+	return EntryInfo{
+		Notes:               entry.Notes,
+		Name:                entry.Name,
+		Employee:            entry.Employee,
+		TypeOfCompoundEntry: entry.TypeOfCompoundEntry,
+	}
 }
 
 func JournalFilter(dates []time.Time, journal []Journal, f FilterJournal, isDebitAndCredit bool) ([]time.Time, []Journal) {
@@ -489,7 +532,7 @@ func FindDuplicateElement(dates []time.Time, journal []Journal, f FilterJournalD
 	return newDates, newJournal
 }
 
-func MaxDiscount(discounts []Discount, quantity float64) float64 {
+func MaxDiscount(discounts []PQ, quantity float64) float64 {
 	var price float64
 	for _, v1 := range discounts {
 		if v1.Quantity > quantity {
@@ -509,4 +552,13 @@ func FilterJournalFromReverseEntry(keys [][]byte, journal []Journal) ([][]byte, 
 		}
 	}
 	return newKeys, newJournal
+}
+
+// FigerTheSignOfNumber if the isCredit is not same as the isCreditInTheEntry of the number then it will return negative else return positive
+func FigerTheSignOfNumber(isCredit, isCreditInTheEntry bool, number float64) float64 {
+	number = math.Abs(number)
+	if isCredit != isCreditInTheEntry {
+		return -number
+	}
+	return number
 }

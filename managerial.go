@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"log"
+	"math"
+)
 
 func CalculateCvpMap(cvp map[string]map[string]float64, print, checkIfKeysInTheEquations bool) {
 	for _, v1 := range cvp {
@@ -189,4 +192,55 @@ func TotalMixedCostInComplicatedAndMultiLevelStep(cvp map[string]map[string]floa
 		}
 	}
 	return totalMixedCost
+}
+
+func FCostVolumeProfit(units, salesPerUnit float64, variableCosts, fixedCosts []APQ) (Cvp, Cvp, []AVQ, []AVQ) {
+	var a []AVQ
+	var variableCost float64
+	variableCost, a = newFunction(variableCosts, units, variableCost, a)
+	var b []AVQ
+	var fixedCost float64
+	fixedCost, b = newFunction(fixedCosts, units, fixedCost, b)
+
+	sales := salesPerUnit * units
+	mixedCost := fixedCost + variableCost
+	profit := sales - mixedCost
+	contributionMargin := sales - variableCost
+
+	o1 := Cvp{
+		VariableCost:       variableCost,
+		FixedCost:          fixedCost,
+		MixedCost:          mixedCost,
+		Sales:              sales,
+		Profit:             profit,
+		ContributionMargin: contributionMargin,
+	}
+
+	perUint := Cvp{
+		VariableCost:       variableCost / units,
+		FixedCost:          fixedCost / units,
+		MixedCost:          mixedCost / units,
+		Sales:              sales / units,
+		Profit:             profit / units,
+		ContributionMargin: contributionMargin / units,
+	}
+
+	return o1, perUint, a, b
+}
+
+func newFunction(variableCosts []APQ, units float64, variableCost float64, a []AVQ) (float64, []AVQ) {
+	for _, v1 := range variableCosts {
+		if v1.Quantity == 0 {
+			continue
+		}
+		x := math.Ceil(units / v1.Quantity)
+		variableCost += x * v1.Price
+
+		a = append(a, AVQ{
+			Name:     v1.Name,
+			Value:    x * v1.Price,
+			Quantity: x,
+		})
+	}
+	return variableCost, a
 }
