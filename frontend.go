@@ -13,6 +13,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const (
+	WindowWidth  = 500
+	WindowHeight = 500
+)
+
 type menuButtons struct {
 	pageName string
 	page     *fyne.Container
@@ -24,29 +29,14 @@ func main() {
 
 	a := app.New()
 	w := a.NewWindow("ANTI ACCOUNTANTS")
-	w.Resize(fyne.Size{Width: 500, Height: 500})
-
 	height := widget.NewLabel("").MinSize().Height
+	w.Resize(fyne.Size{Width: WindowWidth, Height: WindowHeight})
 
 	menuButton := widget.NewButton("menu", nil)
 	var menu *widget.List
 	var appLayout *fyne.Container
-	var pageJournalEntry = container.NewVBox(
-		Widget4(height, "save"),
-		Widget4(height, "clear checked"),
-		Widget4(height, "clear nan checked"),
-		Widget3(height),
-		Widget1(height, "name"),
-		Widget1(height, "note"),
-		Widget1(height, "type of compound entry"),
-		Widget2(height),
-		Widget2(height),
-		Widget2(height),
-		Widget2(height),
-	)
-
 	pages := []menuButtons{
-		{"SIMPLE JOURNAL ENTRY", pageJournalEntry},
+		{"SIMPLE JOURNAL ENTRY", PageJournalEntry(height)},
 		{"LOGIN", PageLogin()},
 	}
 
@@ -59,10 +49,10 @@ func main() {
 			button.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
 			return button
 		},
-		func(i widget.ListItemID, o fyne.CanvasObject) {
-			o.(*widget.Button).SetText(pages[i].pageName)
-			o.(*widget.Button).OnTapped = func() {
-				appLayout = container.New(layout.NewBorderLayout(nil, menuButton, nil, nil), pages[i].page, menuButton)
+		func(k1 widget.ListItemID, v1 fyne.CanvasObject) {
+			v1.(*widget.Button).SetText(pages[k1].pageName)
+			v1.(*widget.Button).OnTapped = func() {
+				appLayout = container.New(layout.NewBorderLayout(nil, menuButton, nil, nil), pages[k1].page, menuButton)
 				w.SetContent(appLayout)
 			}
 		},
@@ -79,63 +69,30 @@ func main() {
 	w.ShowAndRun()
 }
 
-func Widget3(height float32) *fyne.Container {
-	w1 := widget.NewButton("ok", nil)
-	w2 := widget.NewButton("add", nil)
-
-	w1.Resize(fyne.NewSize(50, height))
-	w2.Resize(fyne.NewSize(50, height))
-
-	return container.New(&DynamicHBoxLayout{Width: 500, Height: height}, w1, w2)
-}
-
-func Widget4(height float32, placeHolder string) *fyne.Container {
-	w1 := widget.NewButton(placeHolder, nil)
-	w2 := widget.NewCheck("", nil)
-
-	w1.Resize(fyne.NewSize(50, height))
-	w2.Resize(fyne.NewSize(50, height))
-
-	return container.New(&DynamicHBoxLayout{Width: 500, Height: height}, w1, w2)
-}
-
 func Widget2(height float32) *fyne.Container {
-	w1 := widget.NewCheck("", nil)
-	w2 := widget.NewSelect([]string{"cash", "book"}, nil)
-	w3 := widget.NewEntry()
-	w4 := widget.NewEntry()
-	w5 := widget.NewEntry()
-	w6 := widget.NewButton("x", nil)
+	wc := widget.NewCheck("", nil)
+	wc.Resize(fyne.NewSize(10, height))
 
-	w2.PlaceHolder = " "
-	w3.SetPlaceHolder("barcode")
-	w4.SetPlaceHolder("price")
-	w5.SetPlaceHolder("quantity")
+	wsAccount := widget.NewSelect([]string{"cash", "book"}, nil)
+	wsAccount.PlaceHolder = " "
+	wsAccount.Resize(fyne.NewSize(20, height))
 
-	w1.Resize(fyne.NewSize(10, height))
-	w2.Resize(fyne.NewSize(20, height))
-	w3.Resize(fyne.NewSize(20, height))
-	w4.Resize(fyne.NewSize(20, height))
-	w5.Resize(fyne.NewSize(20, height))
-	w6.Resize(fyne.NewSize(10, height))
+	weBarcode := widget.NewEntry()
+	weBarcode.SetPlaceHolder("barcode")
+	weBarcode.Resize(fyne.NewSize(20, height))
 
-	return container.New(&DynamicHBoxLayout{Width: 500, Height: height}, w1, w2, w3, w4, w5, w6)
-}
+	wePrice := widget.NewEntry()
+	wePrice.SetPlaceHolder("price")
+	wePrice.Resize(fyne.NewSize(20, height))
 
-func Widget1(height float32, placeHolder string) *fyne.Container {
-	w1 := widget.NewCheck("", nil)
-	w2 := widget.NewEntry()
-	w3 := widget.NewButton("x", func() {
-		w2.SetText("")
-	})
+	weQuantity := widget.NewEntry()
+	weQuantity.SetPlaceHolder("quantity")
+	weQuantity.Resize(fyne.NewSize(20, height))
 
-	w2.SetPlaceHolder(placeHolder)
+	wbX := widget.NewButton("x", nil)
+	wbX.Resize(fyne.NewSize(10, height))
 
-	w1.Resize(fyne.NewSize(10, height))
-	w2.Resize(fyne.NewSize(80, height))
-	w3.Resize(fyne.NewSize(10, height))
-
-	return container.New(&DynamicHBoxLayout{Width: 500, Height: height}, w1, w2, w3)
+	return container.New(&PercentageHBoxLayout{Width: WindowWidth, Height: height}, wc, wsAccount, weBarcode, wePrice, weQuantity, wbX)
 }
 
 func PageLogin() *fyne.Container {
@@ -143,7 +100,6 @@ func PageLogin() *fyne.Container {
 	w1 := widget.NewEntry()
 	w2 := widget.NewEntry()
 	w3 := widget.NewPasswordEntry()
-	w4 := widget.NewLabel("")
 	w5 := widget.NewButton("login", nil)
 	w6 := widget.NewButton("create new employee", nil)
 	w7 := widget.NewButton("create new company", nil)
@@ -152,5 +108,113 @@ func PageLogin() *fyne.Container {
 	w2.SetPlaceHolder("employee name")
 	w3.SetPlaceHolder("password")
 
-	return container.New(layout.NewVBoxLayout(), w1, w2, w3, w4, w5, w6, w7)
+	return container.New(layout.NewVBoxLayout(), w1, w2, w3, w5, w6, w7)
+}
+
+func PageJournalEntry(height float32) *fyne.Container {
+	var c2 *fyne.Container
+	var wlEntries *widget.List
+	lenEntries := 1
+
+	wlEntries = widget.NewList(
+		func() int {
+			return lenEntries
+		},
+		func() fyne.CanvasObject {
+			return Widget2(height)
+		},
+		func(k1 widget.ListItemID, v1 fyne.CanvasObject) {
+			v1.(*fyne.Container).Objects[5].(*widget.Button).OnTapped = func() {}
+		},
+	)
+	wlEntries.Resize(fyne.Size{Width: WindowWidth, Height: height})
+
+	wcName := widget.NewCheck("", nil)
+	wcName.Resize(fyne.NewSize(10, height))
+	weName := widget.NewEntry()
+	weName.SetPlaceHolder("name")
+	weName.Resize(fyne.NewSize(80, height))
+	wbName := widget.NewButton("x", func() {
+		weName.SetText("")
+	})
+	wbName.Resize(fyne.NewSize(10, height))
+	cName := container.New(&PercentageHBoxLayout{Width: WindowWidth, Height: height}, wcName, weName, wbName)
+
+	wcNote := widget.NewCheck("", nil)
+	wcNote.Resize(fyne.NewSize(10, height))
+	weNote := widget.NewEntry()
+	weNote.SetPlaceHolder("note")
+	weNote.Resize(fyne.NewSize(80, height))
+	wbNote := widget.NewButton("x", func() {
+		weNote.SetText("")
+	})
+	wbNote.Resize(fyne.NewSize(10, height))
+	cNote := container.New(&PercentageHBoxLayout{Width: WindowWidth, Height: height}, wcNote, weNote, wbNote)
+
+	wcType := widget.NewCheck("", nil)
+	wcType.Resize(fyne.NewSize(10, height))
+	weType := widget.NewEntry()
+	weType.SetPlaceHolder("type")
+	weType.Resize(fyne.NewSize(80, height))
+	wbType := widget.NewButton("x", func() {
+		weType.SetText("")
+	})
+	wbType.Resize(fyne.NewSize(10, height))
+	cType := container.New(&PercentageHBoxLayout{Width: WindowWidth, Height: height}, wcType, weType, wbType)
+
+	wbSave := widget.NewButton("save", nil)
+	wbSave.Resize(fyne.Size{Width: wbSave.MinSize().Width, Height: height})
+
+	wbClearChecked := widget.NewButton("clear checked", func() {
+		if wcName.Checked {
+			weName.SetText("")
+		}
+		if wcNote.Checked {
+			weNote.SetText("")
+		}
+		if wcType.Checked {
+			weType.SetText("")
+		}
+	})
+	wbClearChecked.Resize(fyne.Size{Width: wbClearChecked.MinSize().Width, Height: height})
+
+	wbClearNotChecked := widget.NewButton("clear not checked", func() {
+		if !wcName.Checked {
+			weName.SetText("")
+		}
+		if !wcNote.Checked {
+			weNote.SetText("")
+		}
+		if !wcType.Checked {
+			weType.SetText("")
+		}
+	})
+	wbClearNotChecked.Resize(fyne.Size{Width: wbClearNotChecked.MinSize().Width, Height: height})
+
+	wbOk := widget.NewButton("ok", func() {
+		if !wcName.Checked {
+			weName.SetText("")
+		}
+		if !wcNote.Checked {
+			weNote.SetText("")
+		}
+		if !wcType.Checked {
+			weType.SetText("")
+		}
+	})
+	wbOk.Resize(fyne.Size{Width: wbOk.MinSize().Width, Height: height})
+
+	wbAdd := widget.NewButton("add", func() {
+		lenEntries++
+		c2.Refresh()
+	})
+	wbAdd.Resize(fyne.Size{Width: wbAdd.MinSize().Width, Height: height})
+
+	wlError := widget.NewLabel("error massage")
+	wlError.Resize(fyne.Size{Width: WindowWidth, Height: height})
+
+	c1 := container.New(&PercentageHBoxLayout{Width: WindowWidth, Height: height}, wbOk, wbSave, wbClearChecked, wbClearNotChecked, wbAdd)
+	c2 = container.New(&StretchVBoxLayout{Width: WindowWidth, Height: height, ObjectToStertch: wlEntries}, c1, cName, cNote, cType, wlError, wlEntries)
+
+	return c2
 }

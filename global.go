@@ -200,13 +200,13 @@ type Journal struct {
 	TypeOfCompoundEntry        string  // the type of the compound entry like: invoice, payment, receipt
 }
 type Statement struct {
-	Account1               string
-	Account2               string
-	Name                   string
-	Vpq                    string
-	TypeOfVpq              string
-	ChangeOrRatioOrBalance string
-	Number                 float64
+	Account1               account1
+	Account2               account2
+	Name                   name
+	Vpq                    vpq
+	TypeOfVpq              typeOfVpq
+	ChangeOrRatioOrBalance changeOrRatioOrBalance
+	Number                 number
 }
 type StatmentWithAccount struct {
 	Account1 Account

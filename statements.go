@@ -5,14 +5,18 @@ import (
 	"time"
 )
 
-// the columns is:account1,account2,name,vpq,isBeforeDateStart,is_credit,number
-type statement1 map[string]map[string]map[string]map[string]map[bool]map[bool]float64
-
-// the columns is:account1,account2,name,vpq,type_of_vpq,number
-type statement2 map[string]map[string]map[string]map[string]map[string]float64
-
-// the columns is:account1,account2,name,vpq,type_of_vpq,Change_or_Ratio_or_balance,number
-type statement3 map[string]map[string]map[string]map[string]map[string]map[string]float64
+type account1 = string
+type account2 = string
+type name = string
+type vpq = string
+type typeOfVpq = string
+type changeOrRatioOrBalance = string
+type isBeforeDateStart = bool
+type isCredit = bool
+type number = float64
+type statement1 = map[account1]map[account2]map[name]map[vpq]map[isBeforeDateStart]map[isCredit]number
+type statement2 = map[account1]map[account2]map[name]map[vpq]map[typeOfVpq]number
+type statement3 = map[account1]map[account2]map[name]map[vpq]map[typeOfVpq]map[changeOrRatioOrBalance]number
 
 func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []string, inNames, withoutReverseEntry bool) ([]statement3, error) {
 
