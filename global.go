@@ -8,167 +8,182 @@ import (
 )
 
 const (
-	Fifo        = "Fifo"
-	Lifo        = "Lifo"
-	Wma         = "Wma"
-	Linear      = "Linear"
-	Exponential = "Exponential"
-	Logarithmic = "Logarithmic"
-	Saturday    = "Saturday"
-	Sunday      = "Sunday"
-	Monday      = "Monday"
-	Tuesday     = "Tuesday"
-	Wednesday   = "Wednesday"
-	Thursday    = "Thursday"
-	Friday      = "Friday"
-	TimeLayout  = "2006-01-02 15:04:05.999999999 -0700 MST"
+	CFifo        = "Fifo"
+	CLifo        = "Lifo"
+	CWma         = "Wma"
+	CLinear      = "Linear"
+	CExponential = "Exponential"
+	CLogarithmic = "Logarithmic"
+	CSaturday    = "Saturday"
+	CSunday      = "Sunday"
+	CMonday      = "Monday"
+	CTuesday     = "Tuesday"
+	CWednesday   = "Wednesday"
+	CThursday    = "Thursday"
+	CFriday      = "Friday"
+	CTimeLayout  = "2006-01-02 15:04:05.999999999 -0700 MST"
 	//constants for financial_statements
 	// vpq
-	Value    = "Value"
-	Price    = "Price"
-	Quantity = "Quantity"
+	CValue    = "Value"
+	CPrice    = "Price"
+	CQuantity = "Quantity"
 	// type_of_vpq
-	FlowInBeginning         = "FlowInBeginning"
-	FlowOutBeginning        = "FlowOutBeginning"
-	FlowBeginning           = "FlowBeginning"
-	FlowInPeriod            = "FlowInPeriod"
-	FlowOutPeriod           = "FlowOutPeriod"
-	FlowPeriod              = "FlowPeriod"
-	FlowInEnding            = "FlowInEnding"
-	FlowOutEnding           = "FlowOutEnding"
-	FlowEnding              = "FlowEnding"
-	Average                 = "Average"
-	Turnover                = "Turnover"
-	TurnoverDays            = "TurnoverDays"
-	GrowthRatio             = "GrowthRatio"
-	NamePercent             = "NamePercent"
-	Balance                 = "Balance"
-	ChangeSinceBasePeriod   = "ChangeSinceBasePeriod"
-	GrowthRatioToBasePeriod = "GrowthRatioToBasePeriod"
+	CFlowInBeginning         = "FlowInBeginning"
+	CFlowOutBeginning        = "FlowOutBeginning"
+	CFlowBeginning           = "FlowBeginning"
+	CFlowInPeriod            = "FlowInPeriod"
+	CFlowOutPeriod           = "FlowOutPeriod"
+	CFlowPeriod              = "FlowPeriod"
+	CFlowInEnding            = "FlowInEnding"
+	CFlowOutEnding           = "FlowOutEnding"
+	CFlowEnding              = "FlowEnding"
+	CAverage                 = "Average"
+	CTurnover                = "Turnover"
+	CTurnoverDays            = "TurnoverDays"
+	CGrowthRatio             = "GrowthRatio"
+	CNamePercent             = "NamePercent"
+	CBalance                 = "Balance"
+	CChangeSinceBasePeriod   = "ChangeSinceBasePeriod"
+	CGrowthRatioToBasePeriod = "GrowthRatioToBasePeriod"
 	// key words for statment columns in financial statement
-	Names       = "Names"
-	AllNames    = "AllNames"
-	AllAccounts = "AllAccounts"
+	CNames       = "Names"
+	CAllNames    = "AllNames"
+	CAllAccounts = "AllAccounts"
 
 	// all cvp keyword
-	VariableCost                  = "VariableCost"
-	VariableCostPerUnits          = "VariableCostPerUnits"
-	Units                         = "Units"
-	FixedCost                     = "FixedCost"
-	FixedCostPerUnits             = "FixedCostPerUnits"
-	MixedCost                     = "MixedCost"
-	MixedCostPerUnits             = "MixedCostPerUnits"
-	Sales                         = "Sales"
-	SalesPerUnits                 = "SalesPerUnits"
-	Profit                        = "Profit"
-	ProfitPerUnits                = "ProfitPerUnits"
-	ContributionMargin            = "ContributionMargin"
-	ContributionMarginPerUnits    = "ContributionMarginPerUnits"
-	BreakEvenInSales              = "BreakEvenInSales"
-	BreakEvenInUnits              = "BreakEvenInUnits"
-	ContributionMarginRatio       = "ContributionMarginRatio"
-	DegreeOfOperatingLeverage     = "DegreeOfOperatingLeverage"
-	UnitsGap                      = "UnitsGap"
-	ActualUnits                   = "ActualUnits"
-	Total                         = "Total"
-	PercentFromVariableCost       = "PercentFromVariableCost"
-	PercentFromFixedCost          = "PercentFromFixedCost"
-	PercentFromMixedCost          = "PercentFromMixedCost"
-	PercentFromSales              = "PercentFromSales"
-	PercentFromProfit             = "PercentFromProfit"
-	PercentFromContributionMargin = "PercentFromContributionMargin"
-	Portions                      = "Portions"
+	CVariableCost                  = "VariableCost"
+	CVariableCostPerUnits          = "VariableCostPerUnits"
+	CUnits                         = "Units"
+	CFixedCost                     = "FixedCost"
+	CFixedCostPerUnits             = "FixedCostPerUnits"
+	CMixedCost                     = "MixedCost"
+	CMixedCostPerUnits             = "MixedCostPerUnits"
+	CSales                         = "Sales"
+	CSalesPerUnits                 = "SalesPerUnits"
+	CProfit                        = "Profit"
+	CProfitPerUnits                = "ProfitPerUnits"
+	CContributionMargin            = "ContributionMargin"
+	CContributionMarginPerUnits    = "ContributionMarginPerUnits"
+	CBreakEvenInSales              = "BreakEvenInSales"
+	CBreakEvenInUnits              = "BreakEvenInUnits"
+	CContributionMarginRatio       = "ContributionMarginRatio"
+	CDegreeOfOperatingLeverage     = "DegreeOfOperatingLeverage"
+	CUnitsGap                      = "UnitsGap"
+	CActualUnits                   = "ActualUnits"
+	CTotal                         = "Total"
+	CPercentFromVariableCost       = "PercentFromVariableCost"
+	CPercentFromFixedCost          = "PercentFromFixedCost"
+	CPercentFromMixedCost          = "PercentFromMixedCost"
+	CPercentFromSales              = "PercentFromSales"
+	CPercentFromProfit             = "PercentFromProfit"
+	CPercentFromContributionMargin = "PercentFromContributionMargin"
+	CPortions                      = "Portions"
 
 	// filter key words for numbers and dates
-	Between          = "Between"    // between big and small
-	NotBetween       = "NotBetween" // not between big and small
-	Bigger           = "Bigger"     // bigger than big
-	Smaller          = "Smaller"    // smaller than small
-	EqualToOneOfThem = "EqualToOneOfThem"
+	CBetween          = "Between"    // between big and small
+	CNotBetween       = "NotBetween" // not between big and small
+	CBigger           = "Bigger"     // bigger than big
+	CSmaller          = "Smaller"    // smaller than small
+	CEqualToOneOfThem = "EqualToOneOfThem"
 
 	// filter key words for string
-	InSlice              = "InSlice"
-	NotInSlice           = "NotInSlice"
-	ElementsInElement    = "ElementsInElement"
-	ElementsNotInElement = "ElementsNotInElement"
+	CInSlice              = "InSlice"
+	CNotInSlice           = "NotInSlice"
+	CElementsInElement    = "ElementsInElement"
+	CElementsNotInElement = "ElementsNotInElement"
 
 	// way to sort statment
-	Ascending  = "Ascending"
-	Descending = "Descending"
+	CAscending  = "Ascending"
+	CDescending = "Descending"
 
 	// Prefixes of inventory account
-	PrefixCost         = "cost of "
-	PrefixDiscount     = "discount of "
-	PrefixTaxExpenses  = "tax expenses of "
-	PrefixTaxLiability = "tax liability of "
-	PrefixRevenue      = "revenue of "
+	CPrefixCost         = "cost of "
+	CPrefixDiscount     = "discount of "
+	CPrefixTaxExpenses  = "tax expenses of "
+	CPrefixTaxLiability = "tax liability of "
+	CPrefixRevenue      = "revenue of "
 )
 
 var (
-	CompanyName          = "anti_accountants"
-	EmployeeName         = "hashem"
-	IndexOfAccountNumber = 0
+	VCompanyName          = "anti_accountants"
+	VEmployeeName         = "hashem"
+	VIndexOfAccountNumber = 0
 	// global accounts
-	InvoiceDiscount      = FormatTheString("Invoice PQ")
-	InvoiceDiscountsList []PQ
+	VInvoiceDiscount      = FFormatTheString("Invoice PQ")
+	VInvoiceDiscountsList []SPQ
 
 	// pathes
-	DbPathAccounts              = "./db/" + CompanyName + "/accounts"
-	DbPathJournal               = "./db/" + CompanyName + "/journal"
-	DbPathInventory             = "./db/" + CompanyName + "/inventory"
-	DbPathAutoCompletionEntries = "./db/" + CompanyName + "/auto_completion_entries"
+	VDbPathAccounts              = "./db/" + VCompanyName + "/accounts"
+	VDbPathJournal               = "./db/" + VCompanyName + "/journal"
+	VDbPathInventory             = "./db/" + VCompanyName + "/inventory"
+	VDbPathAutoCompletionEntries = "./db/" + VCompanyName + "/auto_completion_entries"
 	// data base
-	DbAccounts              = DbOpen(DbPathAccounts)
-	DbJournal               = DbOpen(DbPathJournal)
-	DbInventory             = DbOpen(DbPathInventory)
-	DbAutoCompletionEntries = DbOpen(DbPathAutoCompletionEntries)
+	VDbAccounts              = FDbOpen(VDbPathAccounts)
+	VDbJournal               = FDbOpen(VDbPathJournal)
+	VDbInventory             = FDbOpen(VDbPathInventory)
+	VDbAutoCompletionEntries = FDbOpen(VDbPathAutoCompletionEntries)
 	// read database
-	_, Accounts              = DbRead[Account](DbAccounts)
-	_, AutoCompletionEntries = DbRead[AutoCompletion](DbAutoCompletionEntries)
+	_, VAccounts              = FDbRead[SAccount](VDbAccounts)
+	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
 
 	// standards
-	PrintTable = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	VPrintTable = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	// StandardDays = []string{Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday}
 	// DepreciationMethods = []string{Linear, Exponential, Logarithmic}
-	CostFlowType = []string{Fifo, Lifo, Wma}
+	VCostFlowType = []string{CFifo, CLifo, CWma}
 
 	//errors
-	ErrorNotListed          = errors.New("is not listed")
-	ErrorAccountNameIsUsed  = errors.New("account name is used")
-	ErrorBarcodeIsUsed      = errors.New("barcode is used")
-	ErrorAccountNameIsEmpty = errors.New("account name is empty")
+	VErrorNotListed          = errors.New("is not listed")
+	VErrorAccountNameIsUsed  = errors.New("account name is used")
+	VErrorBarcodeIsUsed      = errors.New("barcode is used")
+	VErrorAccountNameIsEmpty = errors.New("account name is empty")
 
 	//this var for Test function
-	FailTestNumber int
+	VFailTestNumber int
 )
 
-type Number interface{ Integer | float64 | float32 }
-type Integer interface{ int | int64 | uint }
+type INumber interface{ IInteger | float64 | float32 }
+type IInteger interface{ int | int64 | uint }
 
-type EntryInfo struct {
+type (
+	TAccount1               = string
+	TAccount2               = string
+	TName                   = string
+	TVpq                    = string
+	TTypeOfVpq              = string
+	TChangeOrRatioOrBalance = string
+	TIsBeforeDateStart      = bool
+	TIsCredit               = bool
+	TNumber                 = float64
+	TStatement1             = map[TAccount1]map[TAccount2]map[TName]map[TVpq]map[TIsBeforeDateStart]map[TIsCredit]TNumber
+	TStatement2             = map[TAccount1]map[TAccount2]map[TName]map[TVpq]map[TTypeOfVpq]TNumber
+	TStatement3             = map[TAccount1]map[TAccount2]map[TName]map[TVpq]map[TTypeOfVpq]map[TChangeOrRatioOrBalance]TNumber
+)
+
+type SEntryInfo struct {
 	Notes               string
 	Name                string
 	Employee            string
 	TypeOfCompoundEntry string
 }
-type APQ struct {
+type SAPQ struct {
 	Name     string
 	Price    float64
 	Quantity float64
 }
-type APQB struct {
+type SAPQB struct {
 	Name     string
 	Price    float64
 	Quantity float64
 	Barcode  string
 }
-type APQA struct {
+type SAPQA struct {
 	Name     string
 	Price    float64
 	Quantity float64
-	Account  Account
+	Account  SAccount
 }
-type Account struct {
+type SAccount struct {
 	IsLowLevel   bool
 	IsCredit     bool
 	CostFlowType string
@@ -180,7 +195,7 @@ type Account struct {
 	Levels       []uint
 	FathersName  [][]string
 }
-type Journal struct {
+type SJournal struct {
 	IsReverse                  bool
 	IsReversed                 bool
 	ReverseEntryNumberCompound int
@@ -199,50 +214,50 @@ type Journal struct {
 	Employee                   string
 	TypeOfCompoundEntry        string
 }
-type Statement struct {
-	Account1               account1
-	Account2               account2
-	Name                   name
-	Vpq                    vpq
-	TypeOfVpq              typeOfVpq
-	ChangeOrRatioOrBalance changeOrRatioOrBalance
-	Number                 number
+type SStatement struct {
+	TAccount1
+	TAccount2
+	TName
+	TVpq
+	TTypeOfVpq
+	TChangeOrRatioOrBalance
+	TNumber
 }
-type StatmentWithAccount struct {
-	Account1 Account
-	Account2 Account
-	Statment Statement
+type SStatmentWithAccount struct {
+	Account1 SAccount
+	Account2 SAccount
+	Statment SStatement
 }
-type FilterStatement struct {
-	Account1               FilterAccount
-	Account2               FilterAccount
-	Name                   FilterString
-	Vpq                    FilterString
-	TypeOfVpq              FilterString
-	ChangeOrRatioOrBalance FilterString
-	Number                 FilterNumber
+type SFilterStatement struct {
+	Account1               SFilterAccount
+	Account2               SFilterAccount
+	Name                   SFilterString
+	Vpq                    SFilterString
+	TypeOfVpq              SFilterString
+	ChangeOrRatioOrBalance SFilterString
+	Number                 SFilterNumber
 }
-type FilterJournal struct {
-	Date                       FilterDate
-	IsReverse                  FilterBool
-	IsReversed                 FilterBool
-	ReverseEntryNumberCompound FilterNumber
-	ReverseEntryNumberSimple   FilterNumber
-	EntryNumberCompound        FilterNumber
-	EntryNumberSimple          FilterNumber
-	Value                      FilterNumber
-	PriceDebit                 FilterNumber
-	PriceCredit                FilterNumber
-	QuantityDebit              FilterNumber
-	QuantityCredit             FilterNumber
-	AccountDebit               FilterString
-	AccountCredit              FilterString
-	Notes                      FilterString
-	Name                       FilterString
-	Employee                   FilterString
-	TypeOfCompoundEntry        FilterString
+type SFilterJournal struct {
+	Date                       SFilterDate
+	IsReverse                  SFilterBool
+	IsReversed                 SFilterBool
+	ReverseEntryNumberCompound SFilterNumber
+	ReverseEntryNumberSimple   SFilterNumber
+	EntryNumberCompound        SFilterNumber
+	EntryNumberSimple          SFilterNumber
+	Value                      SFilterNumber
+	PriceDebit                 SFilterNumber
+	PriceCredit                SFilterNumber
+	QuantityDebit              SFilterNumber
+	QuantityCredit             SFilterNumber
+	AccountDebit               SFilterString
+	AccountCredit              SFilterString
+	Notes                      SFilterString
+	Name                       SFilterString
+	Employee                   SFilterString
+	TypeOfCompoundEntry        SFilterString
 }
-type FilterJournalDuplicate struct {
+type SFilterJournalDuplicate struct {
 	IsReverse                  bool
 	IsReversed                 bool
 	ReverseEntryNumberCompound bool
@@ -259,47 +274,47 @@ type FilterJournalDuplicate struct {
 	Employee                   bool
 	TypeOfCompoundEntry        bool
 }
-type FilterAccount struct {
+type SFilterAccount struct {
 	IsFilter    bool
-	IsLowLevel  FilterBool
-	IsCredit    FilterBool
-	Account     FilterString
-	FathersName FilterFathersAccountsName
-	Levels      FilterSliceUint
+	IsLowLevel  SFilterBool
+	IsCredit    SFilterBool
+	Account     SFilterString
+	FathersName SFilterFathersAccountsName
+	Levels      SFilterSliceUint
 }
-type FilterFathersAccountsName struct {
+type SFilterFathersAccountsName struct {
 	IsFilter      bool
 	InAccountName bool
 	InFathersName bool
 	FathersName   []string
 }
-type FilterSliceUint struct {
+type SFilterSliceUint struct {
 	IsFilter bool
 	InSlice  bool
 	Slice    []uint
 }
-type FilterDate struct {
+type SFilterDate struct {
 	IsFilter bool
 	Way      string
 	Big      time.Time
 	Small    time.Time
 }
-type FilterNumber struct {
+type SFilterNumber struct {
 	IsFilter bool
 	Way      string
 	Big      float64
 	Small    float64
 }
-type FilterString struct {
+type SFilterString struct {
 	IsFilter bool
 	Way      string
 	Slice    []string
 }
-type FilterBool struct {
+type SFilterBool struct {
 	IsFilter  bool
 	BoolValue bool
 }
-type FinancialAnalysis struct {
+type SFinancialAnalysis struct {
 	CurrentAssets                          float64
 	CurrentLiabilities                     float64
 	Cash                                   float64
@@ -323,7 +338,7 @@ type FinancialAnalysis struct {
 	InterestExpense                        float64
 	WeightedAverageCommonSharesOutstanding float64
 }
-type FinancialAnalysisStatement struct {
+type SFinancialAnalysisStatement struct {
 	CurrentRatio                     float64 // CURRENT_ASSETS / CURRENT_LIABILITIES
 	AcidTest                         float64 // (CASH + SHORT_TERM_INVESTMENTS + NET_RECEIVABLES) / CURRENT_LIABILITIES
 	ReceivablesTurnover              float64 // NET_CREDIT_SALES / AVERAGE_NET_RECEIVABLES
@@ -339,25 +354,24 @@ type FinancialAnalysisStatement struct {
 	EarningsPerShare                 float64 // (NET_INCOME - PREFERRED_DIVIDENDS) / WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING
 	PriceEarningsRatio               float64 // MARKET_PRICE_PER_SHARES_OUTSTANDING / EARNINGS_PER_SHARE
 }
-type OneStepDistribution struct {
+type SOneStepDistribution struct {
 	SalesOrVariableOrFixed string
 	DistributionMethod     string
 	Amount                 float64
 	From                   map[string]float64
 	To                     map[string]float64
 }
-type AutoCompletion struct {
+type SAutoCompletion struct {
 	AccountInvnetory string
 	PriceRevenue     float64
 	PriceTax         float64
-	PriceDiscount    []PQ
+	PriceDiscount    []SPQ
 }
-type PQ struct {
+type SPQ struct {
 	Price    float64
 	Quantity float64
 }
-
-type Cvp struct {
+type SCvp struct {
 	VariableCost       float64
 	FixedCost          float64
 	MixedCost          float64
@@ -365,8 +379,7 @@ type Cvp struct {
 	Profit             float64
 	ContributionMargin float64
 }
-
-type AVQ struct {
+type SAVQ struct {
 	Name     string
 	Value    float64
 	Quantity float64

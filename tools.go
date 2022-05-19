@@ -14,34 +14,34 @@ import (
 	"time"
 )
 
-func CutTheSlice[t any](a []t, b int) []t { return a[:len(a)-b] }
-func Remove[t any](a []t, b int) []t      { return append(a[:b], a[b+1:]...) }
-func Swap[t any](a []t, b, c int)         { a[b], a[c] = a[c], a[b] }
+func FCutTheSlice[t any](a []t, b int) []t { return a[:len(a)-b] }
+func FRemove[t any](a []t, b int) []t      { return append(a[:b], a[b+1:]...) }
+func FSwap[t any](a []t, b, c int)         { a[b], a[c] = a[c], a[b] }
 
-// Now this function to get the current time in the format of TimeLayout to make the error less likely
-func Now() []byte {
-	return []byte(time.Now().Format(TimeLayout))
+// FNow this function to get the current time in the format of TimeLayout to make the error less likely
+func FNow() []byte {
+	return []byte(time.Now().Format(CTimeLayout))
 }
 
-func AssignNumberIfNumber(m map[string]float64, str string) {
+func FAssignNumberIfNumber(m map[string]float64, str string) {
 	number, err := strconv.ParseFloat(str, 64)
 	if err == nil {
 		m[str] = number
 	}
 }
 
-func ConvertNanToZero(VALUE float64) float64 {
+func FConvertNanToZero(VALUE float64) float64 {
 	if math.IsNaN(VALUE) {
 		return 0
 	}
 	return VALUE
 }
 
-func FormatTheString(str string) string {
+func FFormatTheString(str string) string {
 	return strings.ToLower(strings.Join(strings.Fields(str), " "))
 }
 
-func InitializeMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr, i1 t1, i2 t2, i3 t3, i4 t4, i5 t5) map[t6]tr {
+func FInitializeMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr, i1 t1, i2 t2, i3 t3, i4 t4, i5 t5) map[t6]tr {
 	if m == nil {
 		m = map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr{}
 	}
@@ -63,7 +63,7 @@ func InitializeMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]m
 	return m[i1][i2][i3][i4][i5]
 }
 
-func InitializeMap5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr, i1 t1, i2 t2, i3 t3, i4 t4) map[t5]tr {
+func FInitializeMap5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr, i1 t1, i2 t2, i3 t3, i4 t4) map[t5]tr {
 	if m == nil {
 		m = map[t1]map[t2]map[t3]map[t4]map[t5]tr{}
 	}
@@ -82,7 +82,7 @@ func InitializeMap5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t
 	return m[i1][i2][i3][i4]
 }
 
-func Find[t comparable](element t, elements []t) (int, bool) {
+func FFind[t comparable](element t, elements []t) (int, bool) {
 	for k1, v1 := range elements {
 		if v1 == element {
 			return k1, true
@@ -91,7 +91,7 @@ func Find[t comparable](element t, elements []t) (int, bool) {
 	return 0, false
 }
 
-func IsInfIn(numbers ...float64) bool {
+func FIsInfIn(numbers ...float64) bool {
 	for _, v1 := range numbers {
 		if math.IsInf(v1, 0) {
 			return true
@@ -100,14 +100,14 @@ func IsInfIn(numbers ...float64) bool {
 	return false
 }
 
-func ReturnSameSignOfNumberSign(numberSign, number float64) float64 {
+func FReturnSameSignOfNumberSign(numberSign, number float64) float64 {
 	if numberSign < 0 {
-		return -Abs(number)
+		return -FAbs(number)
 	}
-	return Abs(number)
+	return FAbs(number)
 }
 
-func Abs[t Number](n t) t {
+func FAbs[t INumber](n t) t {
 	// this is alternative of math.Abs
 	if n < 0 {
 		return -n
@@ -115,7 +115,7 @@ func Abs[t Number](n t) t {
 	return n
 }
 
-func ReturnSetAndDuplicatesSlices[t any](slice []t) ([]t, []t) {
+func FReturnSetAndDuplicatesSlices[t any](slice []t) ([]t, []t) {
 	var setOfElems, duplicatedElement []t
 big_loop:
 	for _, v1 := range slice {
@@ -130,52 +130,52 @@ big_loop:
 	return setOfElems, duplicatedElement
 }
 
-func ReverseSlice[t any](a []t) {
+func FReverseSlice[t any](a []t) {
 	for k1, k2 := 0, len(a)-1; k1 < k2; k1, k2 = k1+1, k2-1 {
-		Swap(a, k1, k2)
+		FSwap(a, k1, k2)
 	}
 }
 
-func Smallest[t Number](a, b t) t {
+func FSmallest[t INumber](a, b t) t {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func SortTime(slice []time.Time, isAscending bool) {
+func FSortTime(slice []time.Time, isAscending bool) {
 	for k1 := range slice {
 		for k2 := range slice {
 			if k1 < k2 && (slice[k1]).After((slice[k2])) == isAscending {
-				Swap(slice, k1, k2)
+				FSwap(slice, k1, k2)
 			}
 		}
 	}
 }
 
-func SortStatementNumber(slice []StatmentWithAccount, isAscending bool) {
+func FSortStatementNumber(slice []SStatmentWithAccount, isAscending bool) {
 	sort.Slice(slice, func(k1, k2 int) bool {
-		return slice[k1].Statment.Number > slice[k2].Statment.Number == isAscending
+		return slice[k1].Statment.TNumber > slice[k2].Statment.TNumber == isAscending
 	})
 }
 
-func ConvertByteSliceToTime(slice [][]byte) []time.Time {
+func FConvertByteSliceToTime(slice [][]byte) []time.Time {
 	var sliceOfTime []time.Time
 	for _, v1 := range slice {
-		date, _ := time.Parse(TimeLayout, string(v1))
+		date, _ := time.Parse(CTimeLayout, string(v1))
 		sliceOfTime = append(sliceOfTime, date)
 	}
 	return sliceOfTime
 }
 
-func Test[t any](shouldEqual bool, actual, expected t) {
+func FTest[t any](shouldEqual bool, actual, expected t) {
 	if reflect.DeepEqual(actual, expected) != shouldEqual {
-		FailTestNumber++
+		VFailTestNumber++
 		p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		fmt.Fprintln(p, "\033[32m", "fail_test_number\t:", FailTestNumber) //green
-		fmt.Fprintln(p, "\033[35m", "should_equal\t:", shouldEqual)        //purple
-		fmt.Fprintln(p, "\033[34m", "actual\t:", actual)                   //blue
-		fmt.Fprintln(p, "\033[33m", "expected\t:", expected)               //yellow
+		fmt.Fprintln(p, "\033[32m", "fail_test_number\t:", VFailTestNumber) //green
+		fmt.Fprintln(p, "\033[35m", "should_equal\t:", shouldEqual)         //purple
+		fmt.Fprintln(p, "\033[34m", "actual\t:", actual)                    //blue
+		fmt.Fprintln(p, "\033[33m", "expected\t:", expected)                //yellow
 		p.Flush()
 
 		// fmt.Println("\033[34m") //blue
@@ -193,13 +193,13 @@ func Test[t any](shouldEqual bool, actual, expected t) {
 	}
 }
 
-func PrintSlice[t any](a1 []t) {
+func FPrintSlice[t any](a1 []t) {
 	for _, v1 := range a1 {
 		fmt.Println(v1)
 	}
 }
 
-func Transpose[t any](slice [][]t) [][]t {
+func FTranspose[t any](slice [][]t) [][]t {
 	xl := len(slice[0])
 	yl := len(slice)
 	result := make([][]t, xl)
@@ -214,7 +214,7 @@ func Transpose[t any](slice [][]t) [][]t {
 	return result
 }
 
-func Unpack[t any](slice [][]t) []t {
+func FUnpack[t any](slice [][]t) []t {
 	var result []t
 	for _, v1 := range slice {
 		result = append(result, v1...)
@@ -222,7 +222,7 @@ func Unpack[t any](slice [][]t) []t {
 	return result
 }
 
-func (s FilterDate) Filter(input time.Time) bool {
+func (s SFilterDate) FFilter(input time.Time) bool {
 	if !s.IsFilter {
 		return true
 	}
@@ -235,22 +235,22 @@ func (s FilterDate) Filter(input time.Time) bool {
 	isBiggerThanBig := input.After(s.Big)
 
 	switch s.Way {
-	case Between:
+	case CBetween:
 		return !isSmallerThanSmall && !isBiggerThanBig
-	case NotBetween:
+	case CNotBetween:
 		return isSmallerThanSmall || isBiggerThanBig
-	case Bigger:
+	case CBigger:
 		return input.After(s.Big)
-	case Smaller:
+	case CSmaller:
 		return input.Before(s.Small)
-	case EqualToOneOfThem:
+	case CEqualToOneOfThem:
 		return input == s.Small || input == s.Big
 	}
 
 	return false
 }
 
-func (s FilterNumber) Filter(input float64) bool {
+func (s SFilterNumber) FFilter(input float64) bool {
 	if !s.IsFilter {
 		return true
 	}
@@ -263,54 +263,54 @@ func (s FilterNumber) Filter(input float64) bool {
 	isBiggerThanBig := input > s.Big
 
 	switch s.Way {
-	case Between:
+	case CBetween:
 		return !isSmallerThanSmall && !isBiggerThanBig
-	case NotBetween:
+	case CNotBetween:
 		return isSmallerThanSmall || isBiggerThanBig
-	case Bigger:
+	case CBigger:
 		return input > s.Big
-	case Smaller:
+	case CSmaller:
 		return input < s.Small
-	case EqualToOneOfThem:
+	case CEqualToOneOfThem:
 		return input == s.Small || input == s.Big
 	}
 
 	return false
 }
 
-func (s FilterString) Filter(input string) bool {
+func (s SFilterString) FFilter(input string) bool {
 	if !s.IsFilter {
 		return true
 	}
 
 	switch s.Way {
-	case InSlice:
-		_, isIn := Find(input, s.Slice)
+	case CInSlice:
+		_, isIn := FFind(input, s.Slice)
 		return isIn
-	case NotInSlice:
-		_, isIn := Find(input, s.Slice)
+	case CNotInSlice:
+		_, isIn := FFind(input, s.Slice)
 		return isIn == false
-	case ElementsInElement:
+	case CElementsInElement:
 		return FElementsInElement(input, s.Slice)
-	case ElementsNotInElement:
+	case CElementsNotInElement:
 		return FElementsInElement(input, s.Slice) == false
 	}
 	return false
 }
 
-func (s FilterAccount) Filter(account Account, err error) bool {
+func (s SFilterAccount) FFilter(account SAccount, err error) bool {
 	if !s.IsFilter {
 		return true
 	}
 
 	return (err != nil) || // here if the account is not listed in the account list like AllAccounts it will show in statment
-		(s.IsLowLevel.Filter(account.IsLowLevel) &&
-			s.IsCredit.Filter(account.IsCredit) &&
-			s.FathersName.Filter(account.Name, account.FathersName[IndexOfAccountNumber]) &&
-			s.Levels.Filter(account.Levels[IndexOfAccountNumber]))
+		(s.IsLowLevel.FFilter(account.IsLowLevel) &&
+			s.IsCredit.FFilter(account.IsCredit) &&
+			s.FathersName.FFilter(account.Name, account.FathersName[VIndexOfAccountNumber]) &&
+			s.Levels.FFilter(account.Levels[VIndexOfAccountNumber]))
 }
 
-func (s FilterFathersAccountsName) Filter(accountName string, fathersAccountsNameForAccount []string) bool {
+func (s SFilterFathersAccountsName) FFilter(accountName string, fathersAccountsNameForAccount []string) bool {
 	if !s.IsFilter {
 		return true
 	}
@@ -327,15 +327,15 @@ func (s FilterFathersAccountsName) Filter(accountName string, fathersAccountsNam
 	return !s.InFathersName
 }
 
-func (s FilterSliceUint) Filter(input uint) bool {
+func (s SFilterSliceUint) FFilter(input uint) bool {
 	if !s.IsFilter {
 		return true
 	}
-	_, isIn := Find(input, s.Slice)
+	_, isIn := FFind(input, s.Slice)
 	return isIn == s.InSlice
 }
 
-func (s FilterBool) Filter(input bool) bool {
+func (s SFilterBool) FFilter(input bool) bool {
 	if !s.IsFilter {
 		return true
 	}
@@ -351,21 +351,21 @@ func FElementsInElement(element string, elements []string) bool {
 	return false
 }
 
-func FilterDuplicate[t comparable](input1, input2 t, f bool) bool {
+func FFilterDuplicate[t comparable](input1, input2 t, f bool) bool {
 	if !f {
 		return true
 	}
 	return input1 == input2
 }
 
-func PrintMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr) {
+func FPrintMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr) {
 	for k1, v1 := range m {
 		for k2, v2 := range v1 {
 			for k3, v3 := range v2 {
 				for k4, v4 := range v3 {
 					for k5, v5 := range v4 {
 						for k6, v6 := range v5 {
-							fmt.Fprintln(PrintTable, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", k6, "\t", v6)
+							fmt.Fprintln(VPrintTable, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", k6, "\t", v6)
 						}
 					}
 				}
@@ -373,46 +373,46 @@ func PrintMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3
 		}
 	}
 	fmt.Println("//////////////////////////////////////////")
-	PrintTable.Flush()
+	VPrintTable.Flush()
 }
 
-func PrintMap5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr) {
+func FPrintMap5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]tr) {
 	for k1, v1 := range m {
 		for k2, v2 := range v1 {
 			for k3, v3 := range v2 {
 				for k4, v4 := range v3 {
 					for k5, v5 := range v4 {
-						fmt.Fprintln(PrintTable, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", v5)
+						fmt.Fprintln(VPrintTable, k1, "\t", k2, "\t", k3, "\t", k4, "\t", k5, "\t", v5)
 					}
 				}
 			}
 		}
 	}
 	fmt.Println("//////////////////////////////////////////")
-	PrintTable.Flush()
+	VPrintTable.Flush()
 }
 
-func PrintMap2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
+func FPrintMap2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
 	for k1, v1 := range m {
 		for k2, v2 := range v1 {
-			fmt.Fprintln(PrintTable, k1, "\t", k2, "\t", v2)
+			fmt.Fprintln(VPrintTable, k1, "\t", k2, "\t", v2)
 		}
 	}
 	fmt.Println("//////////////////////////////////////////")
-	PrintTable.Flush()
+	VPrintTable.Flush()
 }
 
-func PrintStatement(slice []Statement) {
-	fmt.Fprintln(PrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "ChangeOrRatioOrBalance", "\t", "Number")
+func FPrintStatement(slice []SStatement) {
+	fmt.Fprintln(VPrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "ChangeOrRatioOrBalance", "\t", "Number")
 	for _, v1 := range slice {
-		fmt.Fprintln(PrintTable, v1.Account1, "\t", v1.Account2, "\t", v1.Name, "\t", v1.Vpq, "\t", v1.TypeOfVpq, "\t", v1.ChangeOrRatioOrBalance, "\t", v1.Number)
+		fmt.Fprintln(VPrintTable, v1.TAccount1, "\t", v1.TAccount2, "\t", v1.TName, "\t", v1.TVpq, "\t", v1.TTypeOfVpq, "\t", v1.TChangeOrRatioOrBalance, "\t", v1.TNumber)
 	}
-	PrintTable.Flush()
+	VPrintTable.Flush()
 }
 
-func PrintJournal(slice []Journal) {
+func FPrintJournal(slice []SJournal) {
 	for _, v1 := range slice {
-		fmt.Fprintln(PrintTable,
+		fmt.Fprintln(VPrintTable,
 			"\t", v1.IsReverse,
 			"\t", v1.IsReversed,
 			"\t", v1.ReverseEntryNumberCompound,
@@ -431,15 +431,15 @@ func PrintJournal(slice []Journal) {
 			"\t", v1.Employee,
 			"\t", v1.TypeOfCompoundEntry)
 	}
-	PrintTable.Flush()
+	VPrintTable.Flush()
 }
 
-func PrintCvp(a Cvp) {
-	fmt.Fprintln(PrintTable, "VariableCost", "\t", a.VariableCost)
-	fmt.Fprintln(PrintTable, "FixedCost", "\t", a.FixedCost)
-	fmt.Fprintln(PrintTable, "MixedCost", "\t", a.MixedCost)
-	fmt.Fprintln(PrintTable, "Sales", "\t", a.Sales)
-	fmt.Fprintln(PrintTable, "Profit", "\t", a.Profit)
-	fmt.Fprintln(PrintTable, "ContributionMargin", "\t", a.ContributionMargin)
-	PrintTable.Flush()
+func FPrintCvp(a SCvp) {
+	fmt.Fprintln(VPrintTable, "VariableCost", "\t", a.VariableCost)
+	fmt.Fprintln(VPrintTable, "FixedCost", "\t", a.FixedCost)
+	fmt.Fprintln(VPrintTable, "MixedCost", "\t", a.MixedCost)
+	fmt.Fprintln(VPrintTable, "Sales", "\t", a.Sales)
+	fmt.Fprintln(VPrintTable, "Profit", "\t", a.Profit)
+	fmt.Fprintln(VPrintTable, "ContributionMargin", "\t", a.ContributionMargin)
+	VPrintTable.Flush()
 }

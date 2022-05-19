@@ -29,7 +29,7 @@ type menuButtons struct {
 }
 
 func main() {
-	defer DbClose()
+	defer FDbClose()
 
 	a := app.New()
 	w := a.NewWindow("ANTI ACCOUNTANTS")
@@ -40,13 +40,13 @@ func main() {
 	var cApp *fyne.Container
 
 	wbJournal := widget.NewButton("SIMPLE JOURNAL ENTRY", func() {
-		cApp = container.New(layout.NewBorderLayout(nil, wbMenu, nil, nil), wbMenu, PageJournalEntry())
+		cApp = container.New(layout.NewBorderLayout(nil, wbMenu, nil, nil), wbMenu, FPageJournalEntry())
 		w.SetContent(cApp)
 	})
 	wbJournal.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
 
 	wbLogin := widget.NewButton("LOGIN", func() {
-		w.SetContent(PageLogin())
+		w.SetContent(FPageLogin())
 	})
 	wbLogin.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
 
@@ -63,7 +63,7 @@ func main() {
 	w.ShowAndRun()
 }
 
-func FcEntryABPQ() *fyne.Container {
+func FFcEntryABPQ() *fyne.Container {
 	wc := widget.NewCheck("", nil)
 	wc.Resize(fyne.NewSize(10, height))
 
@@ -86,16 +86,16 @@ func FcEntryABPQ() *fyne.Container {
 	wbX := widget.NewButton("x", nil)
 	wbX.Resize(fyne.NewSize(10, height))
 
-	fc := container.New(&PercentageHBoxLayout{Width: WindowWidth, Height: height}, wc, wsAccount, weBarcode, wePrice, weQuantity, wbX)
+	fc := container.New(&TPercentageHBoxLayout{Width: WindowWidth, Height: height}, wc, wsAccount, weBarcode, wePrice, weQuantity, wbX)
 
 	wbX.OnTapped = func() {
-		index, _ := FindObject(fc, fcEntries.Objects)
-		fcEntries.Objects = Remove(fcEntries.Objects, index)
+		index, _ := FFindObject(fc, fcEntries.Objects)
+		fcEntries.Objects = FRemove(fcEntries.Objects, index)
 	}
 	return fc
 }
 
-func PageLogin() *fyne.Container {
+func FPageLogin() *fyne.Container {
 
 	w1 := widget.NewEntry()
 	w2 := widget.NewEntry()
@@ -111,51 +111,51 @@ func PageLogin() *fyne.Container {
 	return container.New(layout.NewVBoxLayout(), w1, w2, w3, w5, w6, w7)
 }
 
-func PageJournalEntry() *fyne.Container {
+func FPageJournalEntry() *fyne.Container {
 
 	wlError := widget.NewLabel("")
 	wlError.Wrapping = fyne.TextWrapWord
 	wlError.Resize(fyne.Size{Width: WindowWidth, Height: height})
 
 	wbOk := widget.NewButton("ok", func() {
-		_, err := SaveEntries(true)
-		DisplayTheError(err, wlError)
-		ClearEntries(false)
+		_, err := FSaveEntries(true)
+		FDisplayTheError(err, wlError)
+		FClearEntries(false)
 	})
 	wbOk.Resize(fyne.Size{Width: wbOk.MinSize().Width, Height: height})
 
 	wbSave := widget.NewButton("save", func() {
-		_, err := SaveEntries(true)
-		DisplayTheError(err, wlError)
+		_, err := FSaveEntries(true)
+		FDisplayTheError(err, wlError)
 	})
 	wbSave.Resize(fyne.Size{Width: wbSave.MinSize().Width, Height: height})
 
 	wbClearChecked := widget.NewButton("clear checked", func() {
-		ClearEntries(true)
+		FClearEntries(true)
 	})
 	wbClearChecked.Resize(fyne.Size{Width: wbClearChecked.MinSize().Width, Height: height})
 
 	wbClearNotChecked := widget.NewButton("clear not checked", func() {
-		ClearEntries(false)
+		FClearEntries(false)
 	})
 	wbClearNotChecked.Resize(fyne.Size{Width: wbClearNotChecked.MinSize().Width, Height: height})
 
-	fcEntries = container.New(layout.NewVBoxLayout(), FcEntryInfo("note"), FcEntryInfo("name"), FcEntryInfo("type"), FcEntryABPQ())
+	fcEntries = container.New(layout.NewVBoxLayout(), FFcEntryInfo("note"), FFcEntryInfo("name"), FFcEntryInfo("type"), FFcEntryABPQ())
 	wsEntries := container.NewVScroll(fcEntries)
 
 	wbAdd := widget.NewButton("+", func() {
-		fcEntries.Add(FcEntryABPQ())
+		fcEntries.Add(FFcEntryABPQ())
 		fcEntries.Refresh()
 	})
 	wbAdd.Resize(fyne.Size{Width: wbAdd.MinSize().Width, Height: height})
 
-	fc1 := container.New(&PercentageHBoxLayout{Width: WindowWidth, Height: height}, wbOk, wbSave, wbClearChecked, wbClearNotChecked, wbAdd)
-	fc2 := container.New(&StretchVBoxLayout{Width: WindowWidth, Height: height, ObjectToStertch: wsEntries}, fc1, wsEntries, wlError)
+	fc1 := container.New(&TPercentageHBoxLayout{Width: WindowWidth, Height: height}, wbOk, wbSave, wbClearChecked, wbClearNotChecked, wbAdd)
+	fc2 := container.New(&SStretchVBoxLayout{Width: WindowWidth, Height: height, ObjectToStertch: wsEntries}, fc1, wsEntries, wlError)
 
 	return fc2
 }
 
-func DisplayTheError(err error, wlError *widget.Label) {
+func FDisplayTheError(err error, wlError *widget.Label) {
 	if err != nil {
 		wlError.SetText(err.Error())
 	} else {
@@ -163,7 +163,7 @@ func DisplayTheError(err error, wlError *widget.Label) {
 	}
 }
 
-func FcEntryInfo(label string) *fyne.Container {
+func FFcEntryInfo(label string) *fyne.Container {
 	wc := widget.NewCheck("", nil)
 	wc.Resize(fyne.NewSize(10, height))
 	we := widget.NewEntry()
@@ -173,10 +173,10 @@ func FcEntryInfo(label string) *fyne.Container {
 		we.SetText("")
 	})
 	wb.Resize(fyne.NewSize(10, height))
-	return container.New(&PercentageHBoxLayout{Width: WindowWidth, Height: height}, wc, we, wb)
+	return container.New(&TPercentageHBoxLayout{Width: WindowWidth, Height: height}, wc, we, wb)
 }
 
-func ClearEntries(isChecked bool) {
+func FClearEntries(isChecked bool) {
 	for k1, v1 := range fcEntries.Objects {
 		if k1 == 3 {
 			break
@@ -189,23 +189,23 @@ func ClearEntries(isChecked bool) {
 	k1 := 3
 	for k1 < len(fcEntries.Objects) {
 		if fcEntries.Objects[k1].(*fyne.Container).Objects[0].(*widget.Check).Checked == isChecked {
-			fcEntries.Objects = Remove(fcEntries.Objects, k1)
+			fcEntries.Objects = FRemove(fcEntries.Objects, k1)
 		} else {
 			k1++
 		}
 	}
 }
 
-func SaveEntries(insert bool) ([]APQB, error) {
-	entryInfo := EntryInfo{
+func FSaveEntries(insert bool) ([]SAPQB, error) {
+	entryInfo := SEntryInfo{
 		Notes:               fcEntries.Objects[0].(*fyne.Container).Objects[1].(*widget.Entry).Text,
 		Name:                fcEntries.Objects[1].(*fyne.Container).Objects[1].(*widget.Entry).Text,
 		TypeOfCompoundEntry: fcEntries.Objects[2].(*fyne.Container).Objects[1].(*widget.Entry).Text,
 	}
 
-	var entries []APQB
+	var entries []SAPQB
 	for _, v1 := range fcEntries.Objects[3:] {
-		entries = append(entries, APQB{
+		entries = append(entries, SAPQB{
 			Name: v1.(*fyne.Container).Objects[1].(*widget.Select).Selected,
 			// Price:    v1.(*fyne.Container).Objects[3].(*widget.Label).Text,
 			// Quantity: v1.(*fyne.Container).Objects[4].(*widget.Label).Text,
@@ -213,5 +213,5 @@ func SaveEntries(insert bool) ([]APQB, error) {
 		})
 	}
 
-	return SimpleJournalEntry(entries, entryInfo, insert)
+	return FSimpleJournalEntry(entries, entryInfo, insert)
 }

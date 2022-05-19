@@ -5,72 +5,72 @@ import (
 	"math"
 )
 
-func CalculateCvpMap(cvp map[string]map[string]float64, print, checkIfKeysInTheEquations bool) {
+func FCalculateCvpMap(cvp map[string]map[string]float64, print, checkIfKeysInTheEquations bool) {
 	for _, v1 := range cvp {
-		CostVolumeProfit(print, checkIfKeysInTheEquations, v1)
-		_, okVariableCostPerUnits := v1[VariableCostPerUnits]
+		FCostVolumeProfit1(print, checkIfKeysInTheEquations, v1)
+		_, okVariableCostPerUnits := v1[CVariableCostPerUnits]
 		if !okVariableCostPerUnits {
-			v1[VariableCostPerUnits] = 0
-			CostVolumeProfit(print, false, v1)
+			v1[CVariableCostPerUnits] = 0
+			FCostVolumeProfit1(print, false, v1)
 		}
-		_, okFixedCost := v1[FixedCost]
+		_, okFixedCost := v1[CFixedCost]
 		if !okFixedCost {
-			v1[FixedCost] = 0
-			CostVolumeProfit(print, false, v1)
+			v1[CFixedCost] = 0
+			FCostVolumeProfit1(print, false, v1)
 		}
-		_, okSalesPerUnits := v1[SalesPerUnits]
+		_, okSalesPerUnits := v1[CSalesPerUnits]
 		if !okSalesPerUnits {
-			v1[SalesPerUnits] = 0
-			CostVolumeProfit(print, false, v1)
+			v1[CSalesPerUnits] = 0
+			FCostVolumeProfit1(print, false, v1)
 		}
-		_, okUnits := v1[Units]
+		_, okUnits := v1[CUnits]
 		if !okUnits {
-			v1[Units] = 0
-			CostVolumeProfit(print, false, v1)
+			v1[CUnits] = 0
+			FCostVolumeProfit1(print, false, v1)
 		}
 	}
 }
 
-func CostVolumeProfit(print, checkIfKeysInTheEquations bool, m map[string]float64) {
+func FCostVolumeProfit1(print, checkIfKeysInTheEquations bool, m map[string]float64) {
 	equations := [][]string{
-		{VariableCost, VariableCostPerUnits, "*", "units"},
-		{FixedCost, FixedCostPerUnits, "*", Units},
-		{MixedCost, MixedCostPerUnits, "*", Units},
-		{Sales, SalesPerUnits, "*", Units},
-		{Profit, ProfitPerUnits, "*", Units},
-		{ContributionMargin, ContributionMarginPerUnits, "*", Units},
-		{MixedCost, FixedCost, "+", VariableCost},
-		{Sales, Profit, "+", MixedCost},
-		{ContributionMargin, Sales, "-", VariableCost},
-		{BreakEvenInSales, BreakEvenInUnits, "*", SalesPerUnits},
-		{BreakEvenInUnits, ContributionMarginPerUnits, "/", FixedCost},
-		{ContributionMarginPerUnits, ContributionMarginRatio, "*", SalesPerUnits},
-		{ContributionMargin, DegreeOfOperatingLeverage, "*", Profit},
-		{UnitsGap, Units, "-", ActualUnits},
+		{CVariableCost, CVariableCostPerUnits, "*", "units"},
+		{CFixedCost, CFixedCostPerUnits, "*", CUnits},
+		{CMixedCost, CMixedCostPerUnits, "*", CUnits},
+		{CSales, CSalesPerUnits, "*", CUnits},
+		{CProfit, CProfitPerUnits, "*", CUnits},
+		{CContributionMargin, CContributionMarginPerUnits, "*", CUnits},
+		{CMixedCost, CFixedCost, "+", CVariableCost},
+		{CSales, CProfit, "+", CMixedCost},
+		{CContributionMargin, CSales, "-", CVariableCost},
+		{CBreakEvenInSales, CBreakEvenInUnits, "*", CSalesPerUnits},
+		{CBreakEvenInUnits, CContributionMarginPerUnits, "/", CFixedCost},
+		{CContributionMarginPerUnits, CContributionMarginRatio, "*", CSalesPerUnits},
+		{CContributionMargin, CDegreeOfOperatingLeverage, "*", CProfit},
+		{CUnitsGap, CUnits, "-", CActualUnits},
 	}
-	EquationsSolver(print, checkIfKeysInTheEquations, m, equations)
+	FEquationsSolver(print, checkIfKeysInTheEquations, m, equations)
 }
 
-func MixCostVolumeProfit(print, checkIfKeysInTheEquations bool, m map[string]map[string]float64) {
+func FMixCostVolumeProfit(print, checkIfKeysInTheEquations bool, m map[string]map[string]float64) {
 	var units, sales, variableCost, fixedCost float64
 	for _, v1 := range m {
-		units += v1[Units]
-		sales += v1[Sales]
-		variableCost += v1[VariableCost]
-		fixedCost += v1[FixedCost]
+		units += v1[CUnits]
+		sales += v1[CSales]
+		variableCost += v1[CVariableCost]
+		fixedCost += v1[CFixedCost]
 	}
-	m[Total] = map[string]float64{"units": units, "sales": sales, "variableCost": variableCost, "fixedCost": fixedCost}
-	CostVolumeProfit(print, false, m[Total])
+	m[CTotal] = map[string]float64{"units": units, "sales": sales, "variableCost": variableCost, "fixedCost": fixedCost}
+	FCostVolumeProfit1(print, false, m[CTotal])
 }
 
-func CostVolumeProfitSlice(cvp map[string]map[string]float64, distributionSteps []OneStepDistribution, print, simple bool) {
-	CalculateCvpMap(cvp, print, true)
+func FCostVolumeProfitSlice(cvp map[string]map[string]float64, distributionSteps []SOneStepDistribution, print, simple bool) {
+	FCalculateCvpMap(cvp, print, true)
 	for _, v1 := range distributionSteps {
 		var totalMixedCost, totalPortionsTo, totalColumnToDistribute float64
 		if simple {
 			totalMixedCost = v1.Amount
 		} else {
-			totalMixedCost = TotalMixedCostInComplicatedAndMultiLevelStep(cvp, v1, totalMixedCost)
+			totalMixedCost = FTotalMixedCostInComplicatedAndMultiLevelStep(cvp, v1, totalMixedCost)
 		}
 		for k2, v2 := range v1.To {
 			totalPortionsTo += v2
@@ -79,62 +79,62 @@ func CostVolumeProfitSlice(cvp map[string]map[string]float64, distributionSteps 
 		for k2, v2 := range v1.To {
 			var totalOverheadCostToSum float64
 			switch v1.DistributionMethod {
-			case UnitsGap:
-				totalOverheadCostToSum = cvp[k2][UnitsGap] * cvp[k2][VariableCostPerUnits]
-				cvp[k2][Units] -= cvp[k2][UnitsGap]
-				cvp[k2][UnitsGap] = 0
+			case CUnitsGap:
+				totalOverheadCostToSum = cvp[k2][CUnitsGap] * cvp[k2][CVariableCostPerUnits]
+				cvp[k2][CUnits] -= cvp[k2][CUnitsGap]
+				cvp[k2][CUnitsGap] = 0
 			case "1":
 				totalOverheadCostToSum = totalMixedCost
-			case Portions:
+			case CPortions:
 				totalOverheadCostToSum = v2 / totalPortionsTo * totalMixedCost
-			case Units:
-				totalOverheadCostToSum = cvp[k2][Units] / totalColumnToDistribute * totalMixedCost
-			case VariableCost:
-				totalOverheadCostToSum = cvp[k2][VariableCost] / totalColumnToDistribute * totalMixedCost
-			case FixedCost:
-				totalOverheadCostToSum = cvp[k2][FixedCost] / totalColumnToDistribute * totalMixedCost
-			case MixedCost:
-				totalOverheadCostToSum = cvp[k2][MixedCost] / totalColumnToDistribute * totalMixedCost
-			case Sales:
-				totalOverheadCostToSum = cvp[k2][Sales] / totalColumnToDistribute * totalMixedCost
-			case Profit:
-				totalOverheadCostToSum = cvp[k2][Profit] / totalColumnToDistribute * totalMixedCost
-			case ContributionMargin:
-				totalOverheadCostToSum = cvp[k2][ContributionMargin] / totalColumnToDistribute * totalMixedCost
-			case PercentFromVariableCost:
-				totalOverheadCostToSum = cvp[k2][VariableCost] * v2
-			case PercentFromFixedCost:
-				totalOverheadCostToSum = cvp[k2][FixedCost] * v2
-			case PercentFromMixedCost:
-				totalOverheadCostToSum = cvp[k2][MixedCost] * v2
-			case PercentFromSales:
-				totalOverheadCostToSum = cvp[k2][Sales] * v2
-			case PercentFromProfit:
-				totalOverheadCostToSum = cvp[k2][Profit] * v2
-			case PercentFromContributionMargin:
-				totalOverheadCostToSum = cvp[k2][ContributionMargin] * v2
+			case CUnits:
+				totalOverheadCostToSum = cvp[k2][CUnits] / totalColumnToDistribute * totalMixedCost
+			case CVariableCost:
+				totalOverheadCostToSum = cvp[k2][CVariableCost] / totalColumnToDistribute * totalMixedCost
+			case CFixedCost:
+				totalOverheadCostToSum = cvp[k2][CFixedCost] / totalColumnToDistribute * totalMixedCost
+			case CMixedCost:
+				totalOverheadCostToSum = cvp[k2][CMixedCost] / totalColumnToDistribute * totalMixedCost
+			case CSales:
+				totalOverheadCostToSum = cvp[k2][CSales] / totalColumnToDistribute * totalMixedCost
+			case CProfit:
+				totalOverheadCostToSum = cvp[k2][CProfit] / totalColumnToDistribute * totalMixedCost
+			case CContributionMargin:
+				totalOverheadCostToSum = cvp[k2][CContributionMargin] / totalColumnToDistribute * totalMixedCost
+			case CPercentFromVariableCost:
+				totalOverheadCostToSum = cvp[k2][CVariableCost] * v2
+			case CPercentFromFixedCost:
+				totalOverheadCostToSum = cvp[k2][CFixedCost] * v2
+			case CPercentFromMixedCost:
+				totalOverheadCostToSum = cvp[k2][CMixedCost] * v2
+			case CPercentFromSales:
+				totalOverheadCostToSum = cvp[k2][CSales] * v2
+			case CPercentFromProfit:
+				totalOverheadCostToSum = cvp[k2][CProfit] * v2
+			case CPercentFromContributionMargin:
+				totalOverheadCostToSum = cvp[k2][CContributionMargin] * v2
 			default:
 				totalOverheadCostToSum = float64(len(v1.To)) * totalMixedCost
 			}
 			switch v1.SalesOrVariableOrFixed {
-			case VariableCost:
-				cvp[k2][VariableCostPerUnits] = ((cvp[k2][VariableCostPerUnits] * cvp[k2][Units]) + totalOverheadCostToSum) / cvp[k2][Units]
-			case FixedCost:
-				cvp[k2][FixedCost] += totalOverheadCostToSum
+			case CVariableCost:
+				cvp[k2][CVariableCostPerUnits] = ((cvp[k2][CVariableCostPerUnits] * cvp[k2][CUnits]) + totalOverheadCostToSum) / cvp[k2][CUnits]
+			case CFixedCost:
+				cvp[k2][CFixedCost] += totalOverheadCostToSum
 			default:
-				cvp[k2][SalesPerUnits] = ((cvp[k2][SalesPerUnits] * cvp[k2][Units]) - totalOverheadCostToSum) / cvp[k2][Units]
+				cvp[k2][CSalesPerUnits] = ((cvp[k2][CSalesPerUnits] * cvp[k2][CUnits]) - totalOverheadCostToSum) / cvp[k2][CUnits]
 			}
 			for k3, v3 := range cvp {
-				cvp[k3] = map[string]float64{"units_gap": v3[UnitsGap], "units": v3[Units],
-					"sales_per_units": v3[SalesPerUnits], VariableCostPerUnits: v3[VariableCostPerUnits], "fixedCost": v3[FixedCost]}
+				cvp[k3] = map[string]float64{"units_gap": v3[CUnitsGap], "units": v3[CUnits],
+					"sales_per_units": v3[CSalesPerUnits], CVariableCostPerUnits: v3[CVariableCostPerUnits], "fixedCost": v3[CFixedCost]}
 			}
-			CalculateCvpMap(cvp, print, false)
+			FCalculateCvpMap(cvp, print, false)
 		}
 	}
-	TotalCostVolumeProfit(cvp, print)
+	FTotalCostVolumeProfit(cvp, print)
 }
 
-func LaborCost(print, checkIfKeysInTheEquations bool, m map[string]float64) {
+func FLaborCost(print, checkIfKeysInTheEquations bool, m map[string]float64) {
 	equations := [][]string{
 		{"overtime_wage_rate", "bonus_percentage", "*", "hourly_wage_rate"},
 
@@ -145,10 +145,10 @@ func LaborCost(print, checkIfKeysInTheEquations bool, m map[string]float64) {
 		{"normal_lost_time_wage", "normal_lost_time_hours", "*", "hourly_wage_rate"},
 		{"abnormal_lost_time_wage", "abnormal_lost_time_hours", "*", "hourly_wage_rate"},
 	}
-	EquationsSolver(print, checkIfKeysInTheEquations, m, equations)
+	FEquationsSolver(print, checkIfKeysInTheEquations, m, equations)
 }
 
-func ProcessCosting(print, checkIfKeysInTheEquations bool, m map[string]float64) {
+func FProcessCosting(print, checkIfKeysInTheEquations bool, m map[string]float64) {
 	equations := [][]string{
 		{"increase_or_decrease", "increase", "-", "decrease"},
 		{"increase_or_decrease", "ending_balance", "-", "beginning_balance"},
@@ -162,52 +162,52 @@ func ProcessCosting(print, checkIfKeysInTheEquations bool, m map[string]float64)
 		{"equivalent_units_to_complete_beginning_work_in_process_inventory", "equivalent_units_in_beginning_work_in_process_inventory", "*", "percentage_completion_minus_one"},
 		{"cost_per_equivalent_unit_Fifo_method", "cost_added_during_the_period", "/", "equivalent_units_of_production_Fifo_method"},
 	}
-	EquationsSolver(print, checkIfKeysInTheEquations, m, equations)
+	FEquationsSolver(print, checkIfKeysInTheEquations, m, equations)
 }
 
-func TotalCostVolumeProfit(cvp map[string]map[string]float64, print bool) {
+func FTotalCostVolumeProfit(cvp map[string]map[string]float64, print bool) {
 	var units, sales, variableCost, fixedCost float64
 	for k1, v1 := range cvp {
 		if k1 != "total" {
-			units += v1[Units]
-			sales += v1[Sales]
-			variableCost += v1[VariableCost]
-			fixedCost += v1[FixedCost]
+			units += v1[CUnits]
+			sales += v1[CSales]
+			variableCost += v1[CVariableCost]
+			fixedCost += v1[CFixedCost]
 		}
 	}
-	cvp[Total] = map[string]float64{Units: units, Sales: sales, VariableCost: variableCost, FixedCost: fixedCost}
-	CostVolumeProfit(print, false, cvp[Total])
+	cvp[CTotal] = map[string]float64{CUnits: units, CSales: sales, CVariableCost: variableCost, CFixedCost: fixedCost}
+	FCostVolumeProfit1(print, false, cvp[CTotal])
 }
 
-func TotalMixedCostInComplicatedAndMultiLevelStep(cvp map[string]map[string]float64, step OneStepDistribution, totalMixedCost float64) float64 {
+func FTotalMixedCostInComplicatedAndMultiLevelStep(cvp map[string]map[string]float64, step SOneStepDistribution, totalMixedCost float64) float64 {
 	for k1, v1 := range step.From {
-		if cvp[k1][Units] < v1 {
-			log.Panic(v1, " for ", k1, " in ", step.From, " is more than ", cvp[k1][Units])
+		if cvp[k1][CUnits] < v1 {
+			log.Panic(v1, " for ", k1, " in ", step.From, " is more than ", cvp[k1][CUnits])
 		}
-		totalMixedCost += v1 * cvp[k1][MixedCostPerUnits]
-		cvp[k1][FixedCost] -= (cvp[k1][FixedCost] / cvp[k1][Units]) * v1
-		cvp[k1][Units] -= v1
-		if cvp[k1][Units] == 0 {
-			cvp[k1][VariableCostPerUnits] = 0
+		totalMixedCost += v1 * cvp[k1][CMixedCostPerUnits]
+		cvp[k1][CFixedCost] -= (cvp[k1][CFixedCost] / cvp[k1][CUnits]) * v1
+		cvp[k1][CUnits] -= v1
+		if cvp[k1][CUnits] == 0 {
+			cvp[k1][CVariableCostPerUnits] = 0
 		}
 	}
 	return totalMixedCost
 }
 
-func FCostVolumeProfit(units, salesPerUnit float64, variableCosts, fixedCosts []APQ) (Cvp, Cvp, []AVQ, []AVQ) {
-	var a []AVQ
+func FCostVolumeProfit2(units, salesPerUnit float64, variableCosts, fixedCosts []SAPQ) (SCvp, SCvp, []SAVQ, []SAVQ) {
+	var a []SAVQ
 	var variableCost float64
-	variableCost, a = SetCostAndAVQ(variableCosts, units, variableCost, a)
-	var b []AVQ
+	variableCost, a = FSetCostAndAVQ(variableCosts, units, variableCost, a)
+	var b []SAVQ
 	var fixedCost float64
-	fixedCost, b = SetCostAndAVQ(fixedCosts, units, fixedCost, b)
+	fixedCost, b = FSetCostAndAVQ(fixedCosts, units, fixedCost, b)
 
 	sales := salesPerUnit * units
 	mixedCost := fixedCost + variableCost
 	profit := sales - mixedCost
 	contributionMargin := sales - variableCost
 
-	o1 := Cvp{
+	o1 := SCvp{
 		VariableCost:       variableCost,
 		FixedCost:          fixedCost,
 		MixedCost:          mixedCost,
@@ -216,7 +216,7 @@ func FCostVolumeProfit(units, salesPerUnit float64, variableCosts, fixedCosts []
 		ContributionMargin: contributionMargin,
 	}
 
-	perUint := Cvp{
+	perUint := SCvp{
 		VariableCost:       variableCost / units,
 		FixedCost:          fixedCost / units,
 		MixedCost:          mixedCost / units,
@@ -228,7 +228,7 @@ func FCostVolumeProfit(units, salesPerUnit float64, variableCosts, fixedCosts []
 	return o1, perUint, a, b
 }
 
-func SetCostAndAVQ(variableCosts []APQ, units float64, variableCost float64, a []AVQ) (float64, []AVQ) {
+func FSetCostAndAVQ(variableCosts []SAPQ, units float64, variableCost float64, a []SAVQ) (float64, []SAVQ) {
 	for _, v1 := range variableCosts {
 		if v1.Quantity == 0 {
 			continue
@@ -236,7 +236,7 @@ func SetCostAndAVQ(variableCosts []APQ, units float64, variableCost float64, a [
 		x := math.Ceil(units / v1.Quantity)
 		variableCost += x * v1.Price
 
-		a = append(a, AVQ{
+		a = append(a, SAVQ{
 			Name:     v1.Name,
 			Value:    x * v1.Price,
 			Quantity: x,

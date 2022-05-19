@@ -6,28 +6,28 @@ import (
 
 func TestMixCostVolumeProfit(t *testing.T) {
 	a1 := map[string]map[string]float64{
-		"book":  {Units: 10, Sales: 500, FixedCost: 250, VariableCost: 3},
-		"book1": {Units: 10, Sales: 500, FixedCost: 250, VariableCost: 3},
-		"book2": {Units: 10, Sales: 500, FixedCost: 250, VariableCost: 3},
-		"book3": {Units: 10, Sales: 500, FixedCost: 250, VariableCost: 3},
+		"book":  {CUnits: 10, CSales: 500, CFixedCost: 250, CVariableCost: 3},
+		"book1": {CUnits: 10, CSales: 500, CFixedCost: 250, CVariableCost: 3},
+		"book2": {CUnits: 10, CSales: 500, CFixedCost: 250, CVariableCost: 3},
+		"book3": {CUnits: 10, CSales: 500, CFixedCost: 250, CVariableCost: 3},
 	}
-	MixCostVolumeProfit(true, true, a1)
-	PrintMap2(a1)
+	FMixCostVolumeProfit(true, true, a1)
+	FPrintMap2(a1)
 }
 
 func TestFCostVolumeProfit(t *testing.T) {
-	a1, a2, a3, a4 := FCostVolumeProfit(1200, 12000, []APQ{
+	a1, a2, a3, a4 := FCostVolumeProfit2(1200, 12000, []SAPQ{
 		{"a", 250, 1},
 		{"b", 500, 1},
 		{"c", 300, 1},
 		{"d", 8000, 100},
-	}, []APQ{
+	}, []SAPQ{
 		{"e", 500000, 1000},
 		{"f", 700000, 600},
 	})
 
-	PrintCvp(a1)
-	PrintCvp(a2)
-	PrintSlice(a3)
-	PrintSlice(a4)
+	FPrintCvp(a1)
+	FPrintCvp(a2)
+	FPrintSlice(a3)
+	FPrintSlice(a4)
 }

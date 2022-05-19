@@ -7,36 +7,36 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type PercentageHBoxLayout fyne.Size
-type PercentageVBoxLayout fyne.Size
-type StretchHBoxLayout struct {
+type TPercentageHBoxLayout fyne.Size
+type TPercentageVBoxLayout fyne.Size
+type SStretchHBoxLayout struct {
 	Width           float32
 	Height          float32
 	ObjectToStertch fyne.CanvasObject
 }
-type StretchVBoxLayout struct {
+type SStretchVBoxLayout struct {
 	Width           float32
 	Height          float32
 	ObjectToStertch fyne.CanvasObject
 }
 
-func (s *PercentageHBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
+func (s *TPercentageHBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.Size{Width: s.Width, Height: s.Height}
 }
 
-func (s *PercentageVBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
+func (s *TPercentageVBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.Size{Width: s.Width, Height: s.Height}
 }
 
-func (s *StretchHBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
+func (s *SStretchHBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.Size{Width: s.Width, Height: s.Height}
 }
 
-func (s *StretchVBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
+func (s *SStretchVBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.Size{Width: s.Width, Height: s.Height}
 }
 
-func (s *PercentageHBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+func (s *TPercentageHBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
 	var total float32
 	for _, v1 := range objects {
 		total += v1.Size().Width
@@ -50,7 +50,7 @@ func (s *PercentageHBoxLayout) Layout(objects []fyne.CanvasObject, containerSize
 	}
 }
 
-func (s *PercentageVBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+func (s *TPercentageVBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
 	var total float32
 	for _, v1 := range objects {
 		total += v1.Size().Height
@@ -64,7 +64,7 @@ func (s *PercentageVBoxLayout) Layout(objects []fyne.CanvasObject, containerSize
 	}
 }
 
-func (s *StretchHBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+func (s *SStretchHBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
 	var index int
 	var total float32
 	for k1, v1 := range objects {
@@ -84,7 +84,7 @@ func (s *StretchHBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fy
 	}
 }
 
-func (s *StretchVBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+func (s *SStretchVBoxLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
 	var index int
 	var total float32
 	for k1, v1 := range objects {
@@ -122,9 +122,9 @@ func main2() {
 	b5.Resize(fyne.NewSize(100, 100))
 	b6.Resize(fyne.NewSize(100, 200))
 
-	l1 := container.New(&PercentageHBoxLayout{Width: 50, Height: 80}, b1, b2, b3)
-	l2 := container.New(&PercentageVBoxLayout{Width: 50, Height: 80}, b4, b5, b6)
-	l3 := container.New(&PercentageVBoxLayout{Width: 50, Height: 80}, l1, l2)
+	l1 := container.New(&TPercentageHBoxLayout{Width: 50, Height: 80}, b1, b2, b3)
+	l2 := container.New(&TPercentageVBoxLayout{Width: 50, Height: 80}, b4, b5, b6)
+	l3 := container.New(&TPercentageVBoxLayout{Width: 50, Height: 80}, l1, l2)
 
 	w.SetContent(l3)
 	w.ShowAndRun()
@@ -148,15 +148,15 @@ func main3() {
 	b5.Resize(fyne.NewSize(100, 100))
 	b6.Resize(fyne.NewSize(100, 200))
 
-	l1 := container.New(&StretchHBoxLayout{Width: 50, Height: 80, ObjectToStertch: b2}, b1, b2, b3)
-	l2 := container.New(&StretchVBoxLayout{Width: 50, Height: 80, ObjectToStertch: b5}, b4, b5, b6)
-	l3 := container.New(&PercentageHBoxLayout{Width: 20, Height: 20}, l1, l2)
+	l1 := container.New(&SStretchHBoxLayout{Width: 50, Height: 80, ObjectToStertch: b2}, b1, b2, b3)
+	l2 := container.New(&SStretchVBoxLayout{Width: 50, Height: 80, ObjectToStertch: b5}, b4, b5, b6)
+	l3 := container.New(&TPercentageHBoxLayout{Width: 20, Height: 20}, l1, l2)
 
 	w.SetContent(l3)
 	w.ShowAndRun()
 }
 
-func FindObject(object fyne.CanvasObject, objects []fyne.CanvasObject) (int, bool) {
+func FFindObject(object fyne.CanvasObject, objects []fyne.CanvasObject) (int, bool) {
 	for k1, v1 := range objects {
 		if v1 == object {
 			return k1, true

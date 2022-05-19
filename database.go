@@ -6,21 +6,21 @@ import (
 	badger "github.com/dgraph-io/badger/v3"
 )
 
-func DbClose() {
-	DbAccounts.Close()
-	DbJournal.Close()
-	DbInventory.Close()
-	DbAutoCompletionEntries.Close()
+func FDbClose() {
+	VDbAccounts.Close()
+	VDbJournal.Close()
+	VDbInventory.Close()
+	VDbAutoCompletionEntries.Close()
 }
 
-func DbInsertIntoAccounts() {
-	DbAccounts.DropAll()
-	for _, v1 := range Accounts {
-		DbUpdate(DbAccounts, []byte(v1.Name), v1)
+func FDbInsertIntoAccounts() {
+	VDbAccounts.DropAll()
+	for _, v1 := range VAccounts {
+		FDbUpdate(VDbAccounts, []byte(v1.Name), v1)
 	}
 }
 
-func DbLastLine[t any](db *badger.DB) t {
+func FDbLastLine[t any](db *badger.DB) t {
 	var tag t
 	var str []byte
 	db.View(func(txn *badger.Txn) error {
@@ -40,7 +40,7 @@ func DbLastLine[t any](db *badger.DB) t {
 	return tag
 }
 
-func DbOpen(path string) *badger.DB {
+func FDbOpen(path string) *badger.DB {
 	for {
 		db, err := badger.Open(badger.DefaultOptions(path))
 		if err == nil {
@@ -49,7 +49,7 @@ func DbOpen(path string) *badger.DB {
 	}
 }
 
-func DbRead[t any](db *badger.DB) ([][]byte, []t) {
+func FDbRead[t any](db *badger.DB) ([][]byte, []t) {
 	var VALUEs []t
 	var keys [][]byte
 	db.View(func(txn *badger.Txn) error {
@@ -71,43 +71,43 @@ func DbRead[t any](db *badger.DB) ([][]byte, []t) {
 	return keys, VALUEs
 }
 
-func DbDelete(db *badger.DB, key []byte) {
+func FDbDelete(db *badger.DB, key []byte) {
 	db.Update(func(txn *badger.Txn) error {
 		return txn.Delete(key)
 	})
 }
 
-func DbUpdate[t any](db *badger.DB, key []byte, Value t) {
+func FDbUpdate[t any](db *badger.DB, key []byte, Value t) {
 	txn := db.NewTransaction(true)
 	defer txn.Commit()
 	jsonValue, _ := json.Marshal(Value)
 	txn.Set(key, jsonValue)
 }
 
-func ChangeAccountName(old, new string) {
-	keys, journal := DbRead[Journal](DbJournal)
+func FChangeAccountName(old, new string) {
+	keys, journal := FDbRead[SJournal](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.AccountCredit == old {
 			v1.AccountCredit = new
-			DbUpdate(DbJournal, keys[k1], v1)
+			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 		if v1.AccountDebit == old {
 			v1.AccountDebit = new
-			DbUpdate(DbJournal, keys[k1], v1)
+			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
-	keys, inventory := DbRead[APQ](DbInventory)
+	keys, inventory := FDbRead[SAPQ](VDbInventory)
 	for k1, v1 := range inventory {
 		if v1.Name == old {
 			v1.Name = new
-			DbUpdate(DbJournal, keys[k1], v1)
+			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
 }
 
-func WeightedAverage(account string) {
+func FWeightedAverage(account string) {
 	var totalValue, totalQuantity float64
-	_, journal := DbRead[Journal](DbJournal)
+	_, journal := FDbRead[SJournal](VDbJournal)
 	for _, v1 := range journal {
 		if v1.AccountCredit == account {
 			totalValue += v1.Value
@@ -119,54 +119,54 @@ func WeightedAverage(account string) {
 		}
 	}
 
-	keys, inventory := DbRead[APQ](DbInventory)
+	keys, inventory := FDbRead[SAPQ](VDbInventory)
 	for k1, v1 := range inventory {
 		if v1.Name == account {
-			DbDelete(DbInventory, keys[k1])
+			FDbDelete(VDbInventory, keys[k1])
 		}
 	}
 
-	DbUpdate(DbInventory, Now(), APQ{account, Abs(totalValue / totalQuantity), Abs(totalQuantity)})
+	FDbUpdate(VDbInventory, FNow(), SAPQ{account, FAbs(totalValue / totalQuantity), FAbs(totalQuantity)})
 }
 
-func ChangeNotes(old, new string) {
-	keys, journal := DbRead[Journal](DbJournal)
+func FChangeNotes(old, new string) {
+	keys, journal := FDbRead[SJournal](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.Notes == old {
 			v1.Notes = new
-			DbUpdate(DbJournal, keys[k1], v1)
+			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
 }
 
-func ChangeName(old, new string) {
-	keys, journal := DbRead[Journal](DbJournal)
+func FChangeName(old, new string) {
+	keys, journal := FDbRead[SJournal](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.Name == old {
 			v1.Name = new
-			DbUpdate(DbJournal, keys[k1], v1)
+			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
 }
 
-func ChangeTypeOfCompoundEntry(old, new string) {
-	keys, journal := DbRead[Journal](DbJournal)
+func FChangeTypeOfCompoundEntry(old, new string) {
+	keys, journal := FDbRead[SJournal](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.TypeOfCompoundEntry == old {
 			v1.TypeOfCompoundEntry = new
-			DbUpdate(DbJournal, keys[k1], v1)
+			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
 }
 
-func ChangeEntryInfoByEntryNumberCompund(entryNumberCompund int, new EntryInfo) {
-	keys, journal := DbRead[Journal](DbJournal)
+func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund int, new SEntryInfo) {
+	keys, journal := FDbRead[SJournal](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.EntryNumberCompound == entryNumberCompund {
 			v1.Notes = new.Notes
 			v1.Name = new.Name
 			v1.TypeOfCompoundEntry = new.TypeOfCompoundEntry
-			DbUpdate(DbJournal, keys[k1], v1)
+			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
 }
