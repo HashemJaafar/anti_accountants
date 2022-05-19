@@ -56,7 +56,6 @@ func SetPriceAndQuantity(account APQA, insert bool) APQA {
 		return account
 	}
 
-	// i make it this way just to make it faster when using Wma case
 	var keys [][]byte
 	var inventory []APQ
 	switch account.Account.CostFlowType {
@@ -107,7 +106,6 @@ func GroupByAccount(entries []APQA) []APQA {
 			sums = &APQA{}
 			m[key] = sums
 		}
-		// i make this to store the VALUE and then devide it by the Quantity to get the Price
 		sums.Name = v1.Name
 		sums.Price += v1.Price * v1.Quantity //here i store the VALUE in Price field
 		sums.Quantity += v1.Quantity
@@ -326,26 +324,20 @@ func ReverseEntries(entriesKeys [][]byte, entries []Journal, nameEmployee string
 			continue
 		}
 		account, _, _ := FindAccountFromName(v1.AccountCredit)
-		v1.QuantityCredit = FigerTheSignOfNumber(account.IsCredit, true, v1.QuantityCredit)
+		v1.QuantityCredit = ConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, true, v1.QuantityCredit)
 		account, _, _ = FindAccountFromName(v1.AccountDebit)
-		v1.QuantityDebit = FigerTheSignOfNumber(account.IsCredit, false, v1.QuantityDebit)
+		v1.QuantityDebit = ConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, false, v1.QuantityDebit)
 
-		// here i check if the account can be negative by seeing the difference in Quantity after the find the cost in inventory.
-		// because i dont want to make the account negative balance
 		entryCredit := SetPriceAndQuantity(APQA{v1.AccountCredit, v1.PriceCredit, v1.QuantityCredit, Account{IsCredit: false, CostFlowType: Fifo}}, false)
 		entryDebit := SetPriceAndQuantity(APQA{v1.AccountDebit, v1.PriceDebit, v1.QuantityDebit, Account{IsCredit: false, CostFlowType: Fifo}}, false)
 
-		// here i compare the Quantity if it is the same i will reverse the entry
 		if entryCredit.Quantity == v1.QuantityCredit && entryDebit.Quantity == v1.QuantityDebit {
 
-			// here i change the cost flow to Wma just to make outflow from the inventory without error
 			entryCredit.Account.CostFlowType = Wma
 			entryDebit.Account.CostFlowType = Wma
 
-			// here i insert to the inventory
 			InsertToDatabaseInventory([]APQA{entryCredit, entryDebit})
 
-			// i swap the debit and credit with each other but the Quantity after i swap it will be positive
 			v1.PriceCredit, v1.PriceDebit = v1.PriceDebit, v1.PriceCredit
 			v1.QuantityCredit, v1.QuantityDebit = Abs(v1.QuantityDebit), Abs(v1.QuantityCredit)
 			v1.AccountCredit, v1.AccountDebit = v1.AccountDebit, v1.AccountCredit
@@ -356,16 +348,13 @@ func ReverseEntries(entriesKeys [][]byte, entries []Journal, nameEmployee string
 			v1.Notes = "revese entry for entry was entered by " + v1.Employee
 			v1.Employee = nameEmployee
 
-			// here i append the entry to the journal to reverse all in one entry number compound
 			entryToReverse = append(entryToReverse, v1)
 
-			// i make the reverse field in the entry true just to not reverse it again
 			entries[k1].IsReversed = true
 			DbUpdate(DbJournal, entriesKeys[k1], entries[k1])
 		}
 	}
 
-	// and then i insert to database
 	InsertToDatabaseJournal(entryToReverse)
 }
 
@@ -389,7 +378,7 @@ func ConvertJournalToAPQA(entries []Journal) []APQA {
 		newEntries = append(newEntries, APQA{
 			Name:     v1.AccountDebit,
 			Price:    v1.PriceDebit,
-			Quantity: FigerTheSignOfNumber(account.IsCredit, false, v1.QuantityDebit),
+			Quantity: ConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, false, v1.QuantityDebit),
 			Account:  account,
 		})
 
@@ -397,7 +386,7 @@ func ConvertJournalToAPQA(entries []Journal) []APQA {
 		newEntries = append(newEntries, APQA{
 			Name:     v1.AccountCredit,
 			Price:    v1.PriceCredit,
-			Quantity: FigerTheSignOfNumber(account.IsCredit, true, v1.QuantityCredit),
+			Quantity: ConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, true, v1.QuantityCredit),
 			Account:  account,
 		})
 	}
@@ -451,7 +440,6 @@ func JournalFilter(dates []time.Time, journal []Journal, f FilterJournal, isDebi
 	var newDates []time.Time
 	for k1, v1 := range journal {
 
-		// here icheck if the user whant the debit and credit or one of them each time
 		var isTheAccounts bool
 		if isDebitAndCredit {
 			isTheAccounts = f.AccountDebit.Filter(v1.AccountDebit) && f.AccountCredit.Filter(v1.AccountCredit)
@@ -484,7 +472,6 @@ func JournalFilter(dates []time.Time, journal []Journal, f FilterJournal, isDebi
 }
 
 func FindDuplicateElement(dates []time.Time, journal []Journal, f FilterJournalDuplicate) ([]time.Time, []Journal) {
-	// here i make it return the same input if the filter is is all false because that mean i dont want to filter
 	if !f.IsReverse &&
 		!f.IsReversed &&
 		!f.ReverseEntryNumberCompound &&
@@ -554,8 +541,7 @@ func FilterJournalFromReverseEntry(keys [][]byte, journal []Journal) ([][]byte, 
 	return newKeys, newJournal
 }
 
-// FigerTheSignOfNumber if the isCredit is not same as the isCreditInTheEntry of the number then it will return negative else return positive
-func FigerTheSignOfNumber(isCredit, isCreditInTheEntry bool, number float64) float64 {
+func ConvertTheSignOfDoubleEntryToSingleEntry(isCredit, isCreditInTheEntry bool, number float64) float64 {
 	number = math.Abs(number)
 	if isCredit != isCreditInTheEntry {
 		return -number

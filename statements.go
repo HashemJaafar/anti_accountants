@@ -52,8 +52,6 @@ func FinancialStatements(allEndDates []time.Time, periodInDaysBeforeEndDate uint
 }
 
 func StatementStep1(journalTimes []time.Time, journal []Journal, dateStart, dateEnd time.Time) statement1 {
-	// in this function we create the statement map
-
 	newStatement := statement1{}
 	for k1, v1 := range journal {
 		switch {
@@ -166,7 +164,8 @@ func StatementStep4(inNames bool, namesYouWant []string, oldStatement statement1
 							m = InitializeMap6(newStatement, k1, k2, AllNames, k4, k5)
 							m[k6] += v6
 
-							if IsIn(k2, namesYouWant) == inNames {
+							_, isIn := Find(k2, namesYouWant)
+							if isIn == inNames {
 								// here i insert the key word 'Names' in column name
 								m = InitializeMap6(newStatement, k1, k2, Names, k4, k5)
 								m[k6] += v6

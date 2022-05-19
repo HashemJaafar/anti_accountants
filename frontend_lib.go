@@ -20,19 +20,19 @@ type StretchVBoxLayout struct {
 	ObjectToStertch fyne.CanvasObject
 }
 
-func (s *PercentageHBoxLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+func (s *PercentageHBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.Size{Width: s.Width, Height: s.Height}
 }
 
-func (s *PercentageVBoxLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+func (s *PercentageVBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.Size{Width: s.Width, Height: s.Height}
 }
 
-func (s *StretchHBoxLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+func (s *StretchHBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.Size{Width: s.Width, Height: s.Height}
 }
 
-func (s *StretchVBoxLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+func (s *StretchVBoxLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.Size{Width: s.Width, Height: s.Height}
 }
 
@@ -154,4 +154,13 @@ func main3() {
 
 	w.SetContent(l3)
 	w.ShowAndRun()
+}
+
+func FindObject(object fyne.CanvasObject, objects []fyne.CanvasObject) (int, bool) {
+	for k1, v1 := range objects {
+		if v1 == object {
+			return k1, true
+		}
+	}
+	return 0, false
 }

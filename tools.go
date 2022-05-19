@@ -82,13 +82,13 @@ func InitializeMap5[t1, t2, t3, t4, t5 comparable, tr any](m map[t1]map[t2]map[t
 	return m[i1][i2][i3][i4]
 }
 
-func IsIn[t comparable](element t, elements []t) bool {
-	for _, v1 := range elements {
+func Find[t comparable](element t, elements []t) (int, bool) {
+	for k1, v1 := range elements {
 		if v1 == element {
-			return true
+			return k1, true
 		}
 	}
-	return false
+	return 0, false
 }
 
 func IsInfIn(numbers ...float64) bool {
@@ -285,9 +285,11 @@ func (s FilterString) Filter(input string) bool {
 
 	switch s.Way {
 	case InSlice:
-		return IsIn(input, s.Slice)
+		_, isIn := Find(input, s.Slice)
+		return isIn
 	case NotInSlice:
-		return IsIn(input, s.Slice) == false
+		_, isIn := Find(input, s.Slice)
+		return isIn == false
 	case ElementsInElement:
 		return FElementsInElement(input, s.Slice)
 	case ElementsNotInElement:
@@ -329,7 +331,8 @@ func (s FilterSliceUint) Filter(input uint) bool {
 	if !s.IsFilter {
 		return true
 	}
-	return IsIn(input, s.Slice) == s.InSlice
+	_, isIn := Find(input, s.Slice)
+	return isIn == s.InSlice
 }
 
 func (s FilterBool) Filter(input bool) bool {

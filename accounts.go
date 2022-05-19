@@ -9,7 +9,8 @@ import (
 
 func FindAccountFromBarcode(barcode string) (Account, int, error) {
 	for k1, v1 := range Accounts {
-		if IsIn(barcode, v1.Barcode) {
+		_, isIn := Find(barcode, v1.Barcode)
+		if isIn {
 			return v1, k1, nil
 		}
 	}
@@ -127,7 +128,6 @@ func EditAccount(isDelete bool, index int, account Account) {
 	newAccountName := FormatTheString(account.Name)
 	oldAccountName := Accounts[index].Name
 
-	// here i will search for oldAccountName in journal if not used i can delete it or chenge it
 	if !IsUsedInJournal(oldAccountName) {
 		if isDelete {
 			Accounts = Remove(Accounts, index)
@@ -141,8 +141,6 @@ func EditAccount(isDelete bool, index int, account Account) {
 	}
 
 	if oldAccountName != newAccountName && newAccountName != "" {
-		// if the account not used in journal then the account is not used in inventory then
-		// i will search for the account newAccountName in accounts database if it is not used then i can chenge the name
 		_, _, err := FindAccountFromName(newAccountName)
 		if err != nil {
 			ChangeAccountName(oldAccountName, newAccountName)
@@ -206,7 +204,8 @@ func FormatStringSliceToString(a []string) string {
 func IsBarcodesUsed(barcode []string) bool {
 	for _, v1 := range Accounts {
 		for _, v2 := range barcode {
-			if IsIn(v2, v1.Barcode) {
+			_, isIn := Find(v2, v1.Barcode)
+			if isIn {
 				return true
 			}
 		}
@@ -316,7 +315,6 @@ func SetTheAccounts() {
 	maxLen := MaxLenForAccountNumber()
 
 	for k1, v1 := range Accounts {
-		// init the slices
 		Accounts[k1].FathersName = make([][]string, maxLen)
 		Accounts[k1].Number = make([][]uint, maxLen)
 		Accounts[k1].Levels = make([]uint, maxLen)
@@ -327,20 +325,18 @@ func SetTheAccounts() {
 			}
 		}
 
-		// set high level account to permanent
-		// set cost flow type . the cost flow should be used for every low level account
+		_, isIn := Find(v1.CostFlowType, CostFlowType)
 		if !v1.IsLowLevel {
 			Accounts[k1].CostFlowType = ""
-		} else if !IsIn(v1.CostFlowType, CostFlowType) {
+		} else if !isIn {
 			Accounts[k1].CostFlowType = Fifo
 		}
 	}
 
-	// here i set the father and grandpa accounts name
 	for k1 := 0; k1 < maxLen; k1++ {
-		for k2, v2 := range Accounts { // here i loop over account
+		for k2, v2 := range Accounts {
 			if len(v2.Number[k1]) > 1 {
-				for _, v3 := range Accounts { // but here i loop over account to find the father or grandpa account
+				for _, v3 := range Accounts {
 					if len(v3.Number[k1]) > 0 {
 						if IsItSubAccountUsingNumber(v3.Number[k1], v2.Number[k1]) {
 							Accounts[k2].FathersName[k1] = append(Accounts[k2].FathersName[k1], v3.Name)
@@ -351,7 +347,6 @@ func SetTheAccounts() {
 		}
 	}
 
-	// here i sort the accounts by there account number
 	for k1 := range Accounts {
 		for k2 := range Accounts {
 			if k1 < k2 && !IsItHighThanByOrder(Accounts[k1].Number[IndexOfAccountNumber], Accounts[k2].Number[IndexOfAccountNumber]) {

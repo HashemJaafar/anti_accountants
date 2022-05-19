@@ -197,10 +197,10 @@ func TotalMixedCostInComplicatedAndMultiLevelStep(cvp map[string]map[string]floa
 func FCostVolumeProfit(units, salesPerUnit float64, variableCosts, fixedCosts []APQ) (Cvp, Cvp, []AVQ, []AVQ) {
 	var a []AVQ
 	var variableCost float64
-	variableCost, a = newFunction(variableCosts, units, variableCost, a)
+	variableCost, a = SetCostAndAVQ(variableCosts, units, variableCost, a)
 	var b []AVQ
 	var fixedCost float64
-	fixedCost, b = newFunction(fixedCosts, units, fixedCost, b)
+	fixedCost, b = SetCostAndAVQ(fixedCosts, units, fixedCost, b)
 
 	sales := salesPerUnit * units
 	mixedCost := fixedCost + variableCost
@@ -228,7 +228,7 @@ func FCostVolumeProfit(units, salesPerUnit float64, variableCosts, fixedCosts []
 	return o1, perUint, a, b
 }
 
-func newFunction(variableCosts []APQ, units float64, variableCost float64, a []AVQ) (float64, []AVQ) {
+func SetCostAndAVQ(variableCosts []APQ, units float64, variableCost float64, a []AVQ) (float64, []AVQ) {
 	for _, v1 := range variableCosts {
 		if v1.Quantity == 0 {
 			continue

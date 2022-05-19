@@ -15,7 +15,8 @@ func CheckMapKeysForEquations(equations [][]string, m map[string]float64) error 
 	}
 	elements, _ = ReturnSetAndDuplicatesSlices(elements)
 	for k1 := range m {
-		if !IsIn(k1, elements) {
+		_, isIn := Find(k1, elements)
+		if !isIn {
 			return ErrorNotListed
 		}
 	}
@@ -43,7 +44,6 @@ func EquationsGenerator(print bool, m map[string]float64, a, b, sign, c string, 
 		m[c] = cValue
 		PrintEquation(print, m, a, b, sign, c)
 	case oka && okb && okc && math.Round(la*1000)/1000 != math.Round(aValue*1000)/1000 && !IsInfIn(la, lb, lc):
-		// fmt.Errorf(m, a, b, sign, c)
 	}
 }
 

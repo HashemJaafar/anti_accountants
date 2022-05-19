@@ -1,4 +1,3 @@
-//this file created automatically
 package main
 
 import (

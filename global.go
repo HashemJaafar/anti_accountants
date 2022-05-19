@@ -146,10 +146,10 @@ type Number interface{ Integer | float64 | float32 }
 type Integer interface{ int | int64 | uint }
 
 type EntryInfo struct {
-	Notes               string // your nots on the entry
-	Name                string // the name of the dealer or customer
-	Employee            string // the name of the employee that made the entry
-	TypeOfCompoundEntry string // the type of the compound entry like: invoice, payment, receipt
+	Notes               string
+	Name                string
+	Employee            string
+	TypeOfCompoundEntry string
 }
 type APQ struct {
 	Name     string
@@ -168,36 +168,36 @@ type APQA struct {
 	Quantity float64
 	Account  Account
 }
-type Account struct { // 							 	  configer		|change				|correct	|necessary	|is unique
-	IsLowLevel   bool       // manual		|if not in journal	|cant		|yes		|no
-	IsCredit     bool       // manual		|if not in journal	|cant		|yes		|no
-	CostFlowType string     // manual		|manual				|auto		|yes		|no
-	Name         string     // manual		|if not used		|manual		|yes		|yes
-	Notes        string     // manual		|manual				|manual		|no			|no
-	Image        []string   // manual		|manual				|manual		|no			|no
-	Barcode      []string   // manual		|if not used		|manual		|yes		|yes
-	Number       [][]uint   // manual		|manual				|manual		|yes		|yes it should be but we don't inforce you
-	Levels       []uint     // auto			|auto				|auto		|yes		|no
-	FathersName  [][]string // auto			|auto				|auto		|yes		|no
+type Account struct {
+	IsLowLevel   bool
+	IsCredit     bool
+	CostFlowType string
+	Name         string
+	Notes        string
+	Image        []string
+	Barcode      []string
+	Number       [][]uint
+	Levels       []uint
+	FathersName  [][]string
 }
 type Journal struct {
-	IsReverse                  bool    // this is true to the new entry when you enter reverse old entry
-	IsReversed                 bool    // this is true to the old entry when you enter reverse old entry
-	ReverseEntryNumberCompound int     // that mean if this is reverse entry what the entry compound was reversed
-	ReverseEntryNumberSimple   int     // that mean if this is reverse entry what the entry simple was reversed
-	EntryNumberCompound        int     // that mean number entry you made
-	EntryNumberSimple          int     // that mean the index of the simple entry in the you made
-	Value                      float64 // this sould be positive
-	PriceDebit                 float64 // this sould be positive
-	PriceCredit                float64 // this sould be positive
-	QuantityDebit              float64 // this sould be positive
-	QuantityCredit             float64 // this sould be positive
-	AccountDebit               string  // the account name in the debit side
-	AccountCredit              string  // the account name in the credit side
-	Notes                      string  // your nots on the entry
-	Name                       string  // the name of the dealer or customer
-	Employee                   string  // the name of the employee that made the entry
-	TypeOfCompoundEntry        string  // the type of the compound entry like: invoice, payment, receipt
+	IsReverse                  bool
+	IsReversed                 bool
+	ReverseEntryNumberCompound int
+	ReverseEntryNumberSimple   int
+	EntryNumberCompound        int
+	EntryNumberSimple          int
+	Value                      float64
+	PriceDebit                 float64
+	PriceCredit                float64
+	QuantityDebit              float64
+	QuantityCredit             float64
+	AccountDebit               string
+	AccountCredit              string
+	Notes                      string
+	Name                       string
+	Employee                   string
+	TypeOfCompoundEntry        string
 }
 type Statement struct {
 	Account1               account1
@@ -269,9 +269,9 @@ type FilterAccount struct {
 }
 type FilterFathersAccountsName struct {
 	IsFilter      bool
-	InAccountName bool // if name in the father name do you want to include it
+	InAccountName bool
 	InFathersName bool
-	FathersName   []string // here the FathersName
+	FathersName   []string
 }
 type FilterSliceUint struct {
 	IsFilter bool
@@ -280,19 +280,19 @@ type FilterSliceUint struct {
 }
 type FilterDate struct {
 	IsFilter bool
-	Way      string // here you have some method : between, not_between, bigger, smaller, equal_to_one_of_them
+	Way      string
 	Big      time.Time
 	Small    time.Time
 }
 type FilterNumber struct {
 	IsFilter bool
-	Way      string // here you have some method : between, not_between, bigger, smaller, equal_to_one_of_them
+	Way      string
 	Big      float64
 	Small    float64
 }
 type FilterString struct {
 	IsFilter bool
-	Way      string // here you have some method : in_slice, not_in_slice, elements_in_element , elements_not_in_element
+	Way      string
 	Slice    []string
 }
 type FilterBool struct {
@@ -347,10 +347,10 @@ type OneStepDistribution struct {
 	To                     map[string]float64
 }
 type AutoCompletion struct {
-	AccountInvnetory string  // the account name that call the auto completion
-	PriceRevenue     float64 // if it is empty it will be deleted
-	PriceTax         float64 // if it is empty it will be deleted
-	PriceDiscount    []PQ    // if it is empty it will be deleted
+	AccountInvnetory string
+	PriceRevenue     float64
+	PriceTax         float64
+	PriceDiscount    []PQ
 }
 type PQ struct {
 	Price    float64

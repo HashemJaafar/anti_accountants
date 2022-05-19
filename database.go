@@ -106,12 +106,6 @@ func ChangeAccountName(old, new string) {
 }
 
 func WeightedAverage(account string) {
-	// i find the WMA from journal because it is the most accurate way when you enter reverese entry
-	// i store the Value in var total but just to know the total should allways be positive
-	// if it is negative that mean the nature of the account is debit
-	// because i subtruct the debit from the total and sum the credit to the total
-
-	// here i find the sum of the Value and sum of QUANTITY from journal
 	var totalValue, totalQuantity float64
 	_, journal := DbRead[Journal](DbJournal)
 	for _, v1 := range journal {
@@ -125,7 +119,6 @@ func WeightedAverage(account string) {
 		}
 	}
 
-	// here i delete the account from the inventory
 	keys, inventory := DbRead[APQ](DbInventory)
 	for k1, v1 := range inventory {
 		if v1.Name == account {
@@ -133,7 +126,6 @@ func WeightedAverage(account string) {
 		}
 	}
 
-	// here i insert the new account with the new PRICE and sum of the QUANTITY
 	DbUpdate(DbInventory, Now(), APQ{account, Abs(totalValue / totalQuantity), Abs(totalQuantity)})
 }
 
