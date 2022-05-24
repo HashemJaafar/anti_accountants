@@ -7,9 +7,12 @@ import (
 	"text/tabwriter"
 )
 
-func FFindAccountFromBarcode(barcode string) (SAccount, int, error) {
+func FFindAccountFromNameOrBarcode(nameOrBarcode string) (SAccount, int, error) {
 	for k1, v1 := range VAccounts {
-		_, isIn := FFind(barcode, v1.Barcode)
+		if nameOrBarcode == v1.TAccountName {
+			return v1, k1, nil
+		}
+		_, isIn := FFind(nameOrBarcode, v1.TAccountBarcode)
 		if isIn {
 			return v1, k1, nil
 		}
@@ -19,7 +22,7 @@ func FFindAccountFromBarcode(barcode string) (SAccount, int, error) {
 
 func FFindAccountFromName(accountName string) (SAccount, int, error) {
 	for k1, v1 := range VAccounts {
-		if accountName == v1.Name {
+		if accountName == v1.TAccountName {
 			return v1, k1, nil
 		}
 	}
@@ -28,7 +31,7 @@ func FFindAccountFromName(accountName string) (SAccount, int, error) {
 
 func FFindAutoCompletionFromName(accountName string) (SAutoCompletion, int, error) {
 	for k1, v1 := range VAutoCompletionEntries {
-		if accountName == v1.AccountInvnetory {
+		if accountName == v1.TAccountName {
 			return v1, k1, nil
 		}
 	}
@@ -36,15 +39,11 @@ func FFindAutoCompletionFromName(accountName string) (SAutoCompletion, int, erro
 }
 
 func FAddAccount(account SAccount) error {
-	account.Name = FFormatTheString(account.Name)
-	if account.Name == "" {
-		return VErrorAccountNameIsEmpty
-	}
-	_, _, err := FFindAccountFromName(account.Name)
+	_, _, err := FFindAccountFromName(account.TAccountName)
 	if err == nil {
 		return VErrorAccountNameIsUsed
 	}
-	if FIsBarcodesUsed(account.Barcode) {
+	if FIsBarcodesUsed(account.TAccountBarcode) {
 		return VErrorBarcodeIsUsed
 	}
 
@@ -60,10 +59,10 @@ func FCheckIfAccountNumberDuplicated() []error {
 	for k1 := 0; k1 < maxLen; k1++ {
 	big_loop:
 		for k2, v2 := range VAccounts {
-			if len(v2.Number[k1]) > 0 {
+			if len(v2.TAccountNumber[k1]) > 0 {
 				for k3, v3 := range VAccounts {
-					if k2 != k3 && reflect.DeepEqual(v2.Number[k1], v3.Number[k1]) {
-						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", v2.Number[k1], v2))
+					if k2 != k3 && reflect.DeepEqual(v2.TAccountNumber[k1], v3.TAccountNumber[k1]) {
+						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", v2.TAccountNumber[k1], v2))
 						continue big_loop
 					}
 				}
@@ -80,15 +79,15 @@ func FCheckIfLowLevelAccountForAll() []error {
 	for k1 := 1; k1 < maxLen; k1++ {
 	big_loop:
 		for k2, v2 := range VAccounts {
-			if len(v2.Number[k1]) > 0 {
+			if len(v2.TAccountNumber[k1]) > 0 {
 				for _, v3 := range VAccounts {
-					if len(v3.Number[k1]) > 0 {
-						if FIsItSubAccountUsingNumber(v2.Number[k1], v3.Number[k1]) {
+					if len(v3.TAccountNumber[k1]) > 0 {
+						if FIsItSubAccountUsingNumber(v2.TAccountNumber[k1], v3.TAccountNumber[k1]) {
 							continue big_loop
 						}
 					}
 				}
-				if !VAccounts[k2].IsLowLevel {
+				if VAccounts[k2].TCostFlowType != "" {
 					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", VAccounts[k2]))
 				}
 			}
@@ -103,13 +102,13 @@ func FCheckIfTheTreeConnected() []error {
 	for k1 := 0; k1 < maxLen; k1++ {
 	big_loop:
 		for _, v2 := range VAccounts {
-			if len(v2.Number[k1]) > 1 {
+			if len(v2.TAccountNumber[k1]) > 1 {
 				for _, v3 := range VAccounts {
-					if FIsItTheFather(v3.Number[k1], v2.Number[k1]) {
+					if FIsItTheFather(v3.TAccountNumber[k1], v2.TAccountNumber[k1]) {
 						continue big_loop
 					}
 				}
-				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", v2.Number[k1], v2))
+				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", v2.TAccountNumber[k1], v2))
 			}
 		}
 	}
@@ -125,8 +124,8 @@ func FCheckTheTree() []error {
 }
 
 func FEditAccount(isDelete bool, index int, account SAccount) {
-	newAccountName := FFormatTheString(account.Name)
-	oldAccountName := VAccounts[index].Name
+	newAccountName := account.TAccountName
+	oldAccountName := VAccounts[index].TAccountName
 
 	if !FIsUsedInJournal(oldAccountName) {
 		if isDelete {
@@ -136,26 +135,29 @@ func FEditAccount(isDelete bool, index int, account SAccount) {
 			return
 		}
 
-		VAccounts[index].IsLowLevel = account.IsLowLevel
-		VAccounts[index].IsCredit = account.IsCredit
+		VAccounts[index].TCostFlowType = account.TCostFlowType
+		VAccounts[index].TIsCredit = account.TIsCredit
 	}
 
 	if oldAccountName != newAccountName && newAccountName != "" {
 		_, _, err := FFindAccountFromName(newAccountName)
 		if err != nil {
 			FChangeAccountName(oldAccountName, newAccountName)
-			VAccounts[index].Name = newAccountName
+			VAccounts[index].TAccountName = newAccountName
 		}
 	}
 
-	if !FIsBarcodesUsed(account.Barcode) {
-		VAccounts[index].Barcode = account.Barcode
+	if !FIsBarcodesUsed(account.TAccountBarcode) {
+		VAccounts[index].TAccountBarcode = account.TAccountBarcode
 	}
 
-	VAccounts[index].CostFlowType = account.CostFlowType
-	VAccounts[index].Notes = account.Notes
-	VAccounts[index].Image = account.Image
-	VAccounts[index].Number = account.Number
+	_, isIn := FFind(account.TCostFlowType, VCostFlowType)
+	if isIn && VAccounts[index].TCostFlowType != "" {
+		VAccounts[index].TCostFlowType = account.TCostFlowType
+	}
+	VAccounts[index].TAccountNotes = account.TAccountNotes
+	VAccounts[index].TAccountImage = account.TAccountImage
+	VAccounts[index].TAccountNumber = account.TAccountNumber
 
 	FSetTheAccounts()
 	FDbInsertIntoAccounts()
@@ -204,7 +206,7 @@ func FFormatStringSliceToString(a []string) string {
 func FIsBarcodesUsed(barcode []string) bool {
 	for _, v1 := range VAccounts {
 		for _, v2 := range barcode {
-			_, isIn := FFind(v2, v1.Barcode)
+			_, isIn := FFind(v2, v1.TAccountBarcode)
 			if isIn {
 				return true
 			}
@@ -244,7 +246,7 @@ func FIsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumb
 func FIsItSubAccountUsingName(higherLevelAccount, lowerLevelAccount string) bool {
 	a1, _, _ := FFindAccountFromName(higherLevelAccount)
 	a2, _, _ := FFindAccountFromName(lowerLevelAccount)
-	return FIsItSubAccountUsingNumber(a1.Number[VIndexOfAccountNumber], a2.Number[VIndexOfAccountNumber])
+	return FIsItSubAccountUsingNumber(a1.TAccountNumber[VIndexOfAccountNumber], a2.TAccountNumber[VIndexOfAccountNumber])
 }
 
 func FIsItSubAccountUsingNumber(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
@@ -280,7 +282,7 @@ func FMaxLenForAccountNumber() int {
 	var maxLen int
 	for _, v1 := range VAccounts {
 		var length int
-		for _, v2 := range v1.Number {
+		for _, v2 := range v1.TAccountNumber {
 			if len(v2) > 0 {
 				length++
 			}
@@ -295,17 +297,16 @@ func FMaxLenForAccountNumber() int {
 func FPrintFormatedAccounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	for _, v1 := range VAccounts {
-		isLowLevelAccount := v1.IsLowLevel
-		isCredit := "\t," + fmt.Sprint(v1.IsCredit)
-		costFlowType := "\t,\"" + v1.CostFlowType + "\""
-		accountName := "\t,\"" + v1.Name + "\""
-		notes := "\t,\"" + v1.Notes + "\""
-		image := "\t," + FFormatStringSliceToString(v1.Image)
-		barcodes := "\t," + FFormatStringSliceToString(v1.Barcode)
-		accountNumber := "\t," + FFormatSliceOfSliceOfUintToString(v1.Number)
-		accountLevels := "\t," + FFormatSliceOfUintToString(v1.Levels)
-		fathersAccountsName := "\t," + FFormatSliceOfSliceOfStringToString(v1.FathersName)
-		fmt.Fprintln(p, "{", isLowLevelAccount, isCredit, costFlowType, accountName, notes,
+		isCredit := "\t," + fmt.Sprint(v1.TIsCredit)
+		costFlowType := "\t,\"" + v1.TCostFlowType + "\""
+		accountName := "\t,\"" + v1.TAccountName + "\""
+		notes := "\t,\"" + v1.TAccountNotes + "\""
+		image := "\t," + FFormatStringSliceToString(v1.TAccountImage)
+		barcodes := "\t," + FFormatStringSliceToString(v1.TAccountBarcode)
+		accountNumber := "\t," + FFormatSliceOfSliceOfUintToString(v1.TAccountNumber)
+		accountLevels := "\t," + FFormatSliceOfUintToString(v1.TAccountLevels)
+		fathersAccountsName := "\t," + FFormatSliceOfSliceOfStringToString(v1.TAccountFathersName)
+		fmt.Fprintln(p, "{", isCredit, costFlowType, accountName, notes,
 			image, barcodes, accountNumber, accountLevels, fathersAccountsName, "},")
 	}
 	p.Flush()
@@ -315,31 +316,29 @@ func FSetTheAccounts() {
 	maxLen := FMaxLenForAccountNumber()
 
 	for k1, v1 := range VAccounts {
-		VAccounts[k1].FathersName = make([][]string, maxLen)
-		VAccounts[k1].Number = make([][]uint, maxLen)
-		VAccounts[k1].Levels = make([]uint, maxLen)
-		for k2, v2 := range v1.Number {
+		VAccounts[k1].TAccountFathersName = make([][]string, maxLen)
+		VAccounts[k1].TAccountNumber = make([][]uint, maxLen)
+		VAccounts[k1].TAccountLevels = make([]uint, maxLen)
+		for k2, v2 := range v1.TAccountNumber {
 			if k2 < maxLen {
-				VAccounts[k1].Number[k2] = v2
-				VAccounts[k1].Levels[k2] = uint(len(v2))
+				VAccounts[k1].TAccountNumber[k2] = v2
+				VAccounts[k1].TAccountLevels[k2] = uint(len(v2))
 			}
 		}
 
-		_, isIn := FFind(v1.CostFlowType, VCostFlowType)
-		if !v1.IsLowLevel {
-			VAccounts[k1].CostFlowType = ""
-		} else if !isIn {
-			VAccounts[k1].CostFlowType = CFifo
+		_, isIn := FFind(v1.TCostFlowType, VCostFlowType)
+		if !isIn {
+			VAccounts[k1].TCostFlowType = ""
 		}
 	}
 
 	for k1 := 0; k1 < maxLen; k1++ {
 		for k2, v2 := range VAccounts {
-			if len(v2.Number[k1]) > 1 {
+			if len(v2.TAccountNumber[k1]) > 1 {
 				for _, v3 := range VAccounts {
-					if len(v3.Number[k1]) > 0 {
-						if FIsItSubAccountUsingNumber(v3.Number[k1], v2.Number[k1]) {
-							VAccounts[k2].FathersName[k1] = append(VAccounts[k2].FathersName[k1], v3.Name)
+					if len(v3.TAccountNumber[k1]) > 0 {
+						if FIsItSubAccountUsingNumber(v3.TAccountNumber[k1], v2.TAccountNumber[k1]) {
+							VAccounts[k2].TAccountFathersName[k1] = append(VAccounts[k2].TAccountFathersName[k1], v3.TAccountName)
 						}
 					}
 				}
@@ -349,7 +348,7 @@ func FSetTheAccounts() {
 
 	for k1 := range VAccounts {
 		for k2 := range VAccounts {
-			if k1 < k2 && !FIsItHighThanByOrder(VAccounts[k1].Number[VIndexOfAccountNumber], VAccounts[k2].Number[VIndexOfAccountNumber]) {
+			if k1 < k2 && !FIsItHighThanByOrder(VAccounts[k1].TAccountNumber[VIndexOfAccountNumber], VAccounts[k2].TAccountNumber[VIndexOfAccountNumber]) {
 				FSwap(VAccounts, k1, k2)
 			}
 		}
@@ -357,27 +356,27 @@ func FSetTheAccounts() {
 }
 
 func FAddAutoCompletion(a SAutoCompletion) error {
-	account, isExist, err := FAccountTerms(a.AccountInvnetory, true, false)
+	account, isExist, err := FAccountTerms(a.TAccountName, true, false)
 	if isExist && err != nil {
 		return err
 	}
-	accountCost, isExistCost, err := FAccountTerms(CPrefixCost+a.AccountInvnetory, true, false)
+	accountCost, isExistCost, err := FAccountTerms(CPrefixCost+a.TAccountName, true, false)
 	if isExistCost && err != nil {
 		return err
 	}
-	accountDiscount, isExistDiscount, err := FAccountTerms(CPrefixDiscount+a.AccountInvnetory, true, false)
+	accountDiscount, isExistDiscount, err := FAccountTerms(CPrefixDiscount+a.TAccountName, true, false)
 	if isExistDiscount && err != nil {
 		return err
 	}
-	accountTaxExpenses, isExistTaxExpenses, err := FAccountTerms(CPrefixTaxExpenses+a.AccountInvnetory, true, false)
+	accountTaxExpenses, isExistTaxExpenses, err := FAccountTerms(CPrefixTaxExpenses+a.TAccountName, true, false)
 	if isExistTaxExpenses && err != nil {
 		return err
 	}
-	accountTaxLiability, isExistTaxLiability, err := FAccountTerms(CPrefixTaxLiability+a.AccountInvnetory, true, true)
+	accountTaxLiability, isExistTaxLiability, err := FAccountTerms(CPrefixTaxLiability+a.TAccountName, true, true)
 	if isExistTaxLiability && err != nil {
 		return err
 	}
-	accountRevenue, isExistRevenue, err := FAccountTerms(CPrefixRevenue+a.AccountInvnetory, true, true)
+	accountRevenue, isExistRevenue, err := FAccountTerms(CPrefixRevenue+a.TAccountName, true, true)
 	if isExistRevenue && err != nil {
 		return err
 	}
@@ -404,42 +403,41 @@ func FAddAutoCompletion(a SAutoCompletion) error {
 	a.PriceRevenue = FAbs(a.PriceRevenue)
 	a.PriceTax = FAbs(a.PriceTax)
 	for k1, v1 := range a.PriceDiscount {
-		a.PriceDiscount[k1].Price = FAbs(v1.Price)
-		a.PriceDiscount[k1].Quantity = FAbs(v1.Quantity)
+		a.PriceDiscount[k1].TPrice = FAbs(v1.TPrice)
+		a.PriceDiscount[k1].TQuantity = FAbs(v1.TQuantity)
 	}
 
-	FDbUpdate(VDbAutoCompletionEntries, []byte(a.AccountInvnetory), a)
+	FDbUpdate(VDbAutoCompletionEntries, []byte(a.TAccountName), a)
 	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
 
 	return nil
 }
 
 func FAccountTerms(accountName string, isLowLevel, isCredit bool) (SAccount, bool, error) {
-	accountName = FFormatTheString(accountName)
 	account, _, err := FFindAccountFromName(accountName)
-	newAccount := SAccount{IsLowLevel: isLowLevel, IsCredit: isCredit, Name: accountName}
+	newAccount := SAccount{TCostFlowType: CFifo, TIsCredit: isCredit, TAccountName: accountName}
 
 	if err != nil {
 		return newAccount, false, err
 	}
 
 	if isLowLevel {
-		if !account.IsLowLevel {
-			return newAccount, true, fmt.Errorf("(%v) should be Low Level account", account.Name)
+		if account.TCostFlowType == "" {
+			return newAccount, true, fmt.Errorf("(%v) should be Low Level account", account.TAccountName)
 		}
 	} else {
-		if account.IsLowLevel {
-			return newAccount, true, fmt.Errorf("(%v) should not be Low Level account", account.Name)
+		if account.TCostFlowType != "" {
+			return newAccount, true, fmt.Errorf("(%v) should not be Low Level account", account.TAccountName)
 		}
 	}
 
 	if isCredit {
-		if !account.IsCredit {
-			return newAccount, true, fmt.Errorf("(%v) should be credit account", account.Name)
+		if !account.TIsCredit {
+			return newAccount, true, fmt.Errorf("(%v) should be credit account", account.TAccountName)
 		}
 	} else {
-		if account.IsCredit {
-			return newAccount, true, fmt.Errorf("(%v) should not be credit account", account.Name)
+		if account.TIsCredit {
+			return newAccount, true, fmt.Errorf("(%v) should not be credit account", account.TAccountName)
 		}
 	}
 

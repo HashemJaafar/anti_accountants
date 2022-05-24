@@ -37,10 +37,6 @@ func FConvertNanToZero(VALUE float64) float64 {
 	return VALUE
 }
 
-func FFormatTheString(str string) string {
-	return strings.ToLower(strings.Join(strings.Fields(str), " "))
-}
-
 func FInitializeMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr, i1 t1, i2 t2, i3 t3, i4 t4, i5 t5) map[t6]tr {
 	if m == nil {
 		m = map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr{}
@@ -155,7 +151,7 @@ func FSortTime(slice []time.Time, isAscending bool) {
 
 func FSortStatementNumber(slice []SStatmentWithAccount, isAscending bool) {
 	sort.Slice(slice, func(k1, k2 int) bool {
-		return slice[k1].Statment.TNumber > slice[k2].Statment.TNumber == isAscending
+		return slice[k1].SStatement.TNumber > slice[k2].SStatement.TNumber == isAscending
 	})
 }
 
@@ -304,10 +300,9 @@ func (s SFilterAccount) FFilter(account SAccount, err error) bool {
 	}
 
 	return (err != nil) || // here if the account is not listed in the account list like AllAccounts it will show in statment
-		(s.IsLowLevel.FFilter(account.IsLowLevel) &&
-			s.IsCredit.FFilter(account.IsCredit) &&
-			s.FathersName.FFilter(account.Name, account.FathersName[VIndexOfAccountNumber]) &&
-			s.Levels.FFilter(account.Levels[VIndexOfAccountNumber]))
+		(s.IsCredit.FFilter(account.TIsCredit) &&
+			s.FathersName.FFilter(account.TAccountName, account.TAccountFathersName[VIndexOfAccountNumber]) &&
+			s.Levels.FFilter(account.TAccountLevels[VIndexOfAccountNumber]))
 }
 
 func (s SFilterFathersAccountsName) FFilter(accountName string, fathersAccountsNameForAccount []string) bool {
@@ -405,7 +400,7 @@ func FPrintMap2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
 func FPrintStatement(slice []SStatement) {
 	fmt.Fprintln(VPrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "ChangeOrRatioOrBalance", "\t", "Number")
 	for _, v1 := range slice {
-		fmt.Fprintln(VPrintTable, v1.TAccount1, "\t", v1.TAccount2, "\t", v1.TName, "\t", v1.TVpq, "\t", v1.TTypeOfVpq, "\t", v1.TChangeOrRatioOrBalance, "\t", v1.TNumber)
+		fmt.Fprintln(VPrintTable, v1.TAccount1Name, "\t", v1.TAccount2Name, "\t", v1.TPersonName, "\t", v1.TVpq, "\t", v1.TTypeOfVpq, "\t", v1.TChangeOrRatioOrBalance, "\t", v1.TNumber)
 	}
 	VPrintTable.Flush()
 }

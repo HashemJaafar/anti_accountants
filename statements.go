@@ -5,19 +5,7 @@ import (
 	"time"
 )
 
-func FFilterJournalFromReverseEntry(keys [][]byte, journal []SJournal) ([][]byte, []SJournal) {
-	var newKeys [][]byte
-	var newJournal []SJournal
-	for k1, v1 := range journal {
-		if !v1.IsReverse && !v1.IsReversed {
-			newKeys = append(newKeys, keys[k1])
-			newJournal = append(newJournal, v1)
-		}
-	}
-	return newKeys, newJournal
-}
-
-func FStatement(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []TName, inNames, withoutReverseEntry bool) ([]TStatement3, error) {
+func FStatement(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []TPersonName, inNames, withoutReverseEntry bool) ([]TStatement3, error) {
 
 	keys, journal := FDbRead[SJournal](VDbJournal)
 
@@ -25,15 +13,15 @@ func FStatement(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYo
 		keys, journal = FFilterJournalFromReverseEntry(keys, journal)
 	}
 
-	journalTimes := FConvertByteSliceToTime(keys)
+	dates := FConvertByteSliceToTime(keys)
 
 	var statements1 []TStatement2
 	FSortTime(allEndDates, true)
 	for _, v1 := range allEndDates {
-		trailingBalanceSheet := FStatementStep1(journalTimes, journal, v1.AddDate(0, 0, -int(periodInDaysBeforeEndDate)), v1)
+		trailingBalanceSheet := FStatementStep1(dates, journal, v1.AddDate(0, 0, -int(periodInDaysBeforeEndDate)), v1)
 		trailingBalanceSheet = FStatementStep2(trailingBalanceSheet)
 		trailingBalanceSheet = FStatementStep3(trailingBalanceSheet)
-		trailingBalanceSheet = FStatementStep4(inNames, namesYouWant, trailingBalanceSheet)
+		trailingBalanceSheet = FStatementStep4(trailingBalanceSheet, inNames, namesYouWant)
 		statement := FStatementStep5(trailingBalanceSheet)
 		FStatementStep6(periodInDaysBeforeEndDate, statement)
 		FStatementStep7(statement)
@@ -50,13 +38,25 @@ func FStatement(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYo
 	return statements2, nil
 }
 
-func FStatementStep1(journalTimes []time.Time, journal []SJournal, dateStart, dateEnd time.Time) TStatement1 {
+func FFilterJournalFromReverseEntry(keys [][]byte, journal []SJournal) ([][]byte, []SJournal) {
+	var newKeys [][]byte
+	var newJournal []SJournal
+	for k1, v1 := range journal {
+		if !v1.IsReverse && !v1.IsReversed {
+			newKeys = append(newKeys, keys[k1])
+			newJournal = append(newJournal, v1)
+		}
+	}
+	return newKeys, newJournal
+}
+
+func FStatementStep1(dates []time.Time, journal []SJournal, dateStart, dateEnd time.Time) TStatement1 {
 	newStatement := TStatement1{}
 	for k1, v1 := range journal {
 		switch {
-		case journalTimes[k1].Before(dateStart):
+		case dates[k1].Before(dateStart):
 			FFillNewStatement(newStatement, v1, true)
-		case journalTimes[k1].Before(dateEnd):
+		case dates[k1].Before(dateEnd):
 			FFillNewStatement(newStatement, v1, false)
 		default:
 			break
@@ -90,7 +90,7 @@ func FStatementStep2(oldStatement TStatement1) TStatement1 {
 							m[k6] += v6
 
 							if err == nil {
-								for _, v7 := range account.FathersName[VIndexOfAccountNumber] {
+								for _, v7 := range account.TAccountFathersName[VIndexOfAccountNumber] {
 									m = FInitializeMap6(newStatement, v7, k2, k3, k4, k5)
 									m[k6] += v6
 								}
@@ -130,7 +130,7 @@ func FStatementStep3(oldStatement TStatement1) TStatement1 {
 							m = FInitializeMap6(newStatement, k1, CAllAccounts, k3, k4, k5)
 							m[k6] += v6
 
-							for _, v7 := range account.FathersName[VIndexOfAccountNumber] {
+							for _, v7 := range account.TAccountFathersName[VIndexOfAccountNumber] {
 								m = FInitializeMap6(newStatement, k1, v7, k3, k4, k5)
 								m[k6] += v6
 							}
@@ -144,7 +144,7 @@ func FStatementStep3(oldStatement TStatement1) TStatement1 {
 	return newStatement
 }
 
-func FStatementStep4(inNames bool, namesYouWant []string, oldStatement TStatement1) TStatement1 {
+func FStatementStep4(oldStatement TStatement1, inNames bool, namesYouWant []string) TStatement1 {
 	// in this function i insert the key word 'AllNames' and 'Names' in column name
 
 	newStatement := TStatement1{}
@@ -192,7 +192,7 @@ func FStatementStep5(oldStatement TStatement1) TStatement2 {
 						for k6, v6 := range v5 { //is_credit
 							if k5 {
 								// here i insert FlowInBeginning and FlowOutBeginning
-								if accountStruct1.IsCredit == k6 {
+								if accountStruct1.TIsCredit == k6 {
 									m := FInitializeMap5(newStatement, k1, k2, k3, k4)
 									m[CFlowInBeginning] += v6
 								} else {
@@ -201,7 +201,7 @@ func FStatementStep5(oldStatement TStatement1) TStatement2 {
 								}
 							} else {
 								// here i insert FlowInPeriod and FlowOutPeriod
-								if accountStruct1.IsCredit == k6 {
+								if accountStruct1.TIsCredit == k6 {
 									m := FInitializeMap5(newStatement, k1, k2, k3, k4)
 									m[CFlowInPeriod] += v6
 								} else {
@@ -367,7 +367,7 @@ func FStatementFilterByGreedyAlgorithm(oldStatement []SStatmentWithAccount, isPe
 	if isPercent {
 		// here i sum the numbers to find the total amount to calculate the percentage in units
 		for _, v1 := range oldStatement {
-			numberTotal += v1.Statment.TNumber
+			numberTotal += v1.SStatement.TNumber
 		}
 		// here i convert the percent to a units
 		numberTarget = numberTotal * numberTarget
@@ -379,7 +379,7 @@ func FStatementFilterByGreedyAlgorithm(oldStatement []SStatmentWithAccount, isPe
 	for _, v1 := range oldStatement {
 		if numberCurrent < numberTarget {
 			newStatement = append(newStatement, v1)
-			numberCurrent += v1.Statment.TNumber
+			numberCurrent += v1.SStatement.TNumber
 		}
 	}
 	return newStatement
@@ -403,28 +403,28 @@ func FSortByLevel(s []SStatmentWithAccount) []SStatmentWithAccount {
 	for k1 := range s {
 		for k2 := range s {
 			if k1 < k2 &&
-				!FIsItHighThanByOrder(s[k1].Account1.Number[VIndexOfAccountNumber], s[k2].Account1.Number[VIndexOfAccountNumber]) {
+				!FIsItHighThanByOrder(s[k1].Account1.TAccountNumber[VIndexOfAccountNumber], s[k2].Account1.TAccountNumber[VIndexOfAccountNumber]) {
 				FSwap(s, k1, k2) // account1
 
-				if s[k1].Statment.TAccount1 == s[k2].Statment.TAccount1 &&
-					(s[k1].Statment.TAccount2 == CAllAccounts || s[k2].Statment.TAccount2 == CAllAccounts ||
-						!FIsItHighThanByOrder(s[k1].Account2.Number[VIndexOfAccountNumber], s[k2].Account2.Number[VIndexOfAccountNumber])) {
+				if s[k1].SStatement.TAccount1Name == s[k2].SStatement.TAccount1Name &&
+					(s[k1].SStatement.TAccount2Name == CAllAccounts || s[k2].SStatement.TAccount2Name == CAllAccounts ||
+						!FIsItHighThanByOrder(s[k1].Account2.TAccountNumber[VIndexOfAccountNumber], s[k2].Account2.TAccountNumber[VIndexOfAccountNumber])) {
 					FSwap(s, k1, k2) // account2
 
-					if s[k1].Statment.TAccount2 == s[k2].Statment.TAccount2 &&
-						s[k1].Statment.TName > s[k2].Statment.TName {
+					if s[k1].SStatement.TAccount2Name == s[k2].SStatement.TAccount2Name &&
+						s[k1].SStatement.TPersonName > s[k2].SStatement.TPersonName {
 						FSwap(s, k1, k2) // name
 
-						if s[k1].Statment.TName == s[k2].Statment.TName &&
-							s[k1].Statment.TVpq > s[k2].Statment.TVpq {
+						if s[k1].SStatement.TPersonName == s[k2].SStatement.TPersonName &&
+							s[k1].SStatement.TVpq > s[k2].SStatement.TVpq {
 							FSwap(s, k1, k2) // vpq
 
-							if s[k1].Statment.TVpq == s[k2].Statment.TVpq &&
-								s[k1].Statment.TTypeOfVpq > s[k2].Statment.TTypeOfVpq {
+							if s[k1].SStatement.TVpq == s[k2].SStatement.TVpq &&
+								s[k1].SStatement.TTypeOfVpq > s[k2].SStatement.TTypeOfVpq {
 								FSwap(s, k1, k2) // typeOfVpq
 
-								if s[k1].Statment.TTypeOfVpq == s[k2].Statment.TTypeOfVpq &&
-									s[k1].Statment.TChangeOrRatioOrBalance > s[k2].Statment.TChangeOrRatioOrBalance {
+								if s[k1].SStatement.TTypeOfVpq == s[k2].SStatement.TTypeOfVpq &&
+									s[k1].SStatement.TChangeOrRatioOrBalance > s[k2].SStatement.TChangeOrRatioOrBalance {
 									FSwap(s, k1, k2) // ChangeOrRatioOrBalance
 								}
 							}
@@ -439,9 +439,9 @@ func FSortByLevel(s []SStatmentWithAccount) []SStatmentWithAccount {
 
 func FMakeSpaceBeforeAccountInStatementStruct(oldStatement []SStatmentWithAccount) {
 	for k1, v1 := range oldStatement {
-		oldStatement[k1].Statment.TAccount1 = strings.Repeat("  ", int(v1.Account1.Levels[VIndexOfAccountNumber])) + v1.Statment.TAccount1
-		if v1.Statment.TAccount2 != CAllAccounts {
-			oldStatement[k1].Statment.TAccount2 = strings.Repeat("  ", int(v1.Account2.Levels[VIndexOfAccountNumber])) + v1.Statment.TAccount2
+		oldStatement[k1].SStatement.TAccount1Name = strings.Repeat("  ", int(v1.Account1.TAccountLevels[VIndexOfAccountNumber])) + v1.SStatement.TAccount1Name
+		if v1.SStatement.TAccount2Name != CAllAccounts {
+			oldStatement[k1].SStatement.TAccount2Name = strings.Repeat("  ", int(v1.Account2.TAccountLevels[VIndexOfAccountNumber])) + v1.SStatement.TAccount2Name
 		}
 	}
 }
@@ -449,7 +449,7 @@ func FMakeSpaceBeforeAccountInStatementStruct(oldStatement []SStatmentWithAccoun
 func FConvertStatmentWithAccountToFilteredStatement(oldStatement []SStatmentWithAccount) []SStatement {
 	var newStatement []SStatement
 	for _, v1 := range oldStatement {
-		newStatement = append(newStatement, v1.Statment)
+		newStatement = append(newStatement, v1.SStatement)
 	}
 	return newStatement
 }

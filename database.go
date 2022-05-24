@@ -16,7 +16,7 @@ func FDbClose() {
 func FDbInsertIntoAccounts() {
 	VDbAccounts.DropAll()
 	for _, v1 := range VAccounts {
-		FDbUpdate(VDbAccounts, []byte(v1.Name), v1)
+		FDbUpdate(VDbAccounts, []byte(v1.TAccountName), v1)
 	}
 }
 
@@ -50,7 +50,7 @@ func FDbOpen(path string) *badger.DB {
 }
 
 func FDbRead[t any](db *badger.DB) ([][]byte, []t) {
-	var VALUEs []t
+	var Values []t
 	var keys [][]byte
 	db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
@@ -61,14 +61,14 @@ func FDbRead[t any](db *badger.DB) ([][]byte, []t) {
 			item.Value(func(val []byte) error {
 				var Value t
 				json.Unmarshal(val, &Value)
-				VALUEs = append(VALUEs, Value)
+				Values = append(Values, Value)
 				keys = append(keys, item.Key())
 				return nil
 			})
 		}
 		return nil
 	})
-	return keys, VALUEs
+	return keys, Values
 }
 
 func FDbDelete(db *badger.DB, key []byte) {
@@ -98,8 +98,8 @@ func FChangeAccountName(old, new string) {
 	}
 	keys, inventory := FDbRead[SAPQ](VDbInventory)
 	for k1, v1 := range inventory {
-		if v1.Name == old {
-			v1.Name = new
+		if v1.TAccountName == old {
+			v1.TAccountName = new
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
@@ -121,7 +121,7 @@ func FWeightedAverage(account string) {
 
 	keys, inventory := FDbRead[SAPQ](VDbInventory)
 	for k1, v1 := range inventory {
-		if v1.Name == account {
+		if v1.TAccountName == account {
 			FDbDelete(VDbInventory, keys[k1])
 		}
 	}
@@ -159,13 +159,13 @@ func FChangeTypeOfCompoundEntry(old, new string) {
 	}
 }
 
-func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund int, new SEntryInfo) {
+func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund int, new SEntry) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.EntryNumberCompound == entryNumberCompund {
-			v1.Notes = new.Notes
-			v1.Name = new.Name
-			v1.TypeOfCompoundEntry = new.TypeOfCompoundEntry
+			v1.Notes = new.TEntryNotes
+			v1.Name = new.TPersonName
+			v1.TypeOfCompoundEntry = new.TTypeOfCompoundEntry
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}

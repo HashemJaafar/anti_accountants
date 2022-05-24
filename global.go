@@ -109,7 +109,7 @@ var (
 	VEmployeeName         = "hashem"
 	VIndexOfAccountNumber = 0
 	// global accounts
-	VInvoiceDiscount      = FFormatTheString("Invoice PQ")
+	VInvoiceDiscount      = "Invoice PQ"
 	VInvoiceDiscountsList []SPQ
 
 	// pathes
@@ -146,54 +146,54 @@ type INumber interface{ IInteger | float64 | float32 }
 type IInteger interface{ int | int64 | uint }
 
 type (
-	TAccount1               = string
-	TAccount2               = string
-	TName                   = string
+	TAccountName            = string
+	TAccount1Name           = string
+	TAccount2Name           = string
+	TPrice                  = float64
+	TQuantity               = float64
+	TPersonName             = string
 	TVpq                    = string
 	TTypeOfVpq              = string
 	TChangeOrRatioOrBalance = string
 	TIsBeforeDateStart      = bool
 	TIsCredit               = bool
 	TNumber                 = float64
-	TStatement1             = map[TAccount1]map[TAccount2]map[TName]map[TVpq]map[TIsBeforeDateStart]map[TIsCredit]TNumber
-	TStatement2             = map[TAccount1]map[TAccount2]map[TName]map[TVpq]map[TTypeOfVpq]TNumber
-	TStatement3             = map[TAccount1]map[TAccount2]map[TName]map[TVpq]map[TTypeOfVpq]map[TChangeOrRatioOrBalance]TNumber
+	TStatement1             = map[TAccount1Name]map[TAccount2Name]map[TPersonName]map[TVpq]map[TIsBeforeDateStart]map[TIsCredit]TNumber
+	TStatement2             = map[TAccount1Name]map[TAccount2Name]map[TPersonName]map[TVpq]map[TTypeOfVpq]TNumber
+	TStatement3             = map[TAccount1Name]map[TAccount2Name]map[TPersonName]map[TVpq]map[TTypeOfVpq]map[TChangeOrRatioOrBalance]TNumber
 )
 
-type SEntryInfo struct {
-	Notes               string
-	Name                string
-	Employee            string
-	TypeOfCompoundEntry string
+type SEntry struct {
+	TEntryNotes string
+	TPersonName
+	TEmployeeName        string
+	TTypeOfCompoundEntry string
+}
+type SPQ struct {
+	TPrice
+	TQuantity
 }
 type SAPQ struct {
-	Name     string
-	Price    float64
-	Quantity float64
-}
-type SAPQB struct {
-	Name     string
-	Price    float64
-	Quantity float64
-	Barcode  string
+	TAccountName
+	TPrice
+	TQuantity
 }
 type SAPQA struct {
-	Name     string
-	Price    float64
-	Quantity float64
-	Account  SAccount
+	TAccountName
+	TPrice
+	TQuantity
+	SAccount
 }
 type SAccount struct {
-	IsLowLevel   bool
-	IsCredit     bool
-	CostFlowType string
-	Name         string
-	Notes        string
-	Image        []string
-	Barcode      []string
-	Number       [][]uint
-	Levels       []uint
-	FathersName  [][]string
+	TIsCredit           bool
+	TCostFlowType       string
+	TAccountName        string
+	TAccountNotes       string
+	TAccountImage       []string
+	TAccountBarcode     []string
+	TAccountNumber      [][]uint
+	TAccountLevels      []uint
+	TAccountFathersName [][]string
 }
 type SJournal struct {
 	IsReverse                  bool
@@ -215,9 +215,9 @@ type SJournal struct {
 	TypeOfCompoundEntry        string
 }
 type SStatement struct {
-	TAccount1
-	TAccount2
-	TName
+	TAccount1Name
+	TAccount2Name
+	TPersonName
 	TVpq
 	TTypeOfVpq
 	TChangeOrRatioOrBalance
@@ -226,7 +226,7 @@ type SStatement struct {
 type SStatmentWithAccount struct {
 	Account1 SAccount
 	Account2 SAccount
-	Statment SStatement
+	SStatement
 }
 type SFilterStatement struct {
 	Account1               SFilterAccount
@@ -276,7 +276,6 @@ type SFilterJournalDuplicate struct {
 }
 type SFilterAccount struct {
 	IsFilter    bool
-	IsLowLevel  SFilterBool
 	IsCredit    SFilterBool
 	Account     SFilterString
 	FathersName SFilterFathersAccountsName
@@ -362,14 +361,10 @@ type SOneStepDistribution struct {
 	To                     map[string]float64
 }
 type SAutoCompletion struct {
-	AccountInvnetory string
-	PriceRevenue     float64
-	PriceTax         float64
-	PriceDiscount    []SPQ
-}
-type SPQ struct {
-	Price    float64
-	Quantity float64
+	TAccountName  string
+	PriceRevenue  float64
+	PriceTax      float64
+	PriceDiscount []SPQ
 }
 type SCvp struct {
 	VariableCost       float64
@@ -380,7 +375,7 @@ type SCvp struct {
 	ContributionMargin float64
 }
 type SAVQ struct {
-	Name     string
-	Value    float64
-	Quantity float64
+	TAccountName
+	TValue float64
+	TQuantity
 }

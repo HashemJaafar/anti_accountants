@@ -230,16 +230,16 @@ func FCostVolumeProfit2(units, salesPerUnit float64, variableCosts, fixedCosts [
 
 func FSetCostAndAVQ(variableCosts []SAPQ, units float64, variableCost float64, a []SAVQ) (float64, []SAVQ) {
 	for _, v1 := range variableCosts {
-		if v1.Quantity == 0 {
+		if v1.TQuantity == 0 {
 			continue
 		}
-		x := math.Ceil(units / v1.Quantity)
-		variableCost += x * v1.Price
+		x := math.Ceil(units / v1.TQuantity)
+		variableCost += x * v1.TPrice
 
 		a = append(a, SAVQ{
-			Name:     v1.Name,
-			Value:    x * v1.Price,
-			Quantity: x,
+			TAccountName: v1.TAccountName,
+			TValue:       x * v1.TPrice,
+			TQuantity:    x,
 		})
 	}
 	return variableCost, a

@@ -8,10 +8,10 @@ import (
 
 func TestAccountStructFromBarcode(t *testing.T) {
 	VIndexOfAccountNumber = 0
-	account, index, err := FFindAccountFromBarcode("kaslajs")
+	account, index, err := FFindAccountFromNameOrBarcode("kaslajs")
 	FTest(true, err, nil)
 	FTest(true, index, 1)
-	FTest(true, account, SAccount{false, false, "", "CURRENT_ASSETS", "", []string{}, []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}})
+	FTest(true, account, SAccount{false, "", "CURRENT_ASSETS", "", []string{}, []string{"sijadpodjpao", "kaslajs"}, [][]uint{{1, 1}, {}}, []uint{2, 0}, [][]string{{"ASSETS"}, {}}})
 }
 
 func TestAccountStructFromName(t *testing.T) {
@@ -19,162 +19,145 @@ func TestAccountStructFromName(t *testing.T) {
 	account, index, err := FFindAccountFromName("ASSETS")
 	FTest(true, err, nil)
 	FTest(true, index, 0)
-	FTest(true, account, SAccount{false, false, "", "ASSETS", "", []string{}, []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}})
+	FTest(true, account, SAccount{false, "", "ASSETS", "", []string{}, []string{"nojdsjdpq"}, [][]uint{{1}, {}}, []uint{1, 0}, [][]string{{}, {}}})
 }
 
 func TestAddAccount(t *testing.T) {
 	var a1 error
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         "assets",
-		Number:       [][]uint{{1}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   "assets",
+		TAccountNumber: [][]uint{{1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         "current assets",
-		Number:       [][]uint{{1, 1}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   "current assets",
+		TAccountNumber: [][]uint{{1, 1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   true,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         "cash",
-		Number:       [][]uint{{1, 1, 1}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   "cash",
+		TAccountNumber: [][]uint{{1, 1, 1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         "invnetory",
-		Number:       [][]uint{{1, 1, 3}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   "invnetory",
+		TAccountNumber: [][]uint{{1, 1, 3}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   true,
-		IsCredit:     false,
-		CostFlowType: CFifo,
-		Name:         "book",
-		Number:       [][]uint{{1, 1, 3, 1}},
+		TIsCredit:      false,
+		TCostFlowType:  CFifo,
+		TAccountName:   "book",
+		TAccountNumber: [][]uint{{1, 1, 3, 1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     true,
-		CostFlowType: CWma,
-		Name:         "liabilities",
-		Number:       [][]uint{{2}},
+		TIsCredit:      true,
+		TCostFlowType:  CWma,
+		TAccountName:   "liabilities",
+		TAccountNumber: [][]uint{{2}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     true,
-		CostFlowType: CWma,
-		Name:         "owner's equity",
-		Number:       [][]uint{{3}},
+		TIsCredit:      true,
+		TCostFlowType:  CWma,
+		TAccountName:   "owner's equity",
+		TAccountNumber: [][]uint{{3}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   true,
-		IsCredit:     true,
-		CostFlowType: CWma,
-		Name:         "retained earnings",
-		Number:       [][]uint{{3, 1}},
+		TIsCredit:      true,
+		TCostFlowType:  CWma,
+		TAccountName:   "retained earnings",
+		TAccountNumber: [][]uint{{3, 1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     true,
-		CostFlowType: CWma,
-		Name:         "income",
-		Number:       [][]uint{{3, 2}},
+		TIsCredit:      true,
+		TCostFlowType:  CWma,
+		TAccountName:   "income",
+		TAccountNumber: [][]uint{{3, 2}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     true,
-		CostFlowType: CWma,
-		Name:         "revenue",
-		Number:       [][]uint{{3, 2, 1}},
+		TIsCredit:      true,
+		TCostFlowType:  CWma,
+		TAccountName:   "revenue",
+		TAccountNumber: [][]uint{{3, 2, 1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   true,
-		IsCredit:     true,
-		CostFlowType: CWma,
-		Name:         "rent",
-		Number:       [][]uint{{3, 2, 1, 1}},
+		TIsCredit:      true,
+		TCostFlowType:  CWma,
+		TAccountName:   "rent",
+		TAccountNumber: [][]uint{{3, 2, 1, 1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         "expense",
-		Number:       [][]uint{{3, 2, 2}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   "expense",
+		TAccountNumber: [][]uint{{3, 2, 2}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         "discounts",
-		Number:       [][]uint{{3, 2, 2, 1}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   "discounts",
+		TAccountNumber: [][]uint{{3, 2, 2, 1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   true,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         VInvoiceDiscount,
-		Number:       [][]uint{{3, 2, 2, 1, 1}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   VInvoiceDiscount,
+		TAccountNumber: [][]uint{{3, 2, 2, 1, 1}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   true,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         CPrefixDiscount + "book",
-		Number:       [][]uint{{3, 2, 2, 1, 2}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   CPrefixDiscount + "book",
+		TAccountNumber: [][]uint{{3, 2, 2, 1, 2}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   false,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         "cost of goods sold",
-		Number:       [][]uint{{3, 2, 2, 2}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   "cost of goods sold",
+		TAccountNumber: [][]uint{{3, 2, 2, 2}},
 	})
 	FTest(true, a1, nil)
 
 	a1 = FAddAccount(SAccount{
-		IsLowLevel:   true,
-		IsCredit:     false,
-		CostFlowType: CWma,
-		Name:         CPrefixCost + "book",
-		Number:       [][]uint{{3, 2, 2, 2, 1}},
+		TIsCredit:      false,
+		TCostFlowType:  CWma,
+		TAccountName:   CPrefixCost + "book",
+		TAccountNumber: [][]uint{{3, 2, 2, 2, 1}},
 	})
 	FTest(true, a1, nil)
 
@@ -211,7 +194,7 @@ func TestEditAccount(t *testing.T) {
 	account, index, err := FFindAccountFromName(CPrefixRevenue + "book")
 	fmt.Println(err)
 	if err == nil {
-		account.Number = [][]uint{{3, 2, 1, 2}}
+		account.TAccountNumber = [][]uint{{3, 2, 1, 2}}
 		FEditAccount(false, index, account)
 	}
 	FDbClose()

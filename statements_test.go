@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+func TestFilterJournalFromReverseEntry(t *testing.T) {
+	keys, journal := FDbRead[SJournal](VDbJournal)
+	a1, a2 := FFilterJournalFromReverseEntry(keys, journal)
+	FDbClose()
+	FPrintSlice(a1)
+	FPrintSlice(a2)
+}
+
 func TestStatementStep1(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
 	FDbClose()
@@ -39,7 +47,7 @@ func TestStatementStep4(t *testing.T) {
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
 	i2 := FStatementStep3(i1)
-	i2 = FStatementStep4(true, []string{"yasa"}, i2)
+	i2 = FStatementStep4(i2, true, []string{"yasa"})
 	FPrintMap6(i2)
 }
 
@@ -50,7 +58,7 @@ func TestStatementStep5(t *testing.T) {
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
 	i2 := FStatementStep3(i1)
-	i2 = FStatementStep4(true, []string{"yasa"}, i2)
+	i2 = FStatementStep4(i2, true, []string{"yasa"})
 	i3 := FStatementStep5(i2)
 	FPrintMap5(i3)
 }
@@ -62,7 +70,7 @@ func TestStatementStep6(t *testing.T) {
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
 	i2 := FStatementStep3(i1)
-	i2 = FStatementStep4(true, []string{"yasa"}, i2)
+	i2 = FStatementStep4(i2, true, []string{"yasa"})
 	i3 := FStatementStep5(i2)
 	FStatementStep6(365, i3)
 	FPrintMap5(i3)
@@ -75,7 +83,7 @@ func TestCalculatePrice(t *testing.T) {
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
 	i2 := FStatementStep3(i1)
-	i2 = FStatementStep4(true, []string{"yasa"}, i2)
+	i2 = FStatementStep4(i2, true, []string{"yasa"})
 	i3 := FStatementStep5(i2)
 	FStatementStep6(365, i3)
 	FPrintMap5(i3)
@@ -88,7 +96,7 @@ func TestStatementStep7(t *testing.T) {
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
 	i2 := FStatementStep3(i1)
-	i2 = FStatementStep4(true, []string{"yasa"}, i2)
+	i2 = FStatementStep4(i2, true, []string{"yasa"})
 	i3 := FStatementStep5(i2)
 	FStatementStep6(365, i3)
 	FStatementStep7(i3)
@@ -109,7 +117,6 @@ func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
 	a1 := FStatementFilter(i1[0], SFilterStatement{
 		Account1: SFilterAccount{
 			IsFilter:    false,
-			IsLowLevel:  SFilterBool{IsFilter: true, BoolValue: true},
 			IsCredit:    SFilterBool{IsFilter: false, BoolValue: false},
 			Account:     SFilterString{IsFilter: false, Way: "", Slice: []string{}},
 			FathersName: SFilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersName: false, FathersName: []string{"assets"}},
@@ -117,7 +124,6 @@ func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
 		},
 		Account2: SFilterAccount{
 			IsFilter:    false,
-			IsLowLevel:  SFilterBool{IsFilter: false, BoolValue: false},
 			IsCredit:    SFilterBool{IsFilter: false, BoolValue: false},
 			Account:     SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CAllAccounts}},
 			FathersName: SFilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersName: false, FathersName: []string{}},
@@ -172,7 +178,6 @@ func TestMakeSpaceBeforeAccountInStatementStruct(t *testing.T) {
 	a1 := FStatementFilter(i1[0], SFilterStatement{
 		Account1: SFilterAccount{
 			IsFilter:    true,
-			IsLowLevel:  SFilterBool{IsFilter: false, BoolValue: false},
 			IsCredit:    SFilterBool{IsFilter: false, BoolValue: false},
 			Account:     SFilterString{IsFilter: false, Way: "", Slice: []string{}},
 			FathersName: SFilterFathersAccountsName{IsFilter: true, InAccountName: true, InFathersName: true, FathersName: []string{"owner's equity"}},
@@ -180,7 +185,6 @@ func TestMakeSpaceBeforeAccountInStatementStruct(t *testing.T) {
 		},
 		Account2: SFilterAccount{
 			IsFilter:    false,
-			IsLowLevel:  SFilterBool{IsFilter: false, BoolValue: false},
 			IsCredit:    SFilterBool{IsFilter: false, BoolValue: false},
 			Account:     SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CAllAccounts}},
 			FathersName: SFilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersName: false, FathersName: []string{}},
