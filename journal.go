@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+//TODO
 func FValueAfterAdjustUsingAdjustingMethods(adjustingMethod string, minutesCurrent, minutesTotal, minutesPast, valueTotal float64) float64 {
 	percent := FRoot(valueTotal, minutesTotal)
 	switch adjustingMethod {
@@ -68,6 +69,8 @@ func FSetPriceAndQuantity(account SAPQA, insert bool) SAPQA {
 	case CWma:
 		FWeightedAverage(account.TAccountName)
 		keys, inventory = FDbRead[SAPQ](VDbInventory)
+	default:
+		return account
 	}
 
 	QuantityCount := FAbs(account.TQuantity)
@@ -302,7 +305,7 @@ func FStage1(entries []SAPQ, isInvoice bool) []SAPQA {
 			}
 			v1.TPrice = 1
 		}
-		if err == nil && account.TCostFlowType != "" && v1.TQuantity != 0 && v1.TPrice != 0 {
+		if err == nil && account.TCostFlowType != CHighLevelAccount && v1.TQuantity != 0 && v1.TPrice != 0 {
 			newEntries = append(newEntries, SAPQA{
 				TAccountName: account.TAccountName,
 				TPrice:       FAbs(v1.TPrice),

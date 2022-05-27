@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -18,177 +19,55 @@ const (
 )
 
 var (
-	Vheight          float32 = 50
-	VfcEntries       *fyne.Container
-	VAllAccountNames = FAllAccountNames()
+	Vheight                  float32 = 50
+	VfcEntries               *fyne.Container
+	VAllLowLevelAccountNames = FAllLowLevelAccountNames()
+	VWindow                  fyne.Window
 )
 
 func main() {
-	defer FDbClose()
+	defer FDbCloseAll()
 
 	a := app.New()
-	w := a.NewWindow("ANTI ACCOUNTANTS")
+	VWindow = a.NewWindow("ANTI ACCOUNTANTS")
+	VWindow.Resize(fyne.Size{Width: CWindowWidth, Height: CWindowHeight})
+
 	Vheight = widget.NewLabel("").MinSize().Height
-	w.Resize(fyne.Size{Width: CWindowWidth, Height: CWindowHeight})
 
-	wbMenu := widget.NewButton("menu", nil)
-	var cApp *fyne.Container
+	VWindow.SetContent(FPageLogin())
+	VWindow.ShowAndRun()
+}
 
-	wbPageJournalEntry := widget.NewButton("SIMPLE JOURNAL ENTRY", func() {
-		cApp = container.New(layout.NewBorderLayout(nil, wbMenu, nil, nil), wbMenu, FPageJournalEntry())
-		w.SetContent(cApp)
+func FPageMenu() fyne.CanvasObject {
+
+	wbPageJournalEntry := FSetTheWindow("SIMPLE JOURNAL ENTRY", FPageJournalEntry)
+	wbPageJournal := FSetTheWindow("JOURNAL", FPageJournal)
+	wbPageAccounts := FSetTheWindow("ACCOUNTS", FPageAccounts)
+	wbPageLogin := widget.NewButton("LOGIN", func() {
+		defer VWindow.SetContent(FPageLogin())
+		FDbCloseAll()
 	})
-	wbPageJournalEntry.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
+	wbPageLogin.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
 
-	wbPageJournal := widget.NewButton("JOURNAL", func() {
-		cApp = container.New(layout.NewBorderLayout(nil, wbMenu, nil, nil), wbMenu, FPageJournal())
-		w.SetContent(cApp)
-	})
-	wbPageJournal.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
-
-	wbLogin := widget.NewButton("LOGIN", func() {
-		w.SetContent(FPageLogin())
-	})
-	wbLogin.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
-
-	wsMenu := container.NewVScroll(container.New(layout.NewVBoxLayout(), wbPageJournalEntry, wbPageJournal, wbLogin))
-
-	wbMenu.OnTapped = func() {
-		cApp = container.New(layout.NewBorderLayout(nil, wbMenu, nil, nil), wbMenu, wsMenu)
-		w.SetContent(cApp)
-	}
-
-	cApp = container.New(layout.NewBorderLayout(nil, wbMenu, nil, nil), wbMenu, wsMenu)
-	w.SetContent(cApp)
-
-	w.ShowAndRun()
+	return container.NewVScroll(container.New(layout.NewVBoxLayout(), wbPageJournalEntry, wbPageJournal, wbPageAccounts, wbPageLogin))
 }
 
-func FPageJournal() fyne.CanvasObject {
-	keys, journal := FDbRead[SJournal](VDbJournal)
-	dates := FConvertByteSliceToTime(keys)
-
-	fcJournal := container.New(layout.NewVBoxLayout(), container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight},
-		FLabelToDeiplayJournal("dates"),
-		FLabelToDeiplayJournal("IsReverse"),
-		FLabelToDeiplayJournal("IsReversed"),
-		FLabelToDeiplayJournal("ReverseEntryNumberCompound"),
-		FLabelToDeiplayJournal("ReverseEntryNumberSimple"),
-		FLabelToDeiplayJournal("EntryNumberCompound"),
-		FLabelToDeiplayJournal("EntryNumberSimple"),
-		FLabelToDeiplayJournal("Value"),
-		FLabelToDeiplayJournal("PriceDebit"),
-		FLabelToDeiplayJournal("PriceCredit"),
-		FLabelToDeiplayJournal("QuantityDebit"),
-		FLabelToDeiplayJournal("QuantityCredit"),
-		FLabelToDeiplayJournal("AccountDebit"),
-		FLabelToDeiplayJournal("AccountCredit"),
-		FLabelToDeiplayJournal("Notes"),
-		FLabelToDeiplayJournal("Name"),
-		FLabelToDeiplayJournal("Employee"),
-		FLabelToDeiplayJournal("TypeOfCompoundEntry"),
-	))
-	for k1, v1 := range journal {
-		fcJournal.Add(container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight},
-			FLabelToDeiplayJournal(dates[k1]),
-			FLabelToDeiplayJournal(v1.IsReverse),
-			FLabelToDeiplayJournal(v1.IsReversed),
-			FLabelToDeiplayJournal(v1.ReverseEntryNumberCompound),
-			FLabelToDeiplayJournal(v1.ReverseEntryNumberSimple),
-			FLabelToDeiplayJournal(v1.EntryNumberCompound),
-			FLabelToDeiplayJournal(v1.EntryNumberSimple),
-			FLabelToDeiplayJournal(v1.Value),
-			FLabelToDeiplayJournal(v1.PriceDebit),
-			FLabelToDeiplayJournal(v1.PriceCredit),
-			FLabelToDeiplayJournal(v1.QuantityDebit),
-			FLabelToDeiplayJournal(v1.QuantityCredit),
-			FLabelToDeiplayJournal(v1.AccountDebit),
-			FLabelToDeiplayJournal(v1.AccountCredit),
-			FLabelToDeiplayJournal(v1.Notes),
-			FLabelToDeiplayJournal(v1.Name),
-			FLabelToDeiplayJournal(v1.Employee),
-			FLabelToDeiplayJournal(v1.TypeOfCompoundEntry),
-		))
-	}
-
-	return container.NewVScroll(fcJournal)
-}
-
-func FLabelToDeiplayJournal(x any) *widget.Label {
-	wl := widget.NewLabel(fmt.Sprint(x))
-	wl.Resize(fyne.NewSize(10, Vheight))
-	return wl
-}
-
-func FAllAccountNames() []string {
-	var allAccountNames []string
-	for _, v1 := range VAccounts {
-		if v1.TCostFlowType != "" {
-			allAccountNames = append(allAccountNames, v1.TAccountName)
-		}
-	}
-	return allAccountNames
-}
-
-func FFcEntryABPQ() *fyne.Container {
-	wc := widget.NewCheck("", nil)
-	wc.Resize(fyne.NewSize(10, Vheight))
-
-	wsAccount := widget.NewSelectEntry(VAllAccountNames)
-	wsAccount.Resize(fyne.NewSize(80/3, Vheight))
-
-	wePrice := widget.NewEntry()
-	wePrice.SetPlaceHolder("price")
-	wePrice.Resize(fyne.NewSize(80/3, Vheight))
-
-	weQuantity := widget.NewEntry()
-	weQuantity.SetPlaceHolder("quantity")
-	weQuantity.Resize(fyne.NewSize(80/3, Vheight))
-
-	wbX := widget.NewButton("x", nil)
-	wbX.Resize(fyne.NewSize(10, Vheight))
-
-	fc := container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight}, wc, wsAccount, wePrice, weQuantity, wbX)
-
-	wbX.OnTapped = func() {
-		index, _ := FFindObject(fc, VfcEntries.Objects)
-		VfcEntries.Objects = FRemove(VfcEntries.Objects, index)
-	}
-	return fc
-}
-
-func FPageLogin() *fyne.Container {
-
-	w1 := widget.NewEntry()
-	w2 := widget.NewEntry()
-	w3 := widget.NewPasswordEntry()
-	w5 := widget.NewButton("login", nil)
-	w6 := widget.NewButton("create new employee", nil)
-	w7 := widget.NewButton("create new company", nil)
-
-	w1.SetPlaceHolder("company name")
-	w2.SetPlaceHolder("employee name")
-	w3.SetPlaceHolder("password")
-
-	return container.New(layout.NewVBoxLayout(), w1, w2, w3, w5, w6, w7)
-}
-
-func FPageJournalEntry() *fyne.Container {
+func FPageJournalEntry() fyne.CanvasObject {
 
 	wlError := widget.NewLabel("")
 	wlError.Wrapping = fyne.TextWrapWord
 	wlError.Resize(fyne.Size{Width: CWindowWidth, Height: Vheight})
 
 	go func() {
-		for range time.Tick(time.Second) {
+		for range time.Tick(time.Second / 4) {
 			_, err := FSaveEntries(false)
-			FDisplayTheError(err, wlError)
+			FDisplayTheError(err, err, wlError)
 		}
 	}()
 
 	wbOk := widget.NewButton("ok", func() {
 		_, err := FSaveEntries(true)
-		FDisplayTheError(err, wlError)
+		FDisplayTheError(err, err, wlError)
 		if err == nil {
 			FClearEntries(false)
 		}
@@ -197,7 +76,7 @@ func FPageJournalEntry() *fyne.Container {
 
 	wbSave := widget.NewButton("save", func() {
 		_, err := FSaveEntries(true)
-		FDisplayTheError(err, wlError)
+		FDisplayTheError(err, err, wlError)
 	})
 	wbSave.Resize(fyne.Size{Width: wbSave.MinSize().Width, Height: Vheight})
 
@@ -221,14 +100,275 @@ func FPageJournalEntry() *fyne.Container {
 	wbAdd.Resize(fyne.Size{Width: wbAdd.MinSize().Width, Height: Vheight})
 
 	fc1 := container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight}, wbOk, wbSave, wbClearChecked, wbClearNotChecked, wbAdd)
-	fc2 := container.New(&SStretchVBoxLayout{Width: CWindowWidth, Height: Vheight, ObjectToStertch: wsEntries}, fc1, wsEntries, wlError)
 
-	return fc2
+	return container.New(&SStretchVBoxLayout{Width: CWindowWidth, Height: Vheight, ObjectToStertch: wsEntries}, fc1, wsEntries, wlError)
 }
 
-func FDisplayTheError(err error, wlError *widget.Label) {
+func FPageJournal() fyne.CanvasObject {
+	keys, journal := FDbRead[SJournal](VDbJournal)
+	dates := FConvertByteSliceToTime(keys)
+
+	fcJournal := container.New(layout.NewVBoxLayout(), container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight},
+		FLabelToDisplayJournal("dates"),
+		FLabelToDisplayJournal("IsReverse"),
+		FLabelToDisplayJournal("IsReversed"),
+		FLabelToDisplayJournal("ReverseEntryNumberCompound"),
+		FLabelToDisplayJournal("ReverseEntryNumberSimple"),
+		FLabelToDisplayJournal("EntryNumberCompound"),
+		FLabelToDisplayJournal("EntryNumberSimple"),
+		FLabelToDisplayJournal("Value"),
+		FLabelToDisplayJournal("PriceDebit"),
+		FLabelToDisplayJournal("PriceCredit"),
+		FLabelToDisplayJournal("QuantityDebit"),
+		FLabelToDisplayJournal("QuantityCredit"),
+		FLabelToDisplayJournal("AccountDebit"),
+		FLabelToDisplayJournal("AccountCredit"),
+		FLabelToDisplayJournal("Notes"),
+		FLabelToDisplayJournal("Name"),
+		FLabelToDisplayJournal("Employee"),
+		FLabelToDisplayJournal("TypeOfCompoundEntry"),
+	))
+	for k1, v1 := range journal {
+		fcJournal.Add(container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight},
+			FLabelToDisplayJournal(dates[k1]),
+			FLabelToDisplayJournal(v1.IsReverse),
+			FLabelToDisplayJournal(v1.IsReversed),
+			FLabelToDisplayJournal(v1.ReverseEntryNumberCompound),
+			FLabelToDisplayJournal(v1.ReverseEntryNumberSimple),
+			FLabelToDisplayJournal(v1.EntryNumberCompound),
+			FLabelToDisplayJournal(v1.EntryNumberSimple),
+			FLabelToDisplayJournal(v1.Value),
+			FLabelToDisplayJournal(v1.PriceDebit),
+			FLabelToDisplayJournal(v1.PriceCredit),
+			FLabelToDisplayJournal(v1.QuantityDebit),
+			FLabelToDisplayJournal(v1.QuantityCredit),
+			FLabelToDisplayJournal(v1.AccountDebit),
+			FLabelToDisplayJournal(v1.AccountCredit),
+			FLabelToDisplayJournal(v1.Notes),
+			FLabelToDisplayJournal(v1.Name),
+			FLabelToDisplayJournal(v1.Employee),
+			FLabelToDisplayJournal(v1.TypeOfCompoundEntry),
+		))
+	}
+
+	return container.NewVScroll(fcJournal)
+}
+
+func FPageAccounts() fyne.CanvasObject {
+
+	fcAccounts := container.New(layout.NewVBoxLayout(), container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight}))
+
+	for _, v1 := range VAccounts {
+		fcAccounts.Add(container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight},
+			FLabelToDisplayJournal(v1.TIsCredit),
+			FLabelToDisplayJournal(v1.TCostFlowType),
+			FLabelToDisplayJournal(v1.TAccountName),
+			FLabelToDisplayJournal(v1.TAccountNotes),
+			FLabelToDisplayJournal(v1.TAccountImage),
+			FLabelToDisplayJournal(v1.TAccountBarcode),
+			FLabelToDisplayJournal(v1.TAccountNumber),
+			FLabelToDisplayJournal(v1.TAccountLevels),
+			FLabelToDisplayJournal(v1.TAccountFathersName),
+		))
+	}
+
+	wsAccounts := container.NewVScroll(fcAccounts)
+
+	wbIsCredit := widget.NewSelect([]string{CCredit, CDebit}, nil)
+	wbIsCredit.Resize(fyne.NewSize(1, 0))
+	wbIsCredit.SetSelected(CCredit)
+
+	wbCostFlowType := widget.NewSelect([]string{CHighLevelAccount, CWma, CFifo, CLifo}, nil)
+	wbCostFlowType.Resize(fyne.NewSize(1, 0))
+	wbCostFlowType.SetSelected(CHighLevelAccount)
+
+	wbAccountName := widget.NewEntry()
+	wbAccountName.Resize(fyne.NewSize(1, 0))
+	wbAccountName.SetPlaceHolder("Name")
+
+	wbAccountNotes := widget.NewEntry()
+	wbAccountNotes.Resize(fyne.NewSize(1, 0))
+	wbAccountNotes.SetPlaceHolder("Notes")
+
+	wbAccountImage := widget.NewEntry()
+	wbAccountImage.Resize(fyne.NewSize(1, 0))
+	wbAccountImage.SetPlaceHolder("Image")
+
+	wbAccountBarcode := widget.NewEntry()
+	wbAccountBarcode.Resize(fyne.NewSize(1, 0))
+	wbAccountBarcode.SetPlaceHolder("Barcode")
+
+	wbAccountNumber := widget.NewEntry()
+	wbAccountNumber.Resize(fyne.NewSize(1, 0))
+	wbAccountNumber.SetPlaceHolder("Number")
+
+	fc1 := container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight},
+		wbIsCredit,
+		wbCostFlowType,
+		wbAccountName,
+		wbAccountNotes,
+		wbAccountImage,
+		wbAccountBarcode,
+		wbAccountNumber,
+	)
+	return container.New(&SStretchVBoxLayout{Width: CWindowWidth, Height: Vheight, ObjectToStertch: wsAccounts}, fc1, wsAccounts)
+}
+
+func FPageLogin() fyne.CanvasObject {
+	companies, _ := FFilesName(CPathDataBase)
+
+	weCompanyName := widget.NewSelectEntry(companies)
+	weCompanyName.SetPlaceHolder("company name")
+
+	weEmployeeName := widget.NewSelectEntry(nil)
+	weEmployeeName.SetPlaceHolder("employee name")
+
+	go func() {
+		weCompanyName.OnChanged = func(s string) {
+			_, isIn := FFind(weCompanyName.Text, companies)
+			if isIn && weCompanyName.Text != "" {
+				VCompanyName = weCompanyName.Text
+				employees, _ := FDbOpenAndReadEmployees()
+				weEmployeeName.SetOptions(employees)
+			} else {
+				FDbCloseAll()
+				weEmployeeName.SetOptions(nil)
+			}
+		}
+	}()
+
+	wePassword := widget.NewPasswordEntry()
+	wePassword.SetPlaceHolder("password")
+
+	wlError := widget.NewLabel("")
+	wlError.Alignment = fyne.TextAlignCenter
+
+	wbLogin := widget.NewButton("login", func() {
+
+		_, isIn := FFind(weCompanyName.Text, companies)
+		err := FErrorIfFalse(isIn)
+		FDisplayTheError(err, errors.New("company name is wrong"), wlError)
+		if err != nil {
+			return
+		}
+
+		VCompanyName = weCompanyName.Text
+		employees, passwords := FDbOpenAndReadEmployees()
+		fmt.Println(employees)
+		fmt.Println(passwords)
+
+		indexOfEmployee, isIn := FFind(weEmployeeName.Text, employees)
+		err = FErrorIfFalse(isIn)
+		FDisplayTheError(err, errors.New("employee name is wrong"), wlError)
+		if err != nil {
+			return
+		}
+
+		err = FErrorIfFalse(passwords[indexOfEmployee] == wePassword.Text)
+		FDisplayTheError(err, errors.New("password is wrong"), wlError)
+		if err != nil {
+			return
+		}
+
+		VEmployeeName = weEmployeeName.Text
+		FDbOpenAll()
+		VWindow.SetContent(FPageMenu())
+	})
+
+	wbCreateNewCompany := widget.NewButton("create new company", func() {
+
+		_, isIn := FFind(weCompanyName.Text, companies)
+		err := FErrorIfFalse(!isIn)
+		FDisplayTheError(err, errors.New("company name is used"), wlError)
+		if err != nil {
+			return
+		}
+
+		err = FErrorIfFalse(weCompanyName.Text != "")
+		FDisplayTheError(err, errors.New("company name is empty"), wlError)
+		if err != nil {
+			return
+		}
+
+		err = FErrorIfFalse(weEmployeeName.Text != "")
+		FDisplayTheError(err, errors.New("employee name is empty"), wlError)
+		if err != nil {
+			return
+		}
+
+		err = FErrorIfFalse(wePassword.Text != "")
+		FDisplayTheError(err, errors.New("password is empty"), wlError)
+		if err != nil {
+			return
+		}
+
+		VCompanyName = weCompanyName.Text
+		VEmployeeName = weEmployeeName.Text
+
+		VDbEmployees = FDbOpen(VDbEmployees, CPathDataBase+VCompanyName+CPathEmployees)
+		FDbUpdate(VDbEmployees, []byte(VEmployeeName), wePassword.Text)
+
+		FDbOpenAll()
+		VWindow.SetContent(FPageMenu())
+	})
+
+	return container.New(layout.NewVBoxLayout(), weCompanyName, weEmployeeName, wePassword, wlError, wbLogin, wbCreateNewCompany)
+}
+
+func FDbOpenAndReadEmployees() ([]string, []string) {
+	VDbEmployees = FDbOpen(VDbEmployees, CPathDataBase+VCompanyName+CPathEmployees)
+	keys, passwords := FDbRead[string](VDbEmployees)
+	employees := FConvertFromByteSliceToString(keys)
+	return employees, passwords
+}
+
+func FLabelToDisplayJournal(x any) *widget.Label {
+	wl := widget.NewLabel(fmt.Sprint(x))
+	wl.Resize(fyne.NewSize(10, Vheight))
+	return wl
+}
+
+func FAllLowLevelAccountNames() []string {
+	var allAccountNames []string
+	for _, v1 := range VAccounts {
+		if v1.TCostFlowType != CHighLevelAccount {
+			allAccountNames = append(allAccountNames, v1.TAccountName)
+		}
+	}
+	return allAccountNames
+}
+
+func FFcEntryABPQ() *fyne.Container {
+	wc := widget.NewCheck("", nil)
+	wc.Resize(fyne.NewSize(10, Vheight))
+
+	wsAccount := widget.NewSelectEntry(VAllLowLevelAccountNames)
+	wsAccount.Resize(fyne.NewSize(80/3, Vheight))
+
+	wePrice := widget.NewEntry()
+	wePrice.Resize(fyne.NewSize(80/3, Vheight))
+	wePrice.SetPlaceHolder("price")
+
+	weQuantity := widget.NewEntry()
+	weQuantity.Resize(fyne.NewSize(80/3, Vheight))
+	weQuantity.SetPlaceHolder("quantity")
+	weQuantity.SetText("1")
+
+	wbX := widget.NewButton("x", nil)
+	wbX.Resize(fyne.NewSize(10, Vheight))
+
+	fc := container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight}, wc, wsAccount, wePrice, weQuantity, wbX)
+
+	wbX.OnTapped = func() {
+		index, _ := FFindObject(fc, VfcEntries.Objects)
+		VfcEntries.Objects = FRemove(VfcEntries.Objects, index)
+	}
+	return fc
+}
+
+func FDisplayTheError(err error, errorMessage error, wlError *widget.Label) {
 	if err != nil {
-		wlError.SetText(err.Error())
+		wlError.SetText(errorMessage.Error())
 	} else {
 		wlError.SetText("")
 	}
@@ -240,9 +380,7 @@ func FFcEntryInfo(label string) *fyne.Container {
 	we := widget.NewEntry()
 	we.SetPlaceHolder(label)
 	we.Resize(fyne.NewSize(80, Vheight))
-	wb := widget.NewButton("x", func() {
-		we.SetText("")
-	})
+	wb := widget.NewButton("x", func() { we.SetText("") })
 	wb.Resize(fyne.NewSize(10, Vheight))
 	return container.New(&TPercentageHBoxLayout{Width: CWindowWidth, Height: Vheight}, wc, we, wb)
 }
@@ -287,4 +425,15 @@ func FSaveEntries(insert bool) ([]SAPQ, error) {
 	}
 
 	return FSimpleJournalEntry(entries, entryInfo, insert)
+}
+
+func FSetTheWindow(label string, page func() fyne.CanvasObject) *widget.Button {
+	wbMenu := widget.NewButton("MENU", func() {
+		VWindow.SetContent(FPageMenu())
+	})
+	wb := widget.NewButton(label, func() {
+		VWindow.SetContent(container.New(layout.NewBorderLayout(nil, wbMenu, nil, nil), wbMenu, page()))
+	})
+	wb.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
+	return wb
 }

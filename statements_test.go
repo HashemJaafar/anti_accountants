@@ -8,14 +8,14 @@ import (
 func TestFilterJournalFromReverseEntry(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
 	a1, a2 := FFilterJournalFromReverseEntry(keys, journal)
-	FDbClose()
+	FDbCloseAll()
 	FPrintSlice(a1)
 	FPrintSlice(a2)
 }
 
 func TestStatementStep1(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	journalTimes := FConvertByteSliceToTime(keys)
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	FPrintMap6(i1)
@@ -23,7 +23,7 @@ func TestStatementStep1(t *testing.T) {
 
 func TestStatementStep2(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	journalTimes := FConvertByteSliceToTime(keys)
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
@@ -32,7 +32,7 @@ func TestStatementStep2(t *testing.T) {
 
 func TestStatementStep3(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	journalTimes := FConvertByteSliceToTime(keys)
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
@@ -42,7 +42,7 @@ func TestStatementStep3(t *testing.T) {
 
 func TestStatementStep4(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	journalTimes := FConvertByteSliceToTime(keys)
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
@@ -53,7 +53,7 @@ func TestStatementStep4(t *testing.T) {
 
 func TestStatementStep5(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	journalTimes := FConvertByteSliceToTime(keys)
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
@@ -65,7 +65,7 @@ func TestStatementStep5(t *testing.T) {
 
 func TestStatementStep6(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	journalTimes := FConvertByteSliceToTime(keys)
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
@@ -78,7 +78,7 @@ func TestStatementStep6(t *testing.T) {
 
 func TestCalculatePrice(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	journalTimes := FConvertByteSliceToTime(keys)
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
@@ -91,7 +91,7 @@ func TestCalculatePrice(t *testing.T) {
 
 func TestStatementStep7(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	journalTimes := FConvertByteSliceToTime(keys)
 	i1 := FStatementStep1(journalTimes, journal, time.Time{}, time.Now())
 	i1 = FStatementStep2(i1)
@@ -113,7 +113,7 @@ func TestFinancialStatements(t *testing.T) {
 
 func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
 	i1, _ := FStatement([]time.Time{time.Now()}, 10, []string{"yasa"}, true, false)
-	FDbClose()
+	FDbCloseAll()
 	a1 := FStatementFilter(i1[0], SFilterStatement{
 		Account1: SFilterAccount{
 			IsFilter:    false,
@@ -143,7 +143,7 @@ func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
 
 func TestSortByLevel(t *testing.T) {
 	i1, _ := FStatement([]time.Time{time.Now()}, 10, []string{"yasa"}, true, false)
-	FDbClose()
+	FDbCloseAll()
 	a1 := FStatementFilter(i1[0], SFilterStatement{
 		// Account1: FilterAccount{
 		// 	IsLowLevel:   FilterBool{IsFilter: false, BoolValue: false},
@@ -174,7 +174,7 @@ func TestSortByLevel(t *testing.T) {
 
 func TestMakeSpaceBeforeAccountInStatementStruct(t *testing.T) {
 	i1, _ := FStatement([]time.Time{time.Now()}, 1, []string{"yasa"}, true, false)
-	FDbClose()
+	FDbCloseAll()
 	a1 := FStatementFilter(i1[0], SFilterStatement{
 		Account1: SFilterAccount{
 			IsFilter:    true,

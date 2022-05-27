@@ -87,7 +87,7 @@ func FCheckIfLowLevelAccountForAll() []error {
 						}
 					}
 				}
-				if VAccounts[k2].TCostFlowType != "" {
+				if VAccounts[k2].TCostFlowType != CHighLevelAccount {
 					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", VAccounts[k2]))
 				}
 			}
@@ -152,7 +152,7 @@ func FEditAccount(isDelete bool, index int, account SAccount) {
 	}
 
 	_, isIn := FFind(account.TCostFlowType, VCostFlowType)
-	if isIn && VAccounts[index].TCostFlowType != "" {
+	if isIn && VAccounts[index].TCostFlowType != CHighLevelAccount {
 		VAccounts[index].TCostFlowType = account.TCostFlowType
 	}
 	VAccounts[index].TAccountNotes = account.TAccountNotes
@@ -297,7 +297,7 @@ func FMaxLenForAccountNumber() int {
 func FPrintFormatedAccounts() {
 	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	for _, v1 := range VAccounts {
-		isCredit := "\t," + fmt.Sprint(v1.TIsCredit)
+		isCredit := fmt.Sprint(v1.TIsCredit)
 		costFlowType := "\t,\"" + v1.TCostFlowType + "\""
 		accountName := "\t,\"" + v1.TAccountName + "\""
 		notes := "\t,\"" + v1.TAccountNotes + "\""
@@ -328,7 +328,7 @@ func FSetTheAccounts() {
 
 		_, isIn := FFind(v1.TCostFlowType, VCostFlowType)
 		if !isIn {
-			VAccounts[k1].TCostFlowType = ""
+			VAccounts[k1].TCostFlowType = CHighLevelAccount
 		}
 	}
 

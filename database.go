@@ -2,15 +2,84 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+	"strings"
+	"sync"
 
 	badger "github.com/dgraph-io/badger/v3"
 )
 
-func FDbClose() {
-	VDbAccounts.Close()
-	VDbJournal.Close()
-	VDbInventory.Close()
-	VDbAutoCompletionEntries.Close()
+func FDbOpenAll() {
+	var wait sync.WaitGroup
+	wait.Add(5)
+
+	go func() {
+		VDbAccounts = FDbOpen(VDbAccounts, CPathDataBase+VCompanyName+CPathAccounts)
+		wait.Done()
+	}()
+	go func() {
+		VDbJournal = FDbOpen(VDbJournal, CPathDataBase+VCompanyName+CPathJournal)
+		wait.Done()
+	}()
+	go func() {
+		VDbInventory = FDbOpen(VDbInventory, CPathDataBase+VCompanyName+CPathInventory)
+		wait.Done()
+	}()
+	go func() {
+		VDbAutoCompletionEntries = FDbOpen(VDbAutoCompletionEntries, CPathDataBase+VCompanyName+CPathAutoCompletionEntries)
+		wait.Done()
+	}()
+	go func() {
+		VDbEmployees = FDbOpen(VDbEmployees, CPathDataBase+VCompanyName+CPathEmployees)
+		wait.Done()
+	}()
+
+	wait.Wait()
+
+	wait.Add(2)
+	go func() {
+		_, VAccounts = FDbRead[SAccount](VDbAccounts)
+		wait.Done()
+	}()
+	go func() {
+		_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
+		wait.Done()
+	}()
+	wait.Wait()
+}
+
+func FDbCloseAll() {
+	var wait sync.WaitGroup
+	wait.Add(5)
+
+	go func() {
+		FDbClose(VDbAccounts)
+		wait.Done()
+	}()
+	go func() {
+		FDbClose(VDbJournal)
+		wait.Done()
+	}()
+	go func() {
+		FDbClose(VDbInventory)
+		wait.Done()
+	}()
+	go func() {
+		FDbClose(VDbAutoCompletionEntries)
+		wait.Done()
+	}()
+	go func() {
+		FDbClose(VDbEmployees)
+		wait.Done()
+	}()
+
+	wait.Wait()
+}
+
+func FDbClose(db *badger.DB) {
+	if db != nil {
+		db.Close()
+	}
 }
 
 func FDbInsertIntoAccounts() {
@@ -40,10 +109,19 @@ func FDbLastLine[t any](db *badger.DB) t {
 	return tag
 }
 
-func FDbOpen(path string) *badger.DB {
+func FDbOpen(database *badger.DB, path string) *badger.DB {
 	for {
 		db, err := badger.Open(badger.DefaultOptions(path))
+		if err != nil {
+			log.Println(err)
+		}
+		if err != nil &&
+			(strings.Contains(err.Error(), "Cannot acquire directory lock on") ||
+				strings.Contains(err.Error(), "Another process is using this Badger database.")) {
+			return database
+		}
 		if err == nil {
+			FDbClose(database)
 			return db
 		}
 	}

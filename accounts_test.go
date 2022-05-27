@@ -27,7 +27,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      false,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "assets",
 		TAccountNumber: [][]uint{{1}},
 	})
@@ -35,7 +35,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      false,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "current assets",
 		TAccountNumber: [][]uint{{1, 1}},
 	})
@@ -51,7 +51,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      false,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "invnetory",
 		TAccountNumber: [][]uint{{1, 1, 3}},
 	})
@@ -67,7 +67,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      true,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "liabilities",
 		TAccountNumber: [][]uint{{2}},
 	})
@@ -75,7 +75,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      true,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "owner's equity",
 		TAccountNumber: [][]uint{{3}},
 	})
@@ -83,7 +83,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      true,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "retained earnings",
 		TAccountNumber: [][]uint{{3, 1}},
 	})
@@ -91,7 +91,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      true,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "income",
 		TAccountNumber: [][]uint{{3, 2}},
 	})
@@ -99,7 +99,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      true,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "revenue",
 		TAccountNumber: [][]uint{{3, 2, 1}},
 	})
@@ -115,7 +115,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      false,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "expense",
 		TAccountNumber: [][]uint{{3, 2, 2}},
 	})
@@ -123,7 +123,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      false,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "discounts",
 		TAccountNumber: [][]uint{{3, 2, 2, 1}},
 	})
@@ -147,7 +147,7 @@ func TestAddAccount(t *testing.T) {
 
 	a1 = FAddAccount(SAccount{
 		TIsCredit:      false,
-		TCostFlowType:  CWma,
+		TCostFlowType:  CHighLevelAccount,
 		TAccountName:   "cost of goods sold",
 		TAccountNumber: [][]uint{{3, 2, 2, 2}},
 	})
@@ -161,7 +161,7 @@ func TestAddAccount(t *testing.T) {
 	})
 	FTest(true, a1, nil)
 
-	FDbClose()
+	FDbCloseAll()
 	FPrintFormatedAccounts()
 }
 
@@ -197,7 +197,7 @@ func TestEditAccount(t *testing.T) {
 		account.TAccountNumber = [][]uint{{3, 2, 1, 2}}
 		FEditAccount(false, index, account)
 	}
-	FDbClose()
+	FDbCloseAll()
 	FPrintFormatedAccounts()
 }
 
@@ -288,7 +288,7 @@ func TestSetTheAccounts(t *testing.T) {
 
 func TestAddAutoCompletion(t *testing.T) {
 	a1 := FAddAutoCompletion(SAutoCompletion{"book2", 5, 0, []SPQ{}})
-	FDbClose()
+	FDbCloseAll()
 	FPrintSlice(VAutoCompletionEntries)
 	FTest(true, a1, nil)
 }

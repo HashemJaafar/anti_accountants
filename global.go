@@ -5,12 +5,26 @@ import (
 	"os"
 	"text/tabwriter"
 	"time"
+
+	badger "github.com/dgraph-io/badger/v3"
 )
 
 const (
-	CFifo        = "Fifo"
-	CLifo        = "Lifo"
-	CWma         = "Wma"
+	CPathDataBase              = "./db/"
+	CPathAccounts              = "/accounts"
+	CPathJournal               = "/journal"
+	CPathInventory             = "/inventory"
+	CPathAutoCompletionEntries = "/auto_completion_entries"
+	CPathEmployees             = "/employees"
+
+	CFifo             = "Fifo"
+	CLifo             = "Lifo"
+	CWma              = "Wma"
+	CHighLevelAccount = "HighLevelAccount"
+
+	CCredit = "Credit"
+	CDebit  = "Debit"
+
 	CLinear      = "Linear"
 	CExponential = "Exponential"
 	CLogarithmic = "Logarithmic"
@@ -105,31 +119,22 @@ const (
 )
 
 var (
-	VCompanyName          = "anti_accountants"
-	VEmployeeName         = "hashem"
 	VIndexOfAccountNumber = 0
-	// global accounts
 	VInvoiceDiscount      = "Invoice PQ"
-	VInvoiceDiscountsList []SPQ
 
-	// pathes
-	VDbPathAccounts              = "./db/" + VCompanyName + "/accounts"
-	VDbPathJournal               = "./db/" + VCompanyName + "/journal"
-	VDbPathInventory             = "./db/" + VCompanyName + "/inventory"
-	VDbPathAutoCompletionEntries = "./db/" + VCompanyName + "/auto_completion_entries"
-	// data base
-	VDbAccounts              = FDbOpen(VDbPathAccounts)
-	VDbJournal               = FDbOpen(VDbPathJournal)
-	VDbInventory             = FDbOpen(VDbPathInventory)
-	VDbAutoCompletionEntries = FDbOpen(VDbPathAutoCompletionEntries)
-	// read database
-	_, VAccounts              = FDbRead[SAccount](VDbAccounts)
-	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
+	VInvoiceDiscountsList    []SPQ
+	VCompanyName             string
+	VEmployeeName            string
+	VDbAccounts              *badger.DB
+	VDbJournal               *badger.DB
+	VDbInventory             *badger.DB
+	VDbAutoCompletionEntries *badger.DB
+	VDbEmployees             *badger.DB
+	VAccounts                []SAccount
+	VAutoCompletionEntries   []SAutoCompletion
 
 	// standards
-	VPrintTable = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	// StandardDays = []string{Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday}
-	// DepreciationMethods = []string{Linear, Exponential, Logarithmic}
+	VPrintTable   = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	VCostFlowType = []string{CFifo, CLifo, CWma}
 
 	//errors

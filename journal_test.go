@@ -26,7 +26,7 @@ func TestSetPriceAndQuantity(t *testing.T) {
 	fmt.Println(a1)
 	_, inventory = FDbRead[SAPQ](VDbInventory)
 	FPrintSlice(inventory)
-	FDbClose()
+	FDbCloseAll()
 }
 
 func TestGroupByAccount(t *testing.T) {
@@ -107,7 +107,7 @@ func TestSimpleJournalEntry(t *testing.T) {
 	FPrintSlice(a1)
 	FTest(true, a2, nil)
 
-	FDbClose()
+	FDbCloseAll()
 	FPrintFormatedAccounts()
 }
 
@@ -133,7 +133,7 @@ func TestStage1(t *testing.T) {
 func TestReverseEntries(t *testing.T) {
 	keys, journal := FFindEntryFromNumber(8, 0)
 	FReverseEntries(keys, journal, "hashem")
-	FDbClose()
+	FDbCloseAll()
 }
 
 func TestConvertPriceQuantityAccountToPriceQuantityAccountBarcode(t *testing.T) {
@@ -198,11 +198,6 @@ func TestFJournalFilter(t *testing.T) {
 	FPrintSlice(a2)
 }
 
-func TestValueAfterAdjustUsingAdjustingMethods(t *testing.T) {
-	a1 := FValueAfterAdjustUsingAdjustingMethods("", 2, 100, 10, 100)
-	fmt.Println(a1)
-}
-
 func TestInvoiceJournalEntry(t *testing.T) {
 	VAutoCompletionEntries = []SAutoCompletion{{
 		TAccountName: "book",
@@ -217,7 +212,7 @@ func TestInvoiceJournalEntry(t *testing.T) {
 	a1, a2 := FInvoiceJournalEntry("cash", 1, 4, []SAPQ{{"book", 5, -10}}, SEntry{}, true)
 	_, inventory := FDbRead[SAPQ](VDbInventory)
 	_, journal := FDbRead[SJournal](VDbJournal)
-	FDbClose()
+	FDbCloseAll()
 	FPrintFormatedAccounts()
 	FPrintSlice(inventory)
 	FPrintSlice(journal)
@@ -242,13 +237,13 @@ func TestAutoComplete(t *testing.T) {
 	}
 	FTest(true, a1, e1)
 
-	FDbClose()
+	FDbCloseAll()
 	FPrintSlice(a1)
 }
 
 func TestConvertJournalToAPQA(t *testing.T) {
 	_, journal := FFindEntryFromNumber(8, 0)
-	FDbClose()
+	FDbCloseAll()
 	a1 := FConvertJournalToAPQA(journal)
 	FPrintSlice(a1)
 	FPrintJournal(journal)

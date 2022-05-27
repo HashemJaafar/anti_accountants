@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -162,6 +164,14 @@ func FConvertByteSliceToTime(slice [][]byte) []time.Time {
 		sliceOfTime = append(sliceOfTime, date)
 	}
 	return sliceOfTime
+}
+
+func FConvertFromByteSliceToString(slice [][]byte) []string {
+	var values []string
+	for _, v1 := range slice {
+		values = append(values, string(v1))
+	}
+	return values
 }
 
 func FTest[t any](shouldEqual bool, actual, expected t) {
@@ -437,4 +447,23 @@ func FPrintCvp(a SCvp) {
 	fmt.Fprintln(VPrintTable, "Profit", "\t", a.Profit)
 	fmt.Fprintln(VPrintTable, "ContributionMargin", "\t", a.ContributionMargin)
 	VPrintTable.Flush()
+}
+
+func FErrorIfFalse(a bool) error {
+	if !a {
+		return errors.New("")
+	}
+	return nil
+}
+
+func FFilesName(dir string) ([]string, error) {
+	var filesName []string
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return filesName, err
+	}
+	for _, v1 := range files {
+		filesName = append(filesName, v1.Name())
+	}
+	return filesName, nil
 }
