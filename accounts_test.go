@@ -23,6 +23,7 @@ func TestAccountStructFromName(t *testing.T) {
 }
 
 func TestAddAccount(t *testing.T) {
+	FDbOpenAll()
 	var a1 error
 
 	a1 = FAddAccount(SAccount{

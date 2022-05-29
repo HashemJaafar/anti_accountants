@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -29,7 +28,7 @@ func main() {
 	defer FDbCloseAll()
 
 	a := app.New()
-	VWindow = a.NewWindow("ANTI ACCOUNTANTS")
+	VWindow = a.NewWindow(CNameOfTheApp)
 	VWindow.Resize(fyne.Size{Width: CWindowWidth, Height: CWindowHeight})
 
 	Vheight = widget.NewLabel("").MinSize().Height
@@ -39,17 +38,23 @@ func main() {
 }
 
 func FPageMenu() fyne.CanvasObject {
+	VWindow.SetTitle(CNameOfTheApp + " - " + CMenu)
 
-	wbPageJournalEntry := FSetTheWindow("SIMPLE JOURNAL ENTRY", FPageJournalEntry)
+	wbPageJournalEntry := FSetTheWindow("ENTRY", FPageJournalEntry)
 	wbPageJournal := FSetTheWindow("JOURNAL", FPageJournal)
 	wbPageAccounts := FSetTheWindow("ACCOUNTS", FPageAccounts)
-	wbPageLogin := widget.NewButton("LOGIN", func() {
-		defer VWindow.SetContent(FPageLogin())
-		FDbCloseAll()
-	})
+	wbPageChangePassword := FSetTheWindow("CHANGE PASSWORD", FPageChangePassword)
+	wbPageLogin := widget.NewButton("LOGOUT", func() { VWindow.SetContent(FPageLogin()) })
 	wbPageLogin.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)
 
-	return container.NewVScroll(container.New(layout.NewVBoxLayout(), wbPageJournalEntry, wbPageJournal, wbPageAccounts, wbPageLogin))
+	fc := container.New(layout.NewVBoxLayout(), wbPageJournalEntry, wbPageJournal, wbPageAccounts, wbPageChangePassword, wbPageLogin)
+	if VEmployeeName == CManger {
+		fc.Add(widget.NewLabel("this below options are just for " + CManger))
+		fc.Add(FSetTheWindow("ADD NEW EMPLOYEE", FPageAddNewEmployee))
+		fc.Add(FSetTheWindow("CHANGE EMPLOYEE NAME", FPageChangeEmployeeName))
+		fc.Add(FSetTheWindow("DELETE EMPLOYEE", FPageDeleteEmployee))
+	}
+	return container.NewVScroll(fc)
 }
 
 func FPageJournalEntry() fyne.CanvasObject {
@@ -61,13 +66,13 @@ func FPageJournalEntry() fyne.CanvasObject {
 	go func() {
 		for range time.Tick(time.Second / 4) {
 			_, err := FSaveEntries(false)
-			FDisplayTheError(err, err, wlError)
+			FDisplayTheError(err, wlError)
 		}
 	}()
 
 	wbOk := widget.NewButton("ok", func() {
 		_, err := FSaveEntries(true)
-		FDisplayTheError(err, err, wlError)
+		FDisplayTheError(err, wlError)
 		if err == nil {
 			FClearEntries(false)
 		}
@@ -76,7 +81,7 @@ func FPageJournalEntry() fyne.CanvasObject {
 
 	wbSave := widget.NewButton("save", func() {
 		_, err := FSaveEntries(true)
-		FDisplayTheError(err, err, wlError)
+		FDisplayTheError(err, wlError)
 	})
 	wbSave.Resize(fyne.Size{Width: wbSave.MinSize().Width, Height: Vheight})
 
@@ -214,7 +219,33 @@ func FPageAccounts() fyne.CanvasObject {
 	return container.New(&SStretchVBoxLayout{Width: CWindowWidth, Height: Vheight, ObjectToStertch: wsAccounts}, fc1, wsAccounts)
 }
 
+func FPageChangePassword() fyne.CanvasObject {
+	wePassword := widget.NewPasswordEntry()
+	wePassword.SetPlaceHolder("password")
+
+	wlError := widget.NewLabel("")
+	wlError.Alignment = fyne.TextAlignCenter
+
+	wb := widget.NewButton("ok", func() {
+		wlError.SetText("")
+
+		if wePassword.Text == "" {
+			wlError.SetText(wePassword.PlaceHolder + " is empty")
+			return
+		}
+
+		FDbUpdate(VDbEmployees, []byte(VEmployeeName), wePassword.Text)
+		wePassword.SetText("")
+		VWindow.SetContent(FPageMenu())
+	})
+
+	return container.New(layout.NewVBoxLayout(), wePassword, wlError, wb)
+}
+
 func FPageLogin() fyne.CanvasObject {
+	VWindow.SetTitle(CNameOfTheApp + " - " + "LOGIN")
+	FDbCloseAll()
+
 	companies, _ := FFilesName(CPathDataBase)
 
 	weCompanyName := widget.NewSelectEntry(companies)
@@ -223,19 +254,17 @@ func FPageLogin() fyne.CanvasObject {
 	weEmployeeName := widget.NewSelectEntry(nil)
 	weEmployeeName.SetPlaceHolder("employee name")
 
-	go func() {
-		weCompanyName.OnChanged = func(s string) {
-			_, isIn := FFind(weCompanyName.Text, companies)
-			if isIn && weCompanyName.Text != "" {
-				VCompanyName = weCompanyName.Text
-				employees, _ := FDbOpenAndReadEmployees()
-				weEmployeeName.SetOptions(employees)
-			} else {
-				FDbCloseAll()
-				weEmployeeName.SetOptions(nil)
-			}
+	weCompanyName.OnChanged = func(s string) {
+		_, isIn := FFind(weCompanyName.Text, companies)
+		if isIn && weCompanyName.Text != "" {
+			VCompanyName = weCompanyName.Text
+			employees, _ := FDbOpenAndReadEmployees()
+			weEmployeeName.SetOptions(employees)
+		} else {
+			FDbCloseAll()
+			weEmployeeName.SetOptions(nil)
 		}
-	}()
+	}
 
 	wePassword := widget.NewPasswordEntry()
 	wePassword.SetPlaceHolder("password")
@@ -244,61 +273,51 @@ func FPageLogin() fyne.CanvasObject {
 	wlError.Alignment = fyne.TextAlignCenter
 
 	wbLogin := widget.NewButton("login", func() {
+		wlError.SetText("")
 
 		_, isIn := FFind(weCompanyName.Text, companies)
-		err := FErrorIfFalse(isIn)
-		FDisplayTheError(err, errors.New("company name is wrong"), wlError)
-		if err != nil {
+		if !isIn {
+			wlError.SetText(weCompanyName.PlaceHolder + " is wrong")
+			return
+		}
+
+		employees, passwords := FDbOpenAndReadEmployees()
+
+		indexOfEmployee, isIn := FFind(weEmployeeName.Text, employees)
+		if !isIn {
+			wlError.SetText(weEmployeeName.PlaceHolder + " is wrong")
+			return
+		}
+
+		if passwords[indexOfEmployee] != wePassword.Text {
+			wlError.SetText(wePassword.PlaceHolder + " is wrong")
 			return
 		}
 
 		VCompanyName = weCompanyName.Text
-		employees, passwords := FDbOpenAndReadEmployees()
-		fmt.Println(employees)
-		fmt.Println(passwords)
-
-		indexOfEmployee, isIn := FFind(weEmployeeName.Text, employees)
-		err = FErrorIfFalse(isIn)
-		FDisplayTheError(err, errors.New("employee name is wrong"), wlError)
-		if err != nil {
-			return
-		}
-
-		err = FErrorIfFalse(passwords[indexOfEmployee] == wePassword.Text)
-		FDisplayTheError(err, errors.New("password is wrong"), wlError)
-		if err != nil {
-			return
-		}
-
 		VEmployeeName = weEmployeeName.Text
+
 		FDbOpenAll()
 		VWindow.SetContent(FPageMenu())
 	})
 
 	wbCreateNewCompany := widget.NewButton("create new company", func() {
+		wlError.SetText("")
+		weEmployeeName.SetText(CManger)
 
 		_, isIn := FFind(weCompanyName.Text, companies)
-		err := FErrorIfFalse(!isIn)
-		FDisplayTheError(err, errors.New("company name is used"), wlError)
-		if err != nil {
+		if isIn {
+			wlError.SetText(weCompanyName.PlaceHolder + " is used")
 			return
 		}
 
-		err = FErrorIfFalse(weCompanyName.Text != "")
-		FDisplayTheError(err, errors.New("company name is empty"), wlError)
-		if err != nil {
+		if weCompanyName.Text == "" {
+			wlError.SetText(weCompanyName.PlaceHolder + " is empty")
 			return
 		}
 
-		err = FErrorIfFalse(weEmployeeName.Text != "")
-		FDisplayTheError(err, errors.New("employee name is empty"), wlError)
-		if err != nil {
-			return
-		}
-
-		err = FErrorIfFalse(wePassword.Text != "")
-		FDisplayTheError(err, errors.New("password is empty"), wlError)
-		if err != nil {
+		if wePassword.Text == "" {
+			wlError.SetText(wePassword.PlaceHolder + " is empty")
 			return
 		}
 
@@ -313,6 +332,135 @@ func FPageLogin() fyne.CanvasObject {
 	})
 
 	return container.New(layout.NewVBoxLayout(), weCompanyName, weEmployeeName, wePassword, wlError, wbLogin, wbCreateNewCompany)
+}
+
+func FPageAddNewEmployee() fyne.CanvasObject {
+	employees, _ := FDbOpenAndReadEmployees()
+
+	weEmployeeName := widget.NewSelectEntry(employees)
+	weEmployeeName.SetPlaceHolder("employee name")
+
+	wePassword := widget.NewPasswordEntry()
+	wePassword.SetPlaceHolder("password")
+
+	wlError := widget.NewLabel("")
+	wlError.Alignment = fyne.TextAlignCenter
+
+	wb := widget.NewButton("ok", func() {
+		wlError.SetText("")
+
+		if weEmployeeName.Text == "" {
+			wlError.SetText(weEmployeeName.PlaceHolder + " is empty")
+			return
+		}
+
+		if weEmployeeName.Text == CManger {
+			wlError.SetText("you can't use " + CManger + " as " + weEmployeeName.PlaceHolder)
+			return
+		}
+
+		employees, _ := FDbOpenAndReadEmployees()
+		_, isIn := FFind(weEmployeeName.Text, employees)
+		if isIn {
+			wlError.SetText(weEmployeeName.PlaceHolder + " is used")
+			return
+		}
+
+		if wePassword.Text == "" {
+			wlError.SetText(wePassword.PlaceHolder + " is empty")
+			return
+		}
+
+		FDbUpdate(VDbEmployees, []byte(weEmployeeName.Text), wePassword.Text)
+		weEmployeeName.SetText("")
+		wePassword.SetText("")
+	})
+
+	return container.New(layout.NewVBoxLayout(), weEmployeeName, wePassword, wlError, wb)
+}
+
+func FPageChangeEmployeeName() fyne.CanvasObject {
+	employees, _ := FDbOpenAndReadEmployees()
+
+	weEmployeeName := widget.NewSelectEntry(employees)
+	weEmployeeName.SetPlaceHolder("employee name")
+
+	weNewEmployeeName := widget.NewEntry()
+	weNewEmployeeName.SetPlaceHolder("new employee name")
+
+	wlError := widget.NewLabel("")
+	wlError.Alignment = fyne.TextAlignCenter
+
+	wb := widget.NewButton("ok", func() {
+		wlError.SetText("")
+
+		if weEmployeeName.Text == CManger {
+			wlError.SetText("you can't use " + CManger + " as " + weEmployeeName.PlaceHolder)
+			return
+		}
+
+		if weNewEmployeeName.Text == "" {
+			wlError.SetText(weNewEmployeeName.PlaceHolder + " is empty")
+			return
+		}
+
+		if weNewEmployeeName.Text == CManger {
+			wlError.SetText("you can't use " + CManger + " as " + weNewEmployeeName.PlaceHolder)
+			return
+		}
+
+		employees, passwords := FDbOpenAndReadEmployees()
+		indexOfEmployee, isIn := FFind(weEmployeeName.Text, employees)
+		if !isIn {
+			wlError.SetText(weEmployeeName.PlaceHolder + " is wrong")
+			return
+		}
+
+		employees, _ = FDbOpenAndReadEmployees()
+		_, isIn = FFind(weNewEmployeeName.Text, employees)
+		if isIn {
+			wlError.SetText(weNewEmployeeName.PlaceHolder + " is used")
+			return
+		}
+
+		FDbUpdate(VDbEmployees, []byte(weEmployeeName.Text), passwords[indexOfEmployee])
+		FChangeEmployeeName(weEmployeeName.Text, weNewEmployeeName.Text)
+		weEmployeeName.SetText("")
+		weNewEmployeeName.SetText("")
+	})
+
+	return container.New(layout.NewVBoxLayout(), weEmployeeName, weNewEmployeeName, wlError, wb)
+}
+
+func FPageDeleteEmployee() fyne.CanvasObject {
+	employees, _ := FDbOpenAndReadEmployees()
+
+	weEmployeeName := widget.NewSelectEntry(employees)
+	weEmployeeName.SetPlaceHolder("employee name")
+
+	wlError := widget.NewLabel("")
+	wlError.Alignment = fyne.TextAlignCenter
+
+	wb := widget.NewButton("ok", func() {
+		wlError.SetText("")
+
+		if weEmployeeName.Text == CManger {
+			wlError.SetText("you can't use " + CManger + " as " + weEmployeeName.PlaceHolder)
+			return
+		}
+
+		employees, _ := FDbOpenAndReadEmployees()
+		_, isIn := FFind(weEmployeeName.Text, employees)
+		if !isIn {
+			wlError.SetText(weEmployeeName.PlaceHolder + " is wrong")
+			return
+		}
+
+		FDbDelete(VDbEmployees, []byte(weEmployeeName.Text))
+		weEmployeeName.SetText("")
+	})
+
+	return container.New(layout.NewVBoxLayout(), weEmployeeName, wlError, wb)
 }
 
 func FDbOpenAndReadEmployees() ([]string, []string) {
@@ -366,8 +514,8 @@ func FFcEntryABPQ() *fyne.Container {
 	return fc
 }
 
-func FDisplayTheError(err error, errorMessage error, wlError *widget.Label) {
-	if err != nil {
+func FDisplayTheError(errorMessage error, wlError *widget.Label) {
+	if errorMessage != nil {
 		wlError.SetText(errorMessage.Error())
 	} else {
 		wlError.SetText("")
@@ -428,10 +576,11 @@ func FSaveEntries(insert bool) ([]SAPQ, error) {
 }
 
 func FSetTheWindow(label string, page func() fyne.CanvasObject) *widget.Button {
-	wbMenu := widget.NewButton("MENU", func() {
+	wbMenu := widget.NewButton(CMenu, func() {
 		VWindow.SetContent(FPageMenu())
 	})
 	wb := widget.NewButton(label, func() {
+		VWindow.SetTitle(CNameOfTheApp + " - " + label)
 		VWindow.SetContent(container.New(layout.NewBorderLayout(nil, wbMenu, nil, nil), wbMenu, page()))
 	})
 	wb.Alignment = widget.ButtonAlign(widget.ButtonAlignLeading)

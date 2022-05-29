@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -131,7 +132,6 @@ func FInsertToDatabaseJournal(journal []SJournal) {
 	for k1, v1 := range journal {
 		v1.EntryNumberCompound = last.EntryNumberCompound + 1
 		v1.EntryNumberSimple = k1 + 1
-
 		FDbUpdate(VDbJournal, FNow(), v1)
 	}
 }
@@ -166,7 +166,7 @@ func FInsertToJournal(debitEntries, creditEntries []SAPQA, entryInfo SEntry) []S
 }
 
 func FSimpleJournalEntry(entries []SAPQ, entryInfo SEntry, insert bool) ([]SAPQ, error) {
-	newEntries1 := FStage1(entries, false)
+	newEntries1 := FSetEntries(entries, false)
 	newEntries1 = FGroupByAccount(newEntries1)
 
 	for k1, v1 := range newEntries1 {
@@ -181,8 +181,7 @@ func FSimpleJournalEntry(entries []SAPQ, entryInfo SEntry, insert bool) ([]SAPQ,
 
 	if insert {
 		simpleEntries := FInsertToJournal(debitEntries, creditEntries, entryInfo)
-		FInsertToDatabaseJournal(simpleEntries)
-		FInsertToDatabaseInventory(newEntries1)
+		FInsertToDatabase(simpleEntries, newEntries1)
 	}
 
 	return newEntries2, nil
@@ -197,7 +196,7 @@ func FInvoiceJournalEntry(payAccountName string, payAccountPrice, invoiceDiscoun
 		return inventoryAccounts, err
 	}
 
-	newEntries1 := FStage1(inventoryAccounts, true)
+	newEntries1 := FSetEntries(inventoryAccounts, true)
 	newEntries1 = FGroupByAccount(newEntries1)
 
 	for k1, v1 := range newEntries1 {
@@ -220,11 +219,26 @@ func FInvoiceJournalEntry(payAccountName string, payAccountPrice, invoiceDiscoun
 	}
 
 	if insert {
-		FInsertToDatabaseJournal(newEntries3)
-		FInsertToDatabaseInventory(newEntries1)
+		FInsertToDatabase(newEntries3, newEntries1)
 	}
 
 	return inventoryAccounts, nil
+}
+
+func FInsertToDatabase(entriesJournal []SJournal, entriesInventory []SAPQA) {
+	var wait sync.WaitGroup
+	wait.Add(2)
+
+	go func() {
+		FInsertToDatabaseJournal(entriesJournal)
+		wait.Done()
+	}()
+	go func() {
+		FInsertToDatabaseInventory(entriesInventory)
+		wait.Done()
+	}()
+
+	wait.Wait()
 }
 
 func FAutoComplete(inventoryAccounts []SAPQA, payAccountName string, payAccountPrice float64) [][]SAPQA {
@@ -295,7 +309,7 @@ func FInsertToDatabaseInventory(entries []SAPQA) {
 	}
 }
 
-func FStage1(entries []SAPQ, isInvoice bool) []SAPQA {
+func FSetEntries(entries []SAPQ, isInvoice bool) []SAPQA {
 	var newEntries []SAPQA
 	for _, v1 := range entries {
 		account, _, err := FFindAccountFromNameOrBarcode(v1.TAccountName)
@@ -356,19 +370,6 @@ func FReverseEntries(entriesKeys [][]byte, entries []SJournal, nameEmployee stri
 	}
 
 	FInsertToDatabaseJournal(entryToReverse)
-}
-
-func FFindEntryFromNumber(entryNumberCompound int, entryNumberSimple int) ([][]byte, []SJournal) {
-	var entries []SJournal
-	var entriesKeys [][]byte
-	keys, journal := FDbRead[SJournal](VDbJournal)
-	for k1, v1 := range journal {
-		if v1.EntryNumberCompound == entryNumberCompound && (entryNumberSimple == 0 || v1.EntryNumberSimple == entryNumberSimple) {
-			entries = append(entries, v1)
-			entriesKeys = append(entriesKeys, keys[k1])
-		}
-	}
-	return entriesKeys, entries
 }
 
 func FConvertJournalToAPQA(entries []SJournal) []SAPQA {

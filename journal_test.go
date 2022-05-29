@@ -47,6 +47,7 @@ func TestGroupByAccount(t *testing.T) {
 
 }
 func TestSimpleJournalEntry(t *testing.T) {
+	FDbOpenAll()
 	var i1 []SAPQ
 	var a1 []SAPQ
 	var a2 error
@@ -121,19 +122,13 @@ func TestStage1(t *testing.T) {
 		{"cash", 10, 0},
 		{"ca", 10, 10},
 	}
-	a1 := FStage1(i1, false)
+	a1 := FSetEntries(i1, false)
 	e1 := []SAPQA{
 		{"book", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}},
 		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}},
 		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}},
 	}
 	FTest(true, a1, e1)
-}
-
-func TestReverseEntries(t *testing.T) {
-	keys, journal := FFindEntryFromNumber(8, 0)
-	FReverseEntries(keys, journal, "hashem")
-	FDbCloseAll()
 }
 
 func TestConvertPriceQuantityAccountToPriceQuantityAccountBarcode(t *testing.T) {
@@ -241,10 +236,11 @@ func TestAutoComplete(t *testing.T) {
 	FPrintSlice(a1)
 }
 
-func TestConvertJournalToAPQA(t *testing.T) {
-	_, journal := FFindEntryFromNumber(8, 0)
-	FDbCloseAll()
-	a1 := FConvertJournalToAPQA(journal)
-	FPrintSlice(a1)
+func TestFReverseEntries(t *testing.T) {
+	FDbOpenAll()
+	keys, journal := FDbRead[SJournal](VDbJournal)
+	FReverseEntries(keys, journal, "hashem")
+	keys, journal = FDbRead[SJournal](VDbJournal)
 	FPrintJournal(journal)
+	FDbCloseAll()
 }

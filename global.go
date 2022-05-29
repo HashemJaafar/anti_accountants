@@ -10,6 +10,10 @@ import (
 )
 
 const (
+	CNameOfTheApp = "ANTI ACCOUNTANTS"
+	CMenu         = "MENU"
+	CManger       = "Manger"
+
 	CPathDataBase              = "./db/"
 	CPathAccounts              = "/accounts"
 	CPathJournal               = "/journal"

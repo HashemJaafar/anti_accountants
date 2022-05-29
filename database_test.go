@@ -21,6 +21,7 @@ func TestDbLastLine(t *testing.T) {
 }
 
 func TestDbRead(t *testing.T) {
+	FDbOpenAll()
 	_, inventory := FDbRead[SAPQ](VDbInventory)
 	_, journal := FDbRead[SJournal](VDbJournal)
 	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
@@ -68,4 +69,10 @@ func TestFDbRead(t *testing.T) {
 	fmt.Println(employees)
 	fmt.Println(passwords)
 	FDbCloseAll()
+}
+
+func TestFDbClose(t *testing.T) {
+	VDbAccounts = FDbOpen(VDbAccounts, CPathDataBase+VCompanyName+CPathAccounts)
+	FDbClose(VDbAccounts)
+	FDbClose(VDbAccounts)
 }

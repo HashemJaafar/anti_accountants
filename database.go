@@ -109,20 +109,20 @@ func FDbLastLine[t any](db *badger.DB) t {
 	return tag
 }
 
-func FDbOpen(database *badger.DB, path string) *badger.DB {
+func FDbOpen(oldDB *badger.DB, path string) *badger.DB {
 	for {
-		db, err := badger.Open(badger.DefaultOptions(path))
+		newDB, err := badger.Open(badger.DefaultOptions(path))
 		if err != nil {
 			log.Println(err)
 		}
 		if err != nil &&
 			(strings.Contains(err.Error(), "Cannot acquire directory lock on") ||
 				strings.Contains(err.Error(), "Another process is using this Badger database.")) {
-			return database
+			return oldDB
 		}
 		if err == nil {
-			FDbClose(database)
-			return db
+			FDbClose(oldDB)
+			return newDB
 		}
 	}
 }
@@ -222,6 +222,16 @@ func FChangeName(old, new string) {
 	for k1, v1 := range journal {
 		if v1.Name == old {
 			v1.Name = new
+			FDbUpdate(VDbJournal, keys[k1], v1)
+		}
+	}
+}
+
+func FChangeEmployeeName(old, new string) {
+	keys, journal := FDbRead[SJournal](VDbJournal)
+	for k1, v1 := range journal {
+		if v1.Employee == old {
+			v1.Employee = new
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}

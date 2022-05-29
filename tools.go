@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -447,13 +446,6 @@ func FPrintCvp(a SCvp) {
 	fmt.Fprintln(VPrintTable, "Profit", "\t", a.Profit)
 	fmt.Fprintln(VPrintTable, "ContributionMargin", "\t", a.ContributionMargin)
 	VPrintTable.Flush()
-}
-
-func FErrorIfFalse(a bool) error {
-	if !a {
-		return errors.New("")
-	}
-	return nil
 }
 
 func FFilesName(dir string) ([]string, error) {
