@@ -136,3 +136,16 @@ func FPrintEquation(print bool, m map[string]float64, a, b, sign, c string) {
 		fmt.Fprintln(VPrintTable, a, "\t", m[a], "\t", " = ", "\t", b, "\t", m[b], "\t", sign, "\t", c, "\t", m[c])
 	}
 }
+
+func FMaxMin(slice []float64) (float64, float64) {
+	var max, min float64
+	for _, v1 := range slice {
+		if v1 > max {
+			max = v1
+		}
+		if v1 < min {
+			min = v1
+		}
+	}
+	return max, min
+}

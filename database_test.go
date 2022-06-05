@@ -21,6 +21,7 @@ func TestDbLastLine(t *testing.T) {
 }
 
 func TestDbRead(t *testing.T) {
+	VCompanyName = "anti_accountants"
 	FDbOpenAll()
 	_, inventory := FDbRead[SAPQ](VDbInventory)
 	_, journal := FDbRead[SJournal](VDbJournal)

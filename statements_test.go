@@ -5,14 +5,6 @@ import (
 	"time"
 )
 
-func TestFilterJournalFromReverseEntry(t *testing.T) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
-	a1, a2 := FFilterJournalFromReverseEntry(keys, journal)
-	FDbCloseAll()
-	FPrintSlice(a1)
-	FPrintSlice(a2)
-}
-
 func TestStatementStep1(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
 	FDbCloseAll()
@@ -104,16 +96,46 @@ func TestStatementStep7(t *testing.T) {
 }
 
 func TestFinancialStatements(t *testing.T) {
-	a1, a2 := FStatement([]time.Time{time.Now()}, 1, []string{"yasa"}, true, false)
+	VCompanyName = "anti_accountants"
+	FDbOpenAll()
+	keys, journal := FDbRead[SJournal](VDbJournal)
+	FDbCloseAll()
+	FPrintJournal(journal)
+	dates := FConvertByteSliceToTime(keys)
+	dates, journal = FJournalFilter(dates, journal, SFilterJournal{}, false)
+	a1, a2 := FStatement(dates, journal, []time.Time{time.Now()}, 1, []string{"yasa"}, true)
+	a3 := FStatementFilter(a1[0], SFilterStatement{
+		Account1: SFilterAccount{
+			IsFilter:    false,
+			IsCredit:    SFilterBool{IsFilter: false, BoolValue: false},
+			Account:     SFilterString{IsFilter: false, Way: "", Slice: []string{}},
+			FathersName: SFilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersName: false, FathersName: []string{"assets"}},
+			Levels:      SFilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
+		},
+		Account2: SFilterAccount{
+			IsFilter:    false,
+			IsCredit:    SFilterBool{IsFilter: false, BoolValue: false},
+			Account:     SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CAllAccounts}},
+			FathersName: SFilterFathersAccountsName{IsFilter: false, InAccountName: false, InFathersName: false, FathersName: []string{}},
+			Levels:      SFilterSliceUint{IsFilter: false, InSlice: false, Slice: []uint{}},
+		},
+		Name:                   SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{"zizi"}},
+		Vpq:                    SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CValue}},
+		TypeOfVpq:              SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CFlowEnding}},
+		ChangeOrRatioOrBalance: SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CBalance}},
+		Number:                 SFilterNumber{IsFilter: false, Way: "", Slice: []float64{}},
+	})
+
 	FTest(true, a2, nil)
-	for _, v1 := range a1 {
-		FPrintMap5(v1)
-	}
+	a4 := FConvertStatmentWithAccountToFilteredStatement(a3)
+	FPrintStatement(a4)
 }
 
 func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
-	i1, _ := FStatement([]time.Time{time.Now()}, 10, []string{"yasa"}, true, false)
+	keys, journal := FDbRead[SJournal](VDbJournal)
 	FDbCloseAll()
+	dates := FConvertByteSliceToTime(keys)
+	i1, _ := FStatement(dates, journal, []time.Time{time.Now()}, 1, []string{"yasa"}, true)
 	a1 := FStatementFilter(i1[0], SFilterStatement{
 		Account1: SFilterAccount{
 			IsFilter:    false,
@@ -133,7 +155,7 @@ func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
 		Vpq:                    SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CValue}},
 		TypeOfVpq:              SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CFlowEnding}},
 		ChangeOrRatioOrBalance: SFilterString{},
-		Number:                 SFilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
+		Number:                 SFilterNumber{IsFilter: false, Way: "", Slice: []float64{}},
 	})
 
 	a1 = FStatementFilterByGreedyAlgorithm(a1, true, 0.7)
@@ -142,8 +164,10 @@ func TestStatementFilterByGreedyAlgorithm(t *testing.T) {
 }
 
 func TestSortByLevel(t *testing.T) {
-	i1, _ := FStatement([]time.Time{time.Now()}, 10, []string{"yasa"}, true, false)
+	keys, journal := FDbRead[SJournal](VDbJournal)
 	FDbCloseAll()
+	dates := FConvertByteSliceToTime(keys)
+	i1, _ := FStatement(dates, journal, []time.Time{time.Now()}, 1, []string{"yasa"}, true)
 	a1 := FStatementFilter(i1[0], SFilterStatement{
 		// Account1: FilterAccount{
 		// 	IsLowLevel:   FilterBool{IsFilter: false, BoolValue: false},
@@ -173,8 +197,10 @@ func TestSortByLevel(t *testing.T) {
 }
 
 func TestMakeSpaceBeforeAccountInStatementStruct(t *testing.T) {
-	i1, _ := FStatement([]time.Time{time.Now()}, 1, []string{"yasa"}, true, false)
+	keys, journal := FDbRead[SJournal](VDbJournal)
 	FDbCloseAll()
+	dates := FConvertByteSliceToTime(keys)
+	i1, _ := FStatement(dates, journal, []time.Time{time.Now()}, 1, []string{"yasa"}, true)
 	a1 := FStatementFilter(i1[0], SFilterStatement{
 		Account1: SFilterAccount{
 			IsFilter:    true,
@@ -194,7 +220,7 @@ func TestMakeSpaceBeforeAccountInStatementStruct(t *testing.T) {
 		Vpq:                    SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CValue}},
 		TypeOfVpq:              SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CFlowEnding}},
 		ChangeOrRatioOrBalance: SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{CBalance}},
-		Number:                 SFilterNumber{IsFilter: false, Way: "", Big: 0, Small: 0},
+		Number:                 SFilterNumber{IsFilter: false, Way: "", Slice: []float64{}},
 	})
 
 	a1 = FSortByLevel(a1)

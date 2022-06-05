@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"strings"
 	"sync"
 
 	badger "github.com/dgraph-io/badger/v3"
@@ -11,7 +10,7 @@ import (
 
 func FDbOpenAll() {
 	var wait sync.WaitGroup
-	wait.Add(5)
+	wait.Add(6)
 
 	go func() {
 		VDbAccounts = FDbOpen(VDbAccounts, CPathDataBase+VCompanyName+CPathAccounts)
@@ -33,6 +32,10 @@ func FDbOpenAll() {
 		VDbEmployees = FDbOpen(VDbEmployees, CPathDataBase+VCompanyName+CPathEmployees)
 		wait.Done()
 	}()
+	go func() {
+		VDbJournalDrafts = FDbOpen(VDbJournalDrafts, CPathDataBase+VCompanyName+CPathDrafts)
+		wait.Done()
+	}()
 
 	wait.Wait()
 
@@ -50,7 +53,7 @@ func FDbOpenAll() {
 
 func FDbCloseAll() {
 	var wait sync.WaitGroup
-	wait.Add(5)
+	wait.Add(6)
 
 	go func() {
 		FDbClose(VDbAccounts)
@@ -70,6 +73,10 @@ func FDbCloseAll() {
 	}()
 	go func() {
 		FDbClose(VDbEmployees)
+		wait.Done()
+	}()
+	go func() {
+		FDbClose(VDbJournalDrafts)
 		wait.Done()
 	}()
 
@@ -110,20 +117,19 @@ func FDbLastLine[t any](db *badger.DB) t {
 }
 
 func FDbOpen(oldDB *badger.DB, path string) *badger.DB {
+	FDbClose(oldDB)
 	for {
 		newDB, err := badger.Open(badger.DefaultOptions(path))
-		if err != nil {
+		if err == nil {
+			return newDB
+		} else {
 			log.Println(err)
 		}
-		if err != nil &&
-			(strings.Contains(err.Error(), "Cannot acquire directory lock on") ||
-				strings.Contains(err.Error(), "Another process is using this Badger database.")) {
-			return oldDB
-		}
-		if err == nil {
-			FDbClose(oldDB)
-			return newDB
-		}
+		// if err != nil &&
+		// 	(strings.Contains(err.Error(), "Cannot acquire directory lock on") ||
+		// 		strings.Contains(err.Error(), "Another process is using this Badger database.")) {
+		// 	return oldDB
+		// }
 	}
 }
 
@@ -165,12 +171,12 @@ func FDbUpdate[t any](db *badger.DB, key []byte, Value t) {
 func FChangeAccountName(old, new string) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
 	for k1, v1 := range journal {
-		if v1.AccountCredit == old {
-			v1.AccountCredit = new
+		if v1.CreditAccountName == old {
+			v1.CreditAccountName = new
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
-		if v1.AccountDebit == old {
-			v1.AccountDebit = new
+		if v1.DebitAccountName == old {
+			v1.DebitAccountName = new
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
@@ -184,18 +190,7 @@ func FChangeAccountName(old, new string) {
 }
 
 func FWeightedAverage(account string) {
-	var totalValue, totalQuantity float64
-	_, journal := FDbRead[SJournal](VDbJournal)
-	for _, v1 := range journal {
-		if v1.AccountCredit == account {
-			totalValue += v1.Value
-			totalQuantity += v1.QuantityCredit
-		}
-		if v1.AccountDebit == account {
-			totalValue -= v1.Value
-			totalQuantity -= v1.QuantityDebit
-		}
-	}
+	_, price, quantity := FTotalValuePriceQuantity(account)
 
 	keys, inventory := FDbRead[SAPQ](VDbInventory)
 	for k1, v1 := range inventory {
@@ -204,7 +199,7 @@ func FWeightedAverage(account string) {
 		}
 	}
 
-	FDbUpdate(VDbInventory, FNow(), SAPQ{account, FAbs(totalValue / totalQuantity), FAbs(totalQuantity)})
+	FDbUpdate(VDbInventory, FNow(), SAPQ{account, price, FAbs(quantity)})
 }
 
 func FChangeNotes(old, new string) {
@@ -251,9 +246,9 @@ func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund int, new SEntry) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.EntryNumberCompound == entryNumberCompund {
-			v1.Notes = new.TEntryNotes
-			v1.Name = new.TPersonName
-			v1.TypeOfCompoundEntry = new.TTypeOfCompoundEntry
+			v1.Notes = new.Notes
+			v1.Name = new.Name
+			v1.TypeOfCompoundEntry = new.TypeOfCompoundEntry
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}

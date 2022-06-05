@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -163,4 +166,30 @@ func FFindObject(object fyne.CanvasObject, objects []fyne.CanvasObject) (int, bo
 		}
 	}
 	return 0, false
+}
+
+func main1() {
+	// VCompanyName = "anti_accountants"
+	// FDbOpenAll()
+	// _, value := FDbRead[*fyne.Container](VDbJournalDrafts)
+	// FDbCloseAll()
+
+	// fmt.Println(value)
+	a := app.New()
+	w := a.NewWindow("")
+
+	wb1 := widget.NewButton("b1", nil)
+	wb1.Text = "ihasiodjodjaoi"
+	fc1 := container.NewHBox(wb1)
+
+	v, err := json.Marshal(fc1)
+	fmt.Println(v)
+	fmt.Println(err)
+
+	var fc2 *fyne.Container
+	err = json.Unmarshal(v, &fc2)
+	fmt.Println(err)
+
+	w.SetContent(fc2)
+	w.ShowAndRun()
 }

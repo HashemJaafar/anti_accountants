@@ -6,11 +6,11 @@ import (
 )
 
 func TestCheckDebitEqualCredit(t *testing.T) {
-	i1 := []SAPQA{
-		{"book", 1, 10, SAccount{TIsCredit: false}},
-		{"cash", 1, 10, SAccount{TIsCredit: false}},
-		{"rent", 1, 10, SAccount{TIsCredit: true}},
-		{"rent", 1, 10, SAccount{TIsCredit: true}},
+	i1 := []SAPQAE{
+		{"book", 1, 10, SAccount{TIsCredit: false}, nil},
+		{"cash", 1, 10, SAccount{TIsCredit: false}, nil},
+		{"rent", 1, 10, SAccount{TIsCredit: true}, nil},
+		{"rent", 1, 10, SAccount{TIsCredit: true}, nil},
 	}
 	a1, a2, a3 := FCheckDebitEqualCredit(i1)
 	FPrintSlice(a1)
@@ -21,7 +21,7 @@ func TestCheckDebitEqualCredit(t *testing.T) {
 func TestSetPriceAndQuantity(t *testing.T) {
 	_, inventory := FDbRead[SAPQ](VDbInventory)
 	FPrintSlice(inventory)
-	i1 := SAPQA{"rent", 0, -1, SAccount{TIsCredit: false}}
+	i1 := SAPQAE{"rent", 0, -1, SAccount{TIsCredit: false}, nil}
 	a1 := FSetPriceAndQuantity(i1, true)
 	fmt.Println(a1)
 	_, inventory = FDbRead[SAPQ](VDbInventory)
@@ -30,26 +30,27 @@ func TestSetPriceAndQuantity(t *testing.T) {
 }
 
 func TestGroupByAccount(t *testing.T) {
-	i1 := []SAPQA{
-		{"book", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}},
-		{"book", 5, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}},
-		{"book", 3, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}},
-		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}},
-		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}},
+	i1 := []SAPQAE{
+		{"book", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
+		{"book", 5, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
+		{"book", 3, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
+		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}, nil},
+		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}, nil},
 	}
 	a1 := FGroupByAccount(i1)
-	e1 := []SAPQA{
-		{"book", 3, 30, SAccount{TIsCredit: false, TCostFlowType: CLifo}},
-		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}},
-		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}},
+	e1 := []SAPQAE{
+		{"book", 3, 30, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
+		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}, nil},
+		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}, nil},
 	}
 	FTest(true, a1, e1)
 
 }
 func TestSimpleJournalEntry(t *testing.T) {
+	VCompanyName = "anti_accountants"
 	FDbOpenAll()
 	var i1 []SAPQ
-	var a1 []SAPQ
+	var a1 []SAPQAE
 	var a2 error
 
 	i1 = []SAPQ{
@@ -123,16 +124,16 @@ func TestStage1(t *testing.T) {
 		{"ca", 10, 10},
 	}
 	a1 := FSetEntries(i1, false)
-	e1 := []SAPQA{
-		{"book", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}},
-		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}},
-		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}},
+	e1 := []SAPQAE{
+		{"book", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
+		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}, nil},
+		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}, nil},
 	}
 	FTest(true, a1, e1)
 }
 
 func TestConvertPriceQuantityAccountToPriceQuantityAccountBarcode(t *testing.T) {
-	a1 := FConvertAPQICToAPQB([]SAPQA{{
+	a1 := FConvertAPQICToAPQB([]SAPQAE{{
 		TAccountName: "cash",
 		TPrice:       5,
 		TQuantity:    8,
@@ -168,26 +169,7 @@ func TestFindDuplicateElement(t *testing.T) {
 func TestFJournalFilter(t *testing.T) {
 	keys, journal := FDbRead[SJournal](VDbJournal)
 	dates := FConvertByteSliceToTime(keys)
-	i1 := SFilterJournal{
-		Date:                       SFilterDate{},
-		IsReverse:                  SFilterBool{},
-		IsReversed:                 SFilterBool{},
-		ReverseEntryNumberCompound: SFilterNumber{},
-		ReverseEntryNumberSimple:   SFilterNumber{},
-		EntryNumberCompound:        SFilterNumber{},
-		EntryNumberSimple:          SFilterNumber{},
-		Value:                      SFilterNumber{},
-		PriceDebit:                 SFilterNumber{},
-		PriceCredit:                SFilterNumber{},
-		QuantityDebit:              SFilterNumber{},
-		QuantityCredit:             SFilterNumber{IsFilter: false, Way: CNotBetween, Big: 999, Small: 0},
-		AccountDebit:               SFilterString{},
-		AccountCredit:              SFilterString{},
-		Notes:                      SFilterString{},
-		Name:                       SFilterString{},
-		Employee:                   SFilterString{},
-		TypeOfCompoundEntry:        SFilterString{IsFilter: true, Way: CInSlice, Slice: []string{"payment"}},
-	}
+	i1 := SFilterJournal{}
 	a1, a2 := FJournalFilter(dates, journal, i1, true)
 	FPrintSlice(a1)
 	FPrintSlice(a2)
@@ -220,15 +202,15 @@ func TestAutoComplete(t *testing.T) {
 		{"book", 12, 0, []SPQ{{5, 2}}},
 	}
 
-	a1 := FAutoComplete([]SAPQA{{
+	a1 := FAutoComplete([]SAPQAE{{
 		TAccountName: "book",
 		TPrice:       0,
 		TQuantity:    -1,
 		SAccount:     SAccount{},
 	}}, "cash", 1)
-	e1 := [][]SAPQA{
-		{{"book", 0, -1, SAccount{TIsCredit: false}}, {CPrefixCost + "book", 0, 1, SAccount{TIsCredit: false}}},
-		{{CPrefixRevenue + "book", 12, 1, SAccount{TIsCredit: true}}, {CPrefixCost + "book", 5, 1, SAccount{TIsCredit: false}}, {"cash", 1, 7, SAccount{TIsCredit: false}}},
+	e1 := [][]SAPQAE{
+		{{"book", 0, -1, SAccount{TIsCredit: false}, nil}, {CPrefixCost + "book", 0, 1, SAccount{TIsCredit: false}, nil}},
+		{{CPrefixRevenue + "book", 12, 1, SAccount{TIsCredit: true}, nil}, {CPrefixCost + "book", 5, 1, SAccount{TIsCredit: false}, nil}, {"cash", 1, 7, SAccount{TIsCredit: false}, nil}},
 	}
 	FTest(true, a1, e1)
 

@@ -16,16 +16,18 @@ func TestFilter(t *testing.T) {
 }
 
 func TestFilterNumber_Filter(t *testing.T) {
-	a1 := SFilterNumber{IsFilter: true, Way: CBetween, Big: 900, Small: 0}.FFilter(1000)
+	a1 := SFilterNumber{IsFilter: true, Way: CBetween, Slice: []float64{100, 500}}.FFilter(1000)
 	FTest(true, a1, false)
-	a1 = SFilterNumber{IsFilter: true, Way: CNotBetween, Big: 900, Small: 0}.FFilter(1000)
+	a1 = SFilterNumber{IsFilter: true, Way: CNotBetween, Slice: []float64{100, 500}}.FFilter(1000)
 	FTest(true, a1, true)
-	a1 = SFilterNumber{IsFilter: true, Way: CBigger, Big: 900, Small: 0}.FFilter(1000)
+	a1 = SFilterNumber{IsFilter: true, Way: CBigger, Slice: []float64{100, 500}}.FFilter(1000)
 	FTest(true, a1, true)
-	a1 = SFilterNumber{IsFilter: true, Way: CSmaller, Big: 900, Small: 0}.FFilter(1000)
+	a1 = SFilterNumber{IsFilter: true, Way: CSmaller, Slice: []float64{100, 500}}.FFilter(1000)
 	FTest(true, a1, false)
-	a1 = SFilterNumber{IsFilter: true, Way: CEqualToOneOfThem, Big: 900, Small: 0}.FFilter(1000)
+	a1 = SFilterNumber{IsFilter: true, Way: CInSlice, Slice: []float64{100, 500}}.FFilter(1000)
 	FTest(true, a1, false)
+	a1 = SFilterNumber{IsFilter: true, Way: CNotInSlice, Slice: []float64{100, 500}}.FFilter(1000)
+	FTest(true, a1, true)
 }
 
 func TestFilterSliceString_Filter(t *testing.T) {

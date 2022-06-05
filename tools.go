@@ -232,24 +232,25 @@ func (s SFilterDate) FFilter(input time.Time) bool {
 		return true
 	}
 
-	if s.Big.Before(s.Small) {
-		s.Big, s.Small = s.Small, s.Big
-	}
-
-	isSmallerThanSmall := input.Before(s.Small)
-	isBiggerThanBig := input.After(s.Big)
-
 	switch s.Way {
 	case CBetween:
-		return !isSmallerThanSmall && !isBiggerThanBig
+		max, min := FMaxMinDate(s.Slice)
+		return input.After(min) && input.Before(max)
 	case CNotBetween:
-		return isSmallerThanSmall || isBiggerThanBig
+		max, min := FMaxMinDate(s.Slice)
+		return !(input.After(min) && input.Before(max))
 	case CBigger:
-		return input.After(s.Big)
+		max, _ := FMaxMinDate(s.Slice)
+		return input.After(max)
 	case CSmaller:
-		return input.Before(s.Small)
-	case CEqualToOneOfThem:
-		return input == s.Small || input == s.Big
+		_, min := FMaxMinDate(s.Slice)
+		return input.Before(min)
+	case CInSlice:
+		_, isIn := FFind(input, s.Slice)
+		return isIn
+	case CNotInSlice:
+		_, isIn := FFind(input, s.Slice)
+		return !isIn
 	}
 
 	return false
@@ -260,24 +261,25 @@ func (s SFilterNumber) FFilter(input float64) bool {
 		return true
 	}
 
-	if s.Big < s.Small {
-		s.Big, s.Small = s.Small, s.Big
-	}
-
-	isSmallerThanSmall := input < s.Small
-	isBiggerThanBig := input > s.Big
-
 	switch s.Way {
 	case CBetween:
-		return !isSmallerThanSmall && !isBiggerThanBig
+		max, min := FMaxMin(s.Slice)
+		return input >= min && input <= max
 	case CNotBetween:
-		return isSmallerThanSmall || isBiggerThanBig
+		max, min := FMaxMin(s.Slice)
+		return !(input >= min && input <= max)
 	case CBigger:
-		return input > s.Big
+		max, _ := FMaxMin(s.Slice)
+		return input > max
 	case CSmaller:
-		return input < s.Small
-	case CEqualToOneOfThem:
-		return input == s.Small || input == s.Big
+		_, min := FMaxMin(s.Slice)
+		return input < min
+	case CInSlice:
+		_, isIn := FFind(input, s.Slice)
+		return isIn
+	case CNotInSlice:
+		_, isIn := FFind(input, s.Slice)
+		return !isIn
 	}
 
 	return false
@@ -424,12 +426,12 @@ func FPrintJournal(slice []SJournal) {
 			"\t", v1.EntryNumberCompound,
 			"\t", v1.EntryNumberSimple,
 			"\t", v1.Value,
-			"\t", v1.PriceDebit,
-			"\t", v1.PriceCredit,
-			"\t", v1.QuantityDebit,
-			"\t", v1.QuantityCredit,
-			"\t", v1.AccountDebit,
-			"\t", v1.AccountCredit,
+			"\t", v1.DebitPrice,
+			"\t", v1.CreditPrice,
+			"\t", v1.DebitQuantity,
+			"\t", v1.CreditQuantity,
+			"\t", v1.DebitAccountName,
+			"\t", v1.CreditAccountName,
 			"\t", v1.Notes,
 			"\t", v1.Name,
 			"\t", v1.Employee,
@@ -458,4 +460,17 @@ func FFilesName(dir string) ([]string, error) {
 		filesName = append(filesName, v1.Name())
 	}
 	return filesName, nil
+}
+
+func FMaxMinDate(slice []time.Time) (time.Time, time.Time) {
+	var max, min time.Time
+	for _, v1 := range slice {
+		if v1.After(max) {
+			max = v1
+		}
+		if v1.Before(min) {
+			min = v1
+		}
+	}
+	return max, min
 }

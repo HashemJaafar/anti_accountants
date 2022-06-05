@@ -10,16 +10,13 @@ import (
 )
 
 const (
-	CNameOfTheApp = "ANTI ACCOUNTANTS"
-	CMenu         = "MENU"
-	CManger       = "Manger"
-
 	CPathDataBase              = "./db/"
 	CPathAccounts              = "/accounts"
 	CPathJournal               = "/journal"
 	CPathInventory             = "/inventory"
 	CPathAutoCompletionEntries = "/auto_completion_entries"
 	CPathEmployees             = "/employees"
+	CPathDrafts                = "/drafts"
 
 	CFifo             = "Fifo"
 	CLifo             = "Lifo"
@@ -98,11 +95,10 @@ const (
 	CPortions                      = "Portions"
 
 	// filter key words for numbers and dates
-	CBetween          = "Between"    // between big and small
-	CNotBetween       = "NotBetween" // not between big and small
-	CBigger           = "Bigger"     // bigger than big
-	CSmaller          = "Smaller"    // smaller than small
-	CEqualToOneOfThem = "EqualToOneOfThem"
+	CBetween    = "Between"    // between big and small
+	CNotBetween = "NotBetween" // not between big and small
+	CBigger     = "Bigger"     // bigger than big
+	CSmaller    = "Smaller"    // smaller than small
 
 	// filter key words for string
 	CInSlice              = "InSlice"
@@ -134,6 +130,7 @@ var (
 	VDbInventory             *badger.DB
 	VDbAutoCompletionEntries *badger.DB
 	VDbEmployees             *badger.DB
+	VDbJournalDrafts         *badger.DB
 	VAccounts                []SAccount
 	VAutoCompletionEntries   []SAutoCompletion
 
@@ -173,10 +170,10 @@ type (
 )
 
 type SEntry struct {
-	TEntryNotes string
-	TPersonName
-	TEmployeeName        string
-	TTypeOfCompoundEntry string
+	Notes               string
+	Name                string
+	Employee            string
+	TypeOfCompoundEntry string
 }
 type SPQ struct {
 	TPrice
@@ -187,11 +184,12 @@ type SAPQ struct {
 	TPrice
 	TQuantity
 }
-type SAPQA struct {
+type SAPQAE struct {
 	TAccountName
 	TPrice
 	TQuantity
 	SAccount
+	error
 }
 type SAccount struct {
 	TIsCredit           bool
@@ -212,16 +210,19 @@ type SJournal struct {
 	EntryNumberCompound        int
 	EntryNumberSimple          int
 	Value                      float64
-	PriceDebit                 float64
-	PriceCredit                float64
-	QuantityDebit              float64
-	QuantityCredit             float64
-	AccountDebit               string
-	AccountCredit              string
-	Notes                      string
-	Name                       string
-	Employee                   string
-	TypeOfCompoundEntry        string
+	DebitAccountName           string
+	DebitPrice                 float64
+	DebitQuantity              float64
+	DebitBalanceValue          float64
+	DebitBalancePrice          float64
+	DebitBalanceQuantity       float64
+	CreditAccountName          string
+	CreditPrice                float64
+	CreditQuantity             float64
+	CreditBalanceValue         float64
+	CreditBalancePrice         float64
+	CreditBalanceQuantity      float64
+	SEntry
 }
 type SStatement struct {
 	TAccount1Name
@@ -255,12 +256,18 @@ type SFilterJournal struct {
 	EntryNumberCompound        SFilterNumber
 	EntryNumberSimple          SFilterNumber
 	Value                      SFilterNumber
-	PriceDebit                 SFilterNumber
-	PriceCredit                SFilterNumber
-	QuantityDebit              SFilterNumber
-	QuantityCredit             SFilterNumber
-	AccountDebit               SFilterString
-	AccountCredit              SFilterString
+	DebitAccountName           SFilterString
+	DebitPrice                 SFilterNumber
+	DebitQuantity              SFilterNumber
+	DebitBalanceValue          SFilterNumber
+	DebitBalancePrice          SFilterNumber
+	DebitBalanceQuantity       SFilterNumber
+	CreditAccountName          SFilterString
+	CreditPrice                SFilterNumber
+	CreditQuantity             SFilterNumber
+	CreditBalanceValue         SFilterNumber
+	CreditBalancePrice         SFilterNumber
+	CreditBalanceQuantity      SFilterNumber
 	Notes                      SFilterString
 	Name                       SFilterString
 	Employee                   SFilterString
@@ -304,14 +311,12 @@ type SFilterSliceUint struct {
 type SFilterDate struct {
 	IsFilter bool
 	Way      string
-	Big      time.Time
-	Small    time.Time
+	Slice    []time.Time
 }
 type SFilterNumber struct {
 	IsFilter bool
 	Way      string
-	Big      float64
-	Small    float64
+	Slice    []float64
 }
 type SFilterString struct {
 	IsFilter bool

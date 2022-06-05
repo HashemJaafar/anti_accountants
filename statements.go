@@ -5,16 +5,7 @@ import (
 	"time"
 )
 
-func FStatement(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []TPersonName, inNames, withoutReverseEntry bool) ([]TStatement3, error) {
-
-	keys, journal := FDbRead[SJournal](VDbJournal)
-
-	if withoutReverseEntry {
-		keys, journal = FFilterJournalFromReverseEntry(keys, journal)
-	}
-
-	dates := FConvertByteSliceToTime(keys)
-
+func FStatement(dates []time.Time, journal []SJournal, allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYouWant []TPersonName, inNames bool) ([]TStatement3, error) {
 	var statements1 []TStatement2
 	FSortTime(allEndDates, true)
 	for _, v1 := range allEndDates {
@@ -36,18 +27,6 @@ func FStatement(allEndDates []time.Time, periodInDaysBeforeEndDate uint, namesYo
 	}
 
 	return statements2, nil
-}
-
-func FFilterJournalFromReverseEntry(keys [][]byte, journal []SJournal) ([][]byte, []SJournal) {
-	var newKeys [][]byte
-	var newJournal []SJournal
-	for k1, v1 := range journal {
-		if !v1.IsReverse && !v1.IsReversed {
-			newKeys = append(newKeys, keys[k1])
-			newJournal = append(newJournal, v1)
-		}
-	}
-	return newKeys, newJournal
 }
 
 func FStatementStep1(dates []time.Time, journal []SJournal, dateStart, dateEnd time.Time) TStatement1 {
@@ -303,14 +282,14 @@ func FStatementStep9(oldStatement TStatement3) {
 }
 
 func FFillNewStatement(newStatement TStatement1, v1 SJournal, isBeforeDateStart bool) {
-	m := FInitializeMap6(newStatement, v1.AccountCredit, v1.AccountDebit, v1.Name, CValue, isBeforeDateStart)
+	m := FInitializeMap6(newStatement, v1.CreditAccountName, v1.DebitAccountName, v1.Name, CValue, isBeforeDateStart)
 	m[true] += v1.Value
-	m = FInitializeMap6(newStatement, v1.AccountCredit, v1.AccountDebit, v1.Name, CQuantity, isBeforeDateStart)
-	m[true] += FAbs(v1.QuantityCredit)
-	m = FInitializeMap6(newStatement, v1.AccountDebit, v1.AccountCredit, v1.Name, CValue, isBeforeDateStart)
+	m = FInitializeMap6(newStatement, v1.CreditAccountName, v1.DebitAccountName, v1.Name, CQuantity, isBeforeDateStart)
+	m[true] += FAbs(v1.CreditQuantity)
+	m = FInitializeMap6(newStatement, v1.DebitAccountName, v1.CreditAccountName, v1.Name, CValue, isBeforeDateStart)
 	m[false] += v1.Value
-	m = FInitializeMap6(newStatement, v1.AccountDebit, v1.AccountCredit, v1.Name, CQuantity, isBeforeDateStart)
-	m[false] += FAbs(v1.QuantityDebit)
+	m = FInitializeMap6(newStatement, v1.DebitAccountName, v1.CreditAccountName, v1.Name, CQuantity, isBeforeDateStart)
+	m[false] += FAbs(v1.DebitQuantity)
 }
 
 func FStatementFilter(oldStatement TStatement3, f SFilterStatement) []SStatmentWithAccount {

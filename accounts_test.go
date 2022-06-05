@@ -23,6 +23,7 @@ func TestAccountStructFromName(t *testing.T) {
 }
 
 func TestAddAccount(t *testing.T) {
+	VCompanyName = "anti_accountants"
 	FDbOpenAll()
 	var a1 error
 
@@ -279,10 +280,14 @@ func TestMaxLenForAccountNumber(t *testing.T) {
 }
 
 func TestPrintFormatedAccounts(t *testing.T) {
+	VCompanyName = "anti_accountants"
+	FDbOpenAll()
 	FPrintFormatedAccounts()
 }
 
 func TestSetTheAccounts(t *testing.T) {
+	VCompanyName = "anti_accountants"
+	FDbOpenAll()
 	FSetTheAccounts()
 	FPrintFormatedAccounts()
 }

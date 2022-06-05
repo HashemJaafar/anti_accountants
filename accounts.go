@@ -271,7 +271,7 @@ func FIsItTheFather(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bo
 func FIsUsedInJournal(accountName string) bool {
 	_, journal := FDbRead[SJournal](VDbJournal)
 	for _, v1 := range journal {
-		if accountName == v1.AccountCredit || accountName == v1.AccountDebit {
+		if accountName == v1.CreditAccountName || accountName == v1.DebitAccountName {
 			return true
 		}
 	}
