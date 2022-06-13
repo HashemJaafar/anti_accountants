@@ -16,7 +16,8 @@ const (
 	CPathInventory             = "/inventory"
 	CPathAutoCompletionEntries = "/auto_completion_entries"
 	CPathEmployees             = "/employees"
-	CPathDrafts                = "/drafts"
+	CPathJournalDrafts         = "/journal_drafts"
+	CPathInvoiceDrafts         = "/invoice_drafts"
 
 	CFifo             = "Fifo"
 	CLifo             = "Lifo"
@@ -101,6 +102,7 @@ const (
 	CSmaller    = "Smaller"    // smaller than small
 
 	// filter key words for string
+	CDontFilter           = "DontFilter"
 	CInSlice              = "InSlice"
 	CNotInSlice           = "NotInSlice"
 	CElementsInElement    = "ElementsInElement"
@@ -131,26 +133,25 @@ var (
 	VDbAutoCompletionEntries *badger.DB
 	VDbEmployees             *badger.DB
 	VDbJournalDrafts         *badger.DB
-	VAccounts                []SAccount
+	VDbInvoiceDrafts         *badger.DB
+	VAccounts                []SAccount1
 	VAutoCompletionEntries   []SAutoCompletion
 
 	// standards
-	VPrintTable   = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	VCostFlowType = []string{CFifo, CLifo, CWma}
+	VPrintTable      = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	VAllCostFlowType = []string{CHighLevelAccount, CFifo, CLifo, CWma}
+	VLowCostFlowType = []string{CFifo, CLifo, CWma}
 
 	//errors
-	VErrorNotListed          = errors.New("is not listed")
-	VErrorAccountNameIsUsed  = errors.New("account name is used")
-	VErrorBarcodeIsUsed      = errors.New("barcode is used")
-	VErrorAccountNameIsEmpty = errors.New("account name is empty")
+	VErrorNotListed = errors.New("is not listed")
+	VErrorIsUsed    = errors.New("is used")
 
 	//this var for Test function
 	VFailTestNumber int
 )
 
-type INumber interface{ IInteger | float64 | float32 }
-type IInteger interface{ int | int64 | uint }
-
+type INumber interface{ int | uint | float64 | float32 }
+type TErr string
 type (
 	TAccountName            = string
 	TAccount1Name           = string
@@ -175,158 +176,121 @@ type SEntry struct {
 	Employee            string
 	TypeOfCompoundEntry string
 }
+
 type SPQ struct {
 	TPrice
 	TQuantity
 }
+
 type SAPQ struct {
 	TAccountName
 	TPrice
 	TQuantity
 }
+
 type SAPQAE struct {
 	TAccountName
 	TPrice
 	TQuantity
-	SAccount
+	SAccount1
 	error
 }
-type SAccount struct {
-	TIsCredit           bool
-	TCostFlowType       string
-	TAccountName        string
-	TAccountNotes       string
-	TAccountImage       []string
-	TAccountBarcode     []string
-	TAccountNumber      [][]uint
-	TAccountLevels      []uint
-	TAccountFathersName [][]string
+
+type SAccount1 SAccount[bool, string, string, string, string, []string, []string, [][]uint, []uint, [][]string]
+type SAccount2 SAccount[SFilterBool, SFilter[string], SFilter[string], SFilter[string], SFilter[string], SFilter[string], SFilter[string], SFilter[uint], SFilter[uint], SFilter[string]]
+type SAccount3 SAccount[TErr, TErr, TErr, TErr, TErr, TErr, []TErr, []TErr, TErr, TErr]
+type SAccount[
+	IsCredit bool | SFilterBool | TErr,
+	CostFlowType string | SFilter[string] | TErr,
+	Inventory string | SFilter[string] | TErr,
+	Name string | SFilter[string] | TErr,
+	Notes string | SFilter[string] | TErr,
+	Image []string | SFilter[string] | TErr,
+	Barcode []string | SFilter[string] | []TErr,
+	Number [][]uint | SFilter[uint] | []string | []TErr,
+	Levels []uint | SFilter[uint] | TErr,
+	FathersName [][]string | SFilter[string] | TErr,
+] struct {
+	IsCredit     IsCredit
+	CostFlowType CostFlowType
+	Inventory    Inventory
+	Name         Name
+	Notes        Notes
+	Image        Image
+	Barcode      Barcode
+	Number       Number
+	Levels       Levels
+	FathersName  FathersName
 }
-type SJournal struct {
-	IsReverse                  bool
-	IsReversed                 bool
-	ReverseEntryNumberCompound int
-	ReverseEntryNumberSimple   int
-	EntryNumberCompound        int
-	EntryNumberSimple          int
-	Value                      float64
-	DebitAccountName           string
-	DebitPrice                 float64
-	DebitQuantity              float64
-	DebitBalanceValue          float64
-	DebitBalancePrice          float64
-	DebitBalanceQuantity       float64
-	CreditAccountName          string
-	CreditPrice                float64
-	CreditQuantity             float64
-	CreditBalanceValue         float64
-	CreditBalancePrice         float64
-	CreditBalanceQuantity      float64
-	SEntry
+
+type SJournal1 SJournal[time.Time, bool, uint, float64, string]
+type SJournal2 SJournal[SFilter[time.Time], SFilterBool, SFilter[uint], SFilter[float64], SFilter[string]]
+type SJournal3 SJournal[bool, bool, bool, bool, bool]
+type SJournal[
+	t1 time.Time | bool | SFilter[time.Time],
+	t2 bool | SFilterBool,
+	t3 uint | bool | SFilter[uint],
+	t4 float64 | bool | SFilter[float64],
+	t5 string | bool | SFilter[string],
+] struct {
+	Date                       t1
+	IsReverse                  t2
+	IsReversed                 t2
+	ReverseEntryNumberCompound t3
+	ReverseEntryNumberSimple   t3
+	EntryNumberCompound        t3
+	EntryNumberSimple          t3
+	Value                      t4
+	DebitAccountName           t5
+	DebitPrice                 t4
+	DebitQuantity              t4
+	DebitBalanceValue          t4
+	DebitBalancePrice          t4
+	DebitBalanceQuantity       t4
+	CreditAccountName          t5
+	CreditPrice                t4
+	CreditQuantity             t4
+	CreditBalanceValue         t4
+	CreditBalancePrice         t4
+	CreditBalanceQuantity      t4
+	Notes                      t5
+	Name                       t5
+	Employee                   t5
+	TypeOfCompoundEntry        t5
 }
-type SStatement struct {
-	TAccount1Name
-	TAccount2Name
-	TPersonName
-	TVpq
-	TTypeOfVpq
-	TChangeOrRatioOrBalance
-	TNumber
+
+type SStatement1 SStatement[string, string, float64]
+type SStatement2 SStatement[SAccount2, SFilter[string], SFilter[float64]]
+type SStatement[
+	t1 string | SAccount2,
+	t2 string | SFilter[string],
+	t3 float64 | SFilter[float64],
+] struct {
+	Account1Name           t1
+	Account2Name           t1
+	PersonName             t2
+	Vpq                    t2
+	TypeOfVpq              t2
+	ChangeOrRatioOrBalance t2
+	Number                 t3
 }
+
 type SStatmentWithAccount struct {
-	Account1 SAccount
-	Account2 SAccount
-	SStatement
+	Account1 SAccount1
+	Account2 SAccount1
+	SStatement1
 }
-type SFilterStatement struct {
-	Account1               SFilterAccount
-	Account2               SFilterAccount
-	Name                   SFilterString
-	Vpq                    SFilterString
-	TypeOfVpq              SFilterString
-	ChangeOrRatioOrBalance SFilterString
-	Number                 SFilterNumber
-}
-type SFilterJournal struct {
-	Date                       SFilterDate
-	IsReverse                  SFilterBool
-	IsReversed                 SFilterBool
-	ReverseEntryNumberCompound SFilterNumber
-	ReverseEntryNumberSimple   SFilterNumber
-	EntryNumberCompound        SFilterNumber
-	EntryNumberSimple          SFilterNumber
-	Value                      SFilterNumber
-	DebitAccountName           SFilterString
-	DebitPrice                 SFilterNumber
-	DebitQuantity              SFilterNumber
-	DebitBalanceValue          SFilterNumber
-	DebitBalancePrice          SFilterNumber
-	DebitBalanceQuantity       SFilterNumber
-	CreditAccountName          SFilterString
-	CreditPrice                SFilterNumber
-	CreditQuantity             SFilterNumber
-	CreditBalanceValue         SFilterNumber
-	CreditBalancePrice         SFilterNumber
-	CreditBalanceQuantity      SFilterNumber
-	Notes                      SFilterString
-	Name                       SFilterString
-	Employee                   SFilterString
-	TypeOfCompoundEntry        SFilterString
-}
-type SFilterJournalDuplicate struct {
-	IsReverse                  bool
-	IsReversed                 bool
-	ReverseEntryNumberCompound bool
-	ReverseEntryNumberSimple   bool
-	Value                      bool
-	PriceDebit                 bool
-	PriceCredit                bool
-	QuantityDebit              bool
-	QuantityCredit             bool
-	AccountDebit               bool
-	AccountCredit              bool
-	Notes                      bool
-	Name                       bool
-	Employee                   bool
-	TypeOfCompoundEntry        bool
-}
-type SFilterAccount struct {
-	IsFilter    bool
-	IsCredit    SFilterBool
-	Account     SFilterString
-	FathersName SFilterFathersAccountsName
-	Levels      SFilterSliceUint
-}
-type SFilterFathersAccountsName struct {
-	IsFilter      bool
-	InAccountName bool
-	InFathersName bool
-	FathersName   []string
-}
-type SFilterSliceUint struct {
-	IsFilter bool
-	InSlice  bool
-	Slice    []uint
-}
-type SFilterDate struct {
-	IsFilter bool
-	Way      string
-	Slice    []time.Time
-}
-type SFilterNumber struct {
-	IsFilter bool
-	Way      string
-	Slice    []float64
-}
-type SFilterString struct {
-	IsFilter bool
-	Way      string
-	Slice    []string
-}
+
 type SFilterBool struct {
 	IsFilter  bool
 	BoolValue bool
 }
+
+type SFilter[t uint | float64 | string | time.Time] struct {
+	Way   string
+	Slice []t
+}
+
 type SFinancialAnalysis struct {
 	CurrentAssets                          float64
 	CurrentLiabilities                     float64
@@ -351,6 +315,7 @@ type SFinancialAnalysis struct {
 	InterestExpense                        float64
 	WeightedAverageCommonSharesOutstanding float64
 }
+
 type SFinancialAnalysisStatement struct {
 	CurrentRatio                     float64 // CURRENT_ASSETS / CURRENT_LIABILITIES
 	AcidTest                         float64 // (CASH + SHORT_TERM_INVESTMENTS + NET_RECEIVABLES) / CURRENT_LIABILITIES
@@ -367,6 +332,7 @@ type SFinancialAnalysisStatement struct {
 	EarningsPerShare                 float64 // (NET_INCOME - PREFERRED_DIVIDENDS) / WEIGHTED_AVERAGE_COMMON_SHARES_OUTSTANDING
 	PriceEarningsRatio               float64 // MARKET_PRICE_PER_SHARES_OUTSTANDING / EARNINGS_PER_SHARE
 }
+
 type SOneStepDistribution struct {
 	SalesOrVariableOrFixed string
 	DistributionMethod     string
@@ -374,12 +340,14 @@ type SOneStepDistribution struct {
 	From                   map[string]float64
 	To                     map[string]float64
 }
+
 type SAutoCompletion struct {
 	TAccountName  string
 	PriceRevenue  float64
 	PriceTax      float64
 	PriceDiscount []SPQ
 }
+
 type SCvp struct {
 	VariableCost       float64
 	FixedCost          float64
@@ -388,6 +356,7 @@ type SCvp struct {
 	Profit             float64
 	ContributionMargin float64
 }
+
 type SAVQ struct {
 	TAccountName
 	TValue float64

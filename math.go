@@ -3,58 +3,25 @@ package main
 import (
 	"fmt"
 	"math"
+	"strconv"
 )
 
 func FRoot(a, b float64) float64      { return math.Pow(a, 1/b) }
 func FLogarithm(a, b float64) float64 { return math.Log(a) / math.Log(b) }
 
-func FCheckMapKeysForEquations(equations [][]string, m map[string]float64) error {
-	var elements []string
-	for _, v1 := range equations {
-		elements = append(elements, v1[0], v1[1], v1[3])
-	}
-	elements, _ = FReturnSetAndDuplicatesSlices(elements)
-	for k1 := range m {
-		_, isIn := FFind(k1, elements)
-		if !isIn {
-			return VErrorNotListed
-		}
-	}
-	return nil
-}
-
-func FEquationsGenerator(print bool, m map[string]float64, a, b, sign, c string, aValue, bValue, cValue float64) {
-	la, oka := m[a]
-	lb, okb := m[b]
-	lc, okc := m[c]
-	m[a] = FConvertNanToZero(la)
-	m[b] = FConvertNanToZero(lb)
-	m[c] = FConvertNanToZero(lc)
-	aValue = FConvertNanToZero(aValue)
-	bValue = FConvertNanToZero(bValue)
-	cValue = FConvertNanToZero(cValue)
-	switch {
-	case !oka && okb && okc:
-		m[a] = aValue
-		FPrintEquation(print, m, a, b, sign, c)
-	case oka && !okb && okc:
-		m[b] = bValue
-		FPrintEquation(print, m, a, b, sign, c)
-	case oka && okb && !okc:
-		m[c] = cValue
-		FPrintEquation(print, m, a, b, sign, c)
-	case oka && okb && okc && math.Round(la*1000)/1000 != math.Round(aValue*1000)/1000 && !FIsInfIn(la, lb, lc):
-	}
-}
-
 func FEquationsSolver(print, checkIfKeysInTheEquations bool, m map[string]float64, equations [][]string) error {
 	if checkIfKeysInTheEquations {
-		err := FCheckMapKeysForEquations(equations, m)
-		if err != nil {
-			return err
+	bigLoop:
+		for k1 := range m {
+			for _, v1 := range equations {
+				if k1 == v1[0] || k1 == v1[1] || k1 == v1[3] {
+					continue bigLoop
+				}
+			}
+			return fmt.Errorf("key (%s) is not in the equations", k1)
 		}
 	}
-	for k1 := 0; k1 <= len(equations)+1; k1++ {
+	for range equations {
 		for _, v2 := range equations {
 			FEquationSolver(print, m, v2[0], v2[1], v2[2], v2[3])
 		}
@@ -64,24 +31,69 @@ func FEquationsSolver(print, checkIfKeysInTheEquations bool, m map[string]float6
 }
 
 func FEquationSolver(print bool, m map[string]float64, a, b, sign, c string) {
-	FAssignNumberIfNumber(m, a)
-	FAssignNumberIfNumber(m, b)
-	FAssignNumberIfNumber(m, c)
+	equationsGenerator := func(aValue, bValue, cValue float64) {
+		printEquation := func() {
+			if print {
+				fmt.Fprintln(VPrintTable, a, "\t", m[a], "\t", " = ", "\t", b, "\t", m[b], "\t", sign, "\t", c, "\t", m[c])
+			}
+		}
+
+		convertNanToZero := func(value float64) float64 {
+			if math.IsNaN(value) {
+				return 0
+			}
+			return value
+		}
+
+		la, oka := m[a]
+		lb, okb := m[b]
+		lc, okc := m[c]
+		m[a] = convertNanToZero(la)
+		m[b] = convertNanToZero(lb)
+		m[c] = convertNanToZero(lc)
+		aValue = convertNanToZero(aValue)
+		bValue = convertNanToZero(bValue)
+		cValue = convertNanToZero(cValue)
+		switch {
+		case !oka && okb && okc:
+			m[a] = aValue
+			printEquation()
+		case oka && !okb && okc:
+			m[b] = bValue
+			printEquation()
+		case oka && okb && !okc:
+			m[c] = cValue
+			printEquation()
+		case oka && okb && okc && math.Round(la*1000)/1000 != math.Round(aValue*1000)/1000 && !FIsInfIn(la, lb, lc):
+		}
+	}
+
+	assignNumberIfNumber := func(str string) {
+		number, err := strconv.ParseFloat(str, 64)
+		if err == nil {
+			m[str] = number
+		}
+	}
+
+	assignNumberIfNumber(a)
+	assignNumberIfNumber(b)
+	assignNumberIfNumber(c)
+
 	switch sign {
 	case "+":
-		FEquationsGenerator(print, m, a, b, sign, c, m[b]+m[c], m[a]-m[c], m[a]-m[b])
+		equationsGenerator(m[b]+m[c], m[a]-m[c], m[a]-m[b])
 	case "-":
-		FEquationsGenerator(print, m, a, b, sign, c, m[b]-m[c], m[a]+m[c], m[b]-m[a])
+		equationsGenerator(m[b]-m[c], m[a]+m[c], m[b]-m[a])
 	case "*":
-		FEquationsGenerator(print, m, a, b, sign, c, m[b]*m[c], m[a]/m[c], m[a]/m[b])
+		equationsGenerator(m[b]*m[c], m[a]/m[c], m[a]/m[b])
 	case "/":
-		FEquationsGenerator(print, m, a, b, sign, c, m[b]/m[c], m[a]*m[c], m[b]/m[a])
+		equationsGenerator(m[b]/m[c], m[a]*m[c], m[b]/m[a])
 	case "**":
-		FEquationsGenerator(print, m, a, b, sign, c, math.Pow(m[b], m[c]), FRoot(m[a], m[c]), FLogarithm(m[a], m[b]))
+		equationsGenerator(math.Pow(m[b], m[c]), FRoot(m[a], m[c]), FLogarithm(m[a], m[b]))
 	case "Root":
-		FEquationsGenerator(print, m, a, b, sign, c, FRoot(m[b], m[c]), math.Pow(m[a], m[c]), FLogarithm(m[b], m[a]))
+		equationsGenerator(FRoot(m[b], m[c]), math.Pow(m[a], m[c]), FLogarithm(m[b], m[a]))
 	default:
-		FEquationsGenerator(print, m, a, b, sign, c, FLogarithm(m[b], m[c]), math.Pow(m[c], m[a]), FRoot(m[b], m[a]))
+		equationsGenerator(FLogarithm(m[b], m[c]), math.Pow(m[c], m[a]), FRoot(m[b], m[a]))
 	}
 }
 
@@ -131,14 +143,8 @@ func FMin(points [][2]float64) (float64, float64) {
 	return x, y
 }
 
-func FPrintEquation(print bool, m map[string]float64, a, b, sign, c string) {
-	if print {
-		fmt.Fprintln(VPrintTable, a, "\t", m[a], "\t", " = ", "\t", b, "\t", m[b], "\t", sign, "\t", c, "\t", m[c])
-	}
-}
-
-func FMaxMin(slice []float64) (float64, float64) {
-	var max, min float64
+func FMaxMin[t INumber](slice []t) (t, t) {
+	var max, min t
 	for _, v1 := range slice {
 		if v1 > max {
 			max = v1

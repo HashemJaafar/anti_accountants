@@ -7,10 +7,10 @@ import (
 
 func TestCheckDebitEqualCredit(t *testing.T) {
 	i1 := []SAPQAE{
-		{"book", 1, 10, SAccount{TIsCredit: false}, nil},
-		{"cash", 1, 10, SAccount{TIsCredit: false}, nil},
-		{"rent", 1, 10, SAccount{TIsCredit: true}, nil},
-		{"rent", 1, 10, SAccount{TIsCredit: true}, nil},
+		{"book", 1, 10, SAccount1{IsCredit: false}, nil},
+		{"cash", 1, 10, SAccount1{IsCredit: false}, nil},
+		{"rent", 1, 10, SAccount1{IsCredit: true}, nil},
+		{"rent", 1, 10, SAccount1{IsCredit: true}, nil},
 	}
 	a1, a2, a3 := FCheckDebitEqualCredit(i1)
 	FPrintSlice(a1)
@@ -21,7 +21,7 @@ func TestCheckDebitEqualCredit(t *testing.T) {
 func TestSetPriceAndQuantity(t *testing.T) {
 	_, inventory := FDbRead[SAPQ](VDbInventory)
 	FPrintSlice(inventory)
-	i1 := SAPQAE{"rent", 0, -1, SAccount{TIsCredit: false}, nil}
+	i1 := SAPQAE{"rent", 0, -1, SAccount1{IsCredit: false}, nil}
 	a1 := FSetPriceAndQuantity(i1, true)
 	fmt.Println(a1)
 	_, inventory = FDbRead[SAPQ](VDbInventory)
@@ -31,17 +31,17 @@ func TestSetPriceAndQuantity(t *testing.T) {
 
 func TestGroupByAccount(t *testing.T) {
 	i1 := []SAPQAE{
-		{"book", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
-		{"book", 5, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
-		{"book", 3, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
-		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}, nil},
-		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}, nil},
+		{"book", 1, 10, SAccount1{IsCredit: false, CostFlowType: CLifo}, nil},
+		{"book", 5, 10, SAccount1{IsCredit: false, CostFlowType: CLifo}, nil},
+		{"book", 3, 10, SAccount1{IsCredit: false, CostFlowType: CLifo}, nil},
+		{"rent", 1, 10, SAccount1{IsCredit: true, CostFlowType: CWma}, nil},
+		{"cash", 1, 10, SAccount1{IsCredit: false, CostFlowType: CWma}, nil},
 	}
 	a1 := FGroupByAccount(i1)
 	e1 := []SAPQAE{
-		{"book", 3, 30, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
-		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}, nil},
-		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}, nil},
+		{"book", 3, 30, SAccount1{IsCredit: false, CostFlowType: CLifo}, nil},
+		{"rent", 1, 10, SAccount1{IsCredit: true, CostFlowType: CWma}, nil},
+		{"cash", 1, 10, SAccount1{IsCredit: false, CostFlowType: CWma}, nil},
 	}
 	FTest(true, a1, e1)
 
@@ -125,9 +125,9 @@ func TestStage1(t *testing.T) {
 	}
 	a1 := FSetEntries(i1, false)
 	e1 := []SAPQAE{
-		{"book", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CLifo}, nil},
-		{"rent", 1, 10, SAccount{TIsCredit: true, TCostFlowType: CWma}, nil},
-		{"cash", 1, 10, SAccount{TIsCredit: false, TCostFlowType: CWma}, nil},
+		{"book", 1, 10, SAccount1{IsCredit: false, CostFlowType: CLifo}, nil},
+		{"rent", 1, 10, SAccount1{IsCredit: true, CostFlowType: CWma}, nil},
+		{"cash", 1, 10, SAccount1{IsCredit: false, CostFlowType: CWma}, nil},
 	}
 	FTest(true, a1, e1)
 }
@@ -137,42 +137,25 @@ func TestConvertPriceQuantityAccountToPriceQuantityAccountBarcode(t *testing.T) 
 		TAccountName: "cash",
 		TPrice:       5,
 		TQuantity:    8,
-		SAccount:     SAccount{},
+		SAccount1:    SAccount1{},
 	}})
 	e1 := []SAPQ{{"cash", 5, 8}}
 	FTest(true, a1, e1)
 }
 
 func TestFindDuplicateElement(t *testing.T) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
+	keys, journal := FDbRead[SJournal1](VDbJournal)
 	dates := FConvertByteSliceToTime(keys)
-	a1, a2 := FFindDuplicateElement(dates, journal, SFilterJournalDuplicate{
-		IsReverse:                  false,
-		IsReversed:                 false,
-		ReverseEntryNumberCompound: false,
-		ReverseEntryNumberSimple:   false,
-		Value:                      false,
-		PriceDebit:                 false,
-		PriceCredit:                false,
-		QuantityDebit:              false,
-		QuantityCredit:             false,
-		AccountDebit:               false,
-		AccountCredit:              false,
-		Notes:                      false,
-		Name:                       false,
-		Employee:                   false,
-	})
+	a1, a2 := FFindDuplicateElement(dates, journal, SJournal3{})
 	FPrintSlice(a1)
 	FPrintSlice(a2)
 }
 
 func TestFJournalFilter(t *testing.T) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
-	dates := FConvertByteSliceToTime(keys)
-	i1 := SFilterJournal{}
-	a1, a2 := FJournalFilter(dates, journal, i1, true)
+	_, journal := FDbRead[SJournal1](VDbJournal)
+	i1 := SJournal2{}
+	a1 := FJournalFilter(journal, i1, true)
 	FPrintSlice(a1)
-	FPrintSlice(a2)
 }
 
 func TestInvoiceJournalEntry(t *testing.T) {
@@ -188,7 +171,7 @@ func TestInvoiceJournalEntry(t *testing.T) {
 
 	a1, a2 := FInvoiceJournalEntry("cash", 1, 4, []SAPQ{{"book", 5, -10}}, SEntry{}, true)
 	_, inventory := FDbRead[SAPQ](VDbInventory)
-	_, journal := FDbRead[SJournal](VDbJournal)
+	_, journal := FDbRead[SJournal1](VDbJournal)
 	FDbCloseAll()
 	FPrintFormatedAccounts()
 	FPrintSlice(inventory)
@@ -206,11 +189,11 @@ func TestAutoComplete(t *testing.T) {
 		TAccountName: "book",
 		TPrice:       0,
 		TQuantity:    -1,
-		SAccount:     SAccount{},
+		SAccount1:    SAccount1{},
 	}}, "cash", 1)
 	e1 := [][]SAPQAE{
-		{{"book", 0, -1, SAccount{TIsCredit: false}, nil}, {CPrefixCost + "book", 0, 1, SAccount{TIsCredit: false}, nil}},
-		{{CPrefixRevenue + "book", 12, 1, SAccount{TIsCredit: true}, nil}, {CPrefixCost + "book", 5, 1, SAccount{TIsCredit: false}, nil}, {"cash", 1, 7, SAccount{TIsCredit: false}, nil}},
+		{{"book", 0, -1, SAccount1{IsCredit: false}, nil}, {CPrefixCost + "book", 0, 1, SAccount1{IsCredit: false}, nil}},
+		{{CPrefixRevenue + "book", 12, 1, SAccount1{IsCredit: true}, nil}, {CPrefixCost + "book", 5, 1, SAccount1{IsCredit: false}, nil}, {"cash", 1, 7, SAccount1{IsCredit: false}, nil}},
 	}
 	FTest(true, a1, e1)
 
@@ -220,9 +203,9 @@ func TestAutoComplete(t *testing.T) {
 
 func TestFReverseEntries(t *testing.T) {
 	FDbOpenAll()
-	keys, journal := FDbRead[SJournal](VDbJournal)
+	keys, journal := FDbRead[SJournal1](VDbJournal)
 	FReverseEntries(keys, journal, "hashem")
-	keys, journal = FDbRead[SJournal](VDbJournal)
+	keys, journal = FDbRead[SJournal1](VDbJournal)
 	FPrintJournal(journal)
 	FDbCloseAll()
 }

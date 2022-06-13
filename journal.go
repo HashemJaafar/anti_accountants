@@ -26,7 +26,7 @@ func FCheckDebitEqualCredit(entries []SAPQAE) ([]SAPQAE, []SAPQAE, error) {
 	var zero float64
 	for _, v1 := range entries {
 		VALUE := v1.TPrice * v1.TQuantity
-		switch v1.SAccount.TIsCredit {
+		switch v1.SAccount1.IsCredit {
 		case false:
 			zero += VALUE
 			if VALUE > 0 {
@@ -60,7 +60,7 @@ func FSetPriceAndQuantity(account SAPQAE, insert bool) SAPQAE {
 
 	var keys [][]byte
 	var inventory []SAPQ
-	switch account.SAccount.TCostFlowType {
+	switch account.SAccount1.CostFlowType {
 	case CFifo:
 		keys, inventory = FDbRead[SAPQ](VDbInventory)
 	case CLifo:
@@ -116,7 +116,7 @@ func FGroupByAccount(entries []SAPQAE) []SAPQAE {
 		sums.TAccountName = v1.TAccountName
 		sums.TPrice += v1.TPrice * v1.TQuantity //here i store the VALUE in Price field
 		sums.TQuantity += v1.TQuantity
-		sums.SAccount = v1.SAccount
+		sums.SAccount1 = v1.SAccount1
 		sums.error = v1.error
 	}
 	entries = []SAPQAE{}
@@ -125,18 +125,18 @@ func FGroupByAccount(entries []SAPQAE) []SAPQAE {
 			TAccountName: v1.TAccountName,
 			TPrice:       v1.TPrice / v1.TQuantity,
 			TQuantity:    v1.TQuantity,
-			SAccount:     v1.SAccount,
+			SAccount1:    v1.SAccount1,
 			error:        v1.error,
 		})
 	}
 	return entries
 }
 
-func FInsertToDatabaseJournal(journal []SJournal) {
-	last := FDbLastLine[SJournal](VDbJournal)
+func FInsertToDatabaseJournal(journal []SJournal1) {
+	last := FDbLastLine[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
 		v1.EntryNumberCompound = last.EntryNumberCompound + 1
-		v1.EntryNumberSimple = k1 + 1
+		v1.EntryNumberSimple = uint(k1) + 1
 
 		v1.DebitBalanceValue, v1.DebitBalancePrice, v1.DebitBalanceQuantity = FTotalValuePriceQuantity(v1.DebitAccountName)
 		v1.CreditBalanceValue, v1.CreditBalancePrice, v1.CreditBalanceQuantity = FTotalValuePriceQuantity(v1.CreditAccountName)
@@ -145,32 +145,36 @@ func FInsertToDatabaseJournal(journal []SJournal) {
 	}
 }
 
-func FInsertToJournal(debitEntries, creditEntries []SAPQAE, entryInfo SEntry) []SJournal {
-	var simpleEntries []SJournal
+func FInsertToJournal(debitEntries, creditEntries []SAPQAE, entryInfo SEntry) []SJournal1 {
+	var simpleEntries []SJournal1
 	for _, debitEntry := range debitEntries {
 		for _, creditEntry := range creditEntries {
-			VALUE := FSmallest(FAbs(debitEntry.TPrice*debitEntry.TQuantity), FAbs(creditEntry.TPrice*creditEntry.TQuantity))
-			simpleEntries = append(simpleEntries, SJournal{
+			value := FSmallest(FAbs(debitEntry.TPrice*debitEntry.TQuantity), FAbs(creditEntry.TPrice*creditEntry.TQuantity))
+			simpleEntries = append(simpleEntries, SJournal1{
+				Date:                       time.Now(),
 				IsReverse:                  false,
 				IsReversed:                 false,
 				ReverseEntryNumberCompound: 0,
 				ReverseEntryNumberSimple:   0,
 				EntryNumberCompound:        0,
 				EntryNumberSimple:          0,
-				Value:                      VALUE,
+				Value:                      value,
 				DebitAccountName:           debitEntry.TAccountName,
 				DebitPrice:                 debitEntry.TPrice,
-				DebitQuantity:              VALUE / debitEntry.TPrice,
+				DebitQuantity:              value / debitEntry.TPrice,
 				DebitBalanceValue:          0,
 				DebitBalancePrice:          0,
 				DebitBalanceQuantity:       0,
 				CreditAccountName:          creditEntry.TAccountName,
 				CreditPrice:                creditEntry.TPrice,
-				CreditQuantity:             VALUE / creditEntry.TPrice,
+				CreditQuantity:             value / creditEntry.TPrice,
 				CreditBalanceValue:         0,
 				CreditBalancePrice:         0,
 				CreditBalanceQuantity:      0,
-				SEntry:                     entryInfo,
+				Notes:                      entryInfo.Notes,
+				Name:                       entryInfo.Name,
+				Employee:                   entryInfo.Employee,
+				TypeOfCompoundEntry:        entryInfo.TypeOfCompoundEntry,
 			})
 		}
 	}
@@ -219,7 +223,7 @@ func FInvoiceJournalEntry(payAccountName string, payAccountPrice, invoiceDiscoun
 	newEntries2 := FAutoComplete(newEntries1, payAccountName, payAccountPrice)
 	inventoryAccounts = FConvertAPQICToAPQB(newEntries1)
 
-	var newEntries3 []SJournal
+	var newEntries3 []SJournal1
 	newEntries1 = []SAPQAE{}
 	for _, v1 := range newEntries2 {
 		debitEntries, creditEntries, err := FCheckDebitEqualCredit(v1)
@@ -238,7 +242,7 @@ func FInvoiceJournalEntry(payAccountName string, payAccountPrice, invoiceDiscoun
 	return inventoryAccounts, nil
 }
 
-func FInsertToDatabase(entriesJournal []SJournal, entriesInventory []SAPQAE) {
+func FInsertToDatabase(entriesJournal []SJournal1, entriesInventory []SAPQAE) {
 	var wait sync.WaitGroup
 	wait.Add(2)
 
@@ -271,26 +275,34 @@ func FAutoComplete(inventoryAccounts []SAPQAE, payAccountName string, payAccount
 		var valueRevenue float64
 		var valueDiscount float64
 
-		inv = append(inv, SAPQAE{autoCompletion.TAccountName, v1.TPrice, v1.TQuantity, SAccount{TIsCredit: false}, nil})
-		inv = append(inv, SAPQAE{CPrefixCost + autoCompletion.TAccountName, v1.TPrice, quantity, SAccount{TIsCredit: false}, nil})
+		inv = append(inv, SAPQAE{autoCompletion.TAccountName, v1.TPrice, v1.TQuantity, SAccount1{IsCredit: false}, nil})
+		inv = append(inv, SAPQAE{CPrefixCost + autoCompletion.TAccountName, v1.TPrice, quantity, SAccount1{IsCredit: false}, nil})
 
 		if autoCompletion.PriceTax > 0 {
-			tax = append(tax, SAPQAE{CPrefixTaxExpenses + autoCompletion.TAccountName, autoCompletion.PriceTax, quantity, SAccount{TIsCredit: false}, nil})
-			tax = append(tax, SAPQAE{CPrefixTaxLiability + autoCompletion.TAccountName, autoCompletion.PriceTax, quantity, SAccount{TIsCredit: true}, nil})
+			tax = append(tax, SAPQAE{CPrefixTaxExpenses + autoCompletion.TAccountName, autoCompletion.PriceTax, quantity, SAccount1{IsCredit: false}, nil})
+			tax = append(tax, SAPQAE{CPrefixTaxLiability + autoCompletion.TAccountName, autoCompletion.PriceTax, quantity, SAccount1{IsCredit: true}, nil})
 		}
 
 		if autoCompletion.PriceRevenue > 0 {
-			pay = append(pay, SAPQAE{CPrefixRevenue + autoCompletion.TAccountName, autoCompletion.PriceRevenue, quantity, SAccount{TIsCredit: true}, nil})
+			pay = append(pay, SAPQAE{CPrefixRevenue + autoCompletion.TAccountName, autoCompletion.PriceRevenue, quantity, SAccount1{IsCredit: true}, nil})
 			valueRevenue = quantity * autoCompletion.PriceRevenue
 		}
 
-		if priceDiscount := FMaxDiscount(autoCompletion.PriceDiscount, quantity); priceDiscount > 0 {
-			pay = append(pay, SAPQAE{CPrefixDiscount + autoCompletion.TAccountName, priceDiscount, quantity, SAccount{TIsCredit: false}, nil})
+		var priceDiscount float64
+		for _, v1 := range autoCompletion.PriceDiscount {
+			if v1.TQuantity > quantity {
+				priceDiscount = v1.TPrice
+			}
+		}
+		priceDiscount = FAbs(priceDiscount)
+
+		if priceDiscount > 0 {
+			pay = append(pay, SAPQAE{CPrefixDiscount + autoCompletion.TAccountName, priceDiscount, quantity, SAccount1{IsCredit: false}, nil})
 			valueDiscount = quantity * priceDiscount
 		}
 
 		payValue := valueRevenue - valueDiscount
-		pay = append(pay, SAPQAE{payAccountName, payAccountPrice, payValue / payAccountPrice, SAccount{TIsCredit: false}, nil})
+		pay = append(pay, SAPQAE{payAccountName, payAccountPrice, payValue / payAccountPrice, SAccount1{IsCredit: false}, nil})
 
 		simpleInfoAPQ = append(simpleInfoAPQ, inv)
 		if len(tax) > 1 {
@@ -327,7 +339,7 @@ func FSetEntries(entries []SAPQ, isInvoice bool) []SAPQAE {
 	for _, v1 := range entries {
 		account, _, err1 := FFindAccountFromNameOrBarcode(v1.TAccountName)
 		if isInvoice {
-			if account.TIsCredit || v1.TQuantity >= 0 {
+			if account.IsCredit || v1.TQuantity >= 0 {
 				continue
 			}
 			v1.TPrice = 1
@@ -337,7 +349,7 @@ func FSetEntries(entries []SAPQ, isInvoice bool) []SAPQAE {
 		switch {
 		case err1 != nil:
 			err2 = err1
-		case account.TCostFlowType == CHighLevelAccount:
+		case account.CostFlowType == CHighLevelAccount:
 			err2 = errors.New("you can't use high level account in journal")
 		case v1.TQuantity == 0:
 			err2 = errors.New("quantity can't be 0")
@@ -349,31 +361,31 @@ func FSetEntries(entries []SAPQ, isInvoice bool) []SAPQAE {
 			TAccountName: v1.TAccountName,
 			TPrice:       FAbs(v1.TPrice),
 			TQuantity:    v1.TQuantity,
-			SAccount:     account,
+			SAccount1:    account,
 			error:        err2,
 		})
 	}
 	return newEntries
 }
 
-func FReverseEntries(entriesKeys [][]byte, entries []SJournal, nameEmployee string) {
-	var entryToReverse []SJournal
+func FReverseEntries(entriesKeys [][]byte, entries []SJournal1, nameEmployee string) {
+	var entryToReverse []SJournal1
 	for k1, v1 := range entries {
 		if v1.IsReversed {
 			continue
 		}
 		account, _, _ := FFindAccountFromName(v1.CreditAccountName)
-		v1.CreditQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(account.TIsCredit, true, v1.CreditQuantity)
+		v1.CreditQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, true, v1.CreditQuantity)
 		account, _, _ = FFindAccountFromName(v1.DebitAccountName)
-		v1.DebitQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(account.TIsCredit, false, v1.DebitQuantity)
+		v1.DebitQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, false, v1.DebitQuantity)
 
-		entryCredit := FSetPriceAndQuantity(SAPQAE{v1.CreditAccountName, v1.CreditPrice, v1.CreditQuantity, SAccount{TIsCredit: false, TCostFlowType: CFifo}, nil}, false)
-		entryDebit := FSetPriceAndQuantity(SAPQAE{v1.DebitAccountName, v1.DebitPrice, v1.DebitQuantity, SAccount{TIsCredit: false, TCostFlowType: CFifo}, nil}, false)
+		entryCredit := FSetPriceAndQuantity(SAPQAE{v1.CreditAccountName, v1.CreditPrice, v1.CreditQuantity, SAccount1{IsCredit: false, CostFlowType: CFifo}, nil}, false)
+		entryDebit := FSetPriceAndQuantity(SAPQAE{v1.DebitAccountName, v1.DebitPrice, v1.DebitQuantity, SAccount1{IsCredit: false, CostFlowType: CFifo}, nil}, false)
 
 		if entryCredit.TQuantity == v1.CreditQuantity && entryDebit.TQuantity == v1.DebitQuantity {
 
-			entryCredit.SAccount.TCostFlowType = CWma
-			entryDebit.SAccount.TCostFlowType = CWma
+			entryCredit.SAccount1.CostFlowType = CWma
+			entryDebit.SAccount1.CostFlowType = CWma
 
 			FInsertToDatabaseInventory([]SAPQAE{entryCredit, entryDebit})
 
@@ -397,23 +409,23 @@ func FReverseEntries(entriesKeys [][]byte, entries []SJournal, nameEmployee stri
 	FInsertToDatabaseJournal(entryToReverse)
 }
 
-func FConvertJournalToAPQA(entries []SJournal) []SAPQAE {
+func FConvertJournalToAPQA(entries []SJournal1) []SAPQAE {
 	var newEntries []SAPQAE
 	for _, v1 := range entries {
 		account, _, _ := FFindAccountFromName(v1.DebitAccountName)
 		newEntries = append(newEntries, SAPQAE{
 			TAccountName: v1.DebitAccountName,
 			TPrice:       v1.DebitPrice,
-			TQuantity:    FConvertTheSignOfDoubleEntryToSingleEntry(account.TIsCredit, false, v1.DebitQuantity),
-			SAccount:     account,
+			TQuantity:    FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, false, v1.DebitQuantity),
+			SAccount1:    account,
 		})
 
 		account, _, _ = FFindAccountFromName(v1.CreditAccountName)
 		newEntries = append(newEntries, SAPQAE{
 			TAccountName: v1.CreditAccountName,
 			TPrice:       v1.CreditPrice,
-			TQuantity:    FConvertTheSignOfDoubleEntryToSingleEntry(account.TIsCredit, true, v1.CreditQuantity),
-			SAccount:     account,
+			TQuantity:    FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, true, v1.CreditQuantity),
+			SAccount1:    account,
 		})
 	}
 	return FGroupByAccount(newEntries)
@@ -431,89 +443,95 @@ func FConvertAPQAToAPQB(entries []SAPQAE) []SAPQ {
 	return newEntries
 }
 
-func FJournalFilter(dates []time.Time, journal []SJournal, f SFilterJournal, isDebitAndCredit bool) ([]time.Time, []SJournal) {
-	if !f.Date.IsFilter &&
+func FJournalFilter(journal []SJournal1, f SJournal2, isDebitAndCredit bool) []SJournal1 {
+	if f.Date.Way == CDontFilter &&
 		!f.IsReverse.IsFilter &&
 		!f.IsReversed.IsFilter &&
-		!f.ReverseEntryNumberCompound.IsFilter &&
-		!f.ReverseEntryNumberSimple.IsFilter &&
-		!f.EntryNumberCompound.IsFilter &&
-		!f.EntryNumberSimple.IsFilter &&
-		!f.Value.IsFilter &&
-		!f.DebitAccountName.IsFilter &&
-		!f.DebitPrice.IsFilter &&
-		!f.DebitQuantity.IsFilter &&
-		!f.DebitBalanceValue.IsFilter &&
-		!f.DebitBalancePrice.IsFilter &&
-		!f.DebitBalanceQuantity.IsFilter &&
-		!f.CreditAccountName.IsFilter &&
-		!f.CreditPrice.IsFilter &&
-		!f.CreditQuantity.IsFilter &&
-		!f.CreditBalanceValue.IsFilter &&
-		!f.CreditBalancePrice.IsFilter &&
-		!f.CreditBalanceQuantity.IsFilter &&
-		!f.Notes.IsFilter &&
-		!f.Name.IsFilter &&
-		!f.Employee.IsFilter &&
-		!f.TypeOfCompoundEntry.IsFilter {
-		return dates, journal
+		f.ReverseEntryNumberCompound.Way == CDontFilter &&
+		f.ReverseEntryNumberSimple.Way == CDontFilter &&
+		f.EntryNumberCompound.Way == CDontFilter &&
+		f.EntryNumberSimple.Way == CDontFilter &&
+		f.Value.Way == CDontFilter &&
+		f.DebitAccountName.Way == CDontFilter &&
+		f.DebitPrice.Way == CDontFilter &&
+		f.DebitQuantity.Way == CDontFilter &&
+		f.DebitBalanceValue.Way == CDontFilter &&
+		f.DebitBalancePrice.Way == CDontFilter &&
+		f.DebitBalanceQuantity.Way == CDontFilter &&
+		f.CreditAccountName.Way == CDontFilter &&
+		f.CreditPrice.Way == CDontFilter &&
+		f.CreditQuantity.Way == CDontFilter &&
+		f.CreditBalanceValue.Way == CDontFilter &&
+		f.CreditBalancePrice.Way == CDontFilter &&
+		f.CreditBalanceQuantity.Way == CDontFilter &&
+		f.Notes.Way == CDontFilter &&
+		f.Name.Way == CDontFilter &&
+		f.Employee.Way == CDontFilter &&
+		f.TypeOfCompoundEntry.Way == CDontFilter {
+		return journal
 	}
 
-	var newJournal []SJournal
-	var newDates []time.Time
-	for k1, v1 := range journal {
+	var newJournal []SJournal1
+	for _, v1 := range journal {
 
 		var isTheAccounts bool
 		if isDebitAndCredit {
-			isTheAccounts = f.DebitAccountName.FFilter(v1.DebitAccountName) && f.CreditAccountName.FFilter(v1.CreditAccountName)
+			isTheAccounts = FFilterString(v1.DebitAccountName, f.DebitAccountName) && FFilterString(v1.CreditAccountName, f.CreditAccountName)
 		} else {
-			isTheAccounts = f.DebitAccountName.FFilter(v1.DebitAccountName) || f.CreditAccountName.FFilter(v1.CreditAccountName)
+			isTheAccounts = FFilterString(v1.DebitAccountName, f.DebitAccountName) || FFilterString(v1.CreditAccountName, f.CreditAccountName)
 		}
 
 		if isTheAccounts &&
-			f.Date.FFilter(dates[k1]) &&
-			f.IsReverse.FFilter(v1.IsReverse) &&
-			f.IsReversed.FFilter(v1.IsReversed) &&
-			f.ReverseEntryNumberCompound.FFilter(float64(v1.ReverseEntryNumberCompound)) &&
-			f.ReverseEntryNumberSimple.FFilter(float64(v1.ReverseEntryNumberSimple)) &&
-			f.EntryNumberCompound.FFilter(float64(v1.EntryNumberCompound)) &&
-			f.EntryNumberSimple.FFilter(float64(v1.EntryNumberSimple)) &&
-			f.Value.FFilter(v1.Value) &&
-			f.DebitAccountName.FFilter(v1.DebitAccountName) &&
-			f.DebitPrice.FFilter(v1.DebitPrice) &&
-			f.DebitQuantity.FFilter(v1.DebitQuantity) &&
-			f.DebitBalanceValue.FFilter(v1.DebitBalanceValue) &&
-			f.DebitBalancePrice.FFilter(v1.DebitBalancePrice) &&
-			f.DebitBalanceQuantity.FFilter(v1.DebitBalanceQuantity) &&
-			f.CreditAccountName.FFilter(v1.CreditAccountName) &&
-			f.CreditPrice.FFilter(v1.CreditPrice) &&
-			f.CreditQuantity.FFilter(v1.CreditQuantity) &&
-			f.CreditBalanceValue.FFilter(v1.CreditBalanceValue) &&
-			f.CreditBalancePrice.FFilter(v1.CreditBalancePrice) &&
-			f.CreditBalanceQuantity.FFilter(v1.CreditBalanceQuantity) &&
-			f.Notes.FFilter(v1.Notes) &&
-			f.Name.FFilter(v1.Name) &&
-			f.Employee.FFilter(v1.Employee) &&
-			f.TypeOfCompoundEntry.FFilter(v1.TypeOfCompoundEntry) {
+			FFilterTime(v1.Date, f.Date) &&
+			FFilterBool(v1.IsReverse, f.IsReverse) &&
+			FFilterBool(v1.IsReversed, f.IsReversed) &&
+			FFilterNumber(v1.ReverseEntryNumberCompound, f.ReverseEntryNumberCompound) &&
+			FFilterNumber(v1.ReverseEntryNumberSimple, f.ReverseEntryNumberSimple) &&
+			FFilterNumber(v1.EntryNumberCompound, f.EntryNumberCompound) &&
+			FFilterNumber(v1.EntryNumberSimple, f.EntryNumberSimple) &&
+			FFilterNumber(v1.Value, f.Value) &&
+			FFilterString(v1.DebitAccountName, f.DebitAccountName) &&
+			FFilterNumber(v1.DebitPrice, f.DebitPrice) &&
+			FFilterNumber(v1.DebitQuantity, f.DebitQuantity) &&
+			FFilterNumber(v1.DebitBalanceValue, f.DebitBalanceValue) &&
+			FFilterNumber(v1.DebitBalancePrice, f.DebitBalancePrice) &&
+			FFilterNumber(v1.DebitBalanceQuantity, f.DebitBalanceQuantity) &&
+			FFilterString(v1.CreditAccountName, f.CreditAccountName) &&
+			FFilterNumber(v1.CreditPrice, f.CreditPrice) &&
+			FFilterNumber(v1.CreditQuantity, f.CreditQuantity) &&
+			FFilterNumber(v1.CreditBalanceValue, f.CreditBalanceValue) &&
+			FFilterNumber(v1.CreditBalancePrice, f.CreditBalancePrice) &&
+			FFilterNumber(v1.CreditBalanceQuantity, f.CreditBalanceQuantity) &&
+			FFilterString(v1.Notes, f.Notes) &&
+			FFilterString(v1.Name, f.Name) &&
+			FFilterString(v1.Employee, f.Employee) &&
+			FFilterString(v1.TypeOfCompoundEntry, f.TypeOfCompoundEntry) {
 			newJournal = append(newJournal, v1)
-			newDates = append(newDates, dates[k1])
 		}
 	}
-	return newDates, newJournal
+	return newJournal
 }
 
-func FFindDuplicateElement(dates []time.Time, journal []SJournal, f SFilterJournalDuplicate) ([]time.Time, []SJournal) {
+func FFindDuplicateElement(dates []time.Time, journal []SJournal1, f SJournal3) ([]time.Time, []SJournal1) {
 	if !f.IsReverse &&
 		!f.IsReversed &&
 		!f.ReverseEntryNumberCompound &&
 		!f.ReverseEntryNumberSimple &&
+		!f.EntryNumberCompound &&
+		!f.EntryNumberSimple &&
 		!f.Value &&
-		!f.PriceDebit &&
-		!f.PriceCredit &&
-		!f.QuantityDebit &&
-		!f.QuantityCredit &&
-		!f.AccountDebit &&
-		!f.AccountCredit &&
+		!f.DebitAccountName &&
+		!f.DebitPrice &&
+		!f.DebitQuantity &&
+		!f.DebitBalanceValue &&
+		!f.DebitBalancePrice &&
+		!f.DebitBalanceQuantity &&
+		!f.CreditAccountName &&
+		!f.CreditPrice &&
+		!f.CreditQuantity &&
+		!f.CreditBalanceValue &&
+		!f.CreditBalancePrice &&
+		!f.CreditBalanceQuantity &&
 		!f.Notes &&
 		!f.Name &&
 		!f.Employee &&
@@ -521,7 +539,7 @@ func FFindDuplicateElement(dates []time.Time, journal []SJournal, f SFilterJourn
 		return dates, journal
 	}
 
-	var newJournal []SJournal
+	var newJournal []SJournal1
 	var newDates []time.Time
 	for k1, v1 := range journal {
 		for k2, v2 := range journal {
@@ -530,13 +548,21 @@ func FFindDuplicateElement(dates []time.Time, journal []SJournal, f SFilterJourn
 				FFilterDuplicate(v1.IsReversed, v2.IsReversed, f.IsReversed) &&
 				FFilterDuplicate(v1.ReverseEntryNumberCompound, v2.ReverseEntryNumberCompound, f.ReverseEntryNumberCompound) &&
 				FFilterDuplicate(v1.ReverseEntryNumberSimple, v2.ReverseEntryNumberSimple, f.ReverseEntryNumberSimple) &&
+				FFilterDuplicate(v1.EntryNumberCompound, v2.EntryNumberCompound, f.EntryNumberCompound) &&
+				FFilterDuplicate(v1.EntryNumberSimple, v2.EntryNumberSimple, f.EntryNumberSimple) &&
 				FFilterDuplicate(v1.Value, v2.Value, f.Value) &&
-				FFilterDuplicate(v1.DebitPrice, v2.DebitPrice, f.PriceDebit) &&
-				FFilterDuplicate(v1.CreditPrice, v2.CreditPrice, f.PriceCredit) &&
-				FFilterDuplicate(v1.DebitQuantity, v2.DebitQuantity, f.QuantityDebit) &&
-				FFilterDuplicate(v1.CreditQuantity, v2.CreditQuantity, f.QuantityCredit) &&
-				FFilterDuplicate(v1.DebitAccountName, v2.DebitAccountName, f.AccountDebit) &&
-				FFilterDuplicate(v1.CreditAccountName, v2.CreditAccountName, f.AccountCredit) &&
+				FFilterDuplicate(v1.DebitAccountName, v2.DebitAccountName, f.DebitAccountName) &&
+				FFilterDuplicate(v1.DebitPrice, v2.DebitPrice, f.DebitPrice) &&
+				FFilterDuplicate(v1.DebitQuantity, v2.DebitQuantity, f.DebitQuantity) &&
+				FFilterDuplicate(v1.DebitBalanceValue, v2.DebitBalanceValue, f.DebitBalanceValue) &&
+				FFilterDuplicate(v1.DebitBalancePrice, v2.DebitBalancePrice, f.DebitBalancePrice) &&
+				FFilterDuplicate(v1.DebitBalanceQuantity, v2.DebitBalanceQuantity, f.DebitBalanceQuantity) &&
+				FFilterDuplicate(v1.CreditAccountName, v2.CreditAccountName, f.CreditAccountName) &&
+				FFilterDuplicate(v1.CreditPrice, v2.CreditPrice, f.CreditPrice) &&
+				FFilterDuplicate(v1.CreditQuantity, v2.CreditQuantity, f.CreditQuantity) &&
+				FFilterDuplicate(v1.CreditBalanceValue, v2.CreditBalanceValue, f.CreditBalanceValue) &&
+				FFilterDuplicate(v1.CreditBalancePrice, v2.CreditBalancePrice, f.CreditBalancePrice) &&
+				FFilterDuplicate(v1.CreditBalanceQuantity, v2.CreditBalanceQuantity, f.CreditBalanceQuantity) &&
 				FFilterDuplicate(v1.Notes, v2.Notes, f.Notes) &&
 				FFilterDuplicate(v1.Name, v2.Name, f.Name) &&
 				FFilterDuplicate(v1.Employee, v2.Employee, f.Employee) &&
@@ -550,16 +576,6 @@ func FFindDuplicateElement(dates []time.Time, journal []SJournal, f SFilterJourn
 	return newDates, newJournal
 }
 
-func FMaxDiscount(discounts []SPQ, quantity float64) float64 {
-	var price float64
-	for _, v1 := range discounts {
-		if v1.TQuantity > quantity {
-			price = v1.TPrice
-		}
-	}
-	return FAbs(price)
-}
-
 func FConvertTheSignOfDoubleEntryToSingleEntry(isCredit, isCreditInTheEntry bool, number float64) float64 {
 	number = math.Abs(number)
 	if isCredit != isCreditInTheEntry {
@@ -570,7 +586,7 @@ func FConvertTheSignOfDoubleEntryToSingleEntry(isCredit, isCreditInTheEntry bool
 
 func FTotalValuePriceQuantity(account string) (float64, float64, float64) {
 	var totalValue, totalQuantity float64
-	_, journal := FDbRead[SJournal](VDbJournal)
+	_, journal := FDbRead[SJournal1](VDbJournal)
 	for _, v1 := range journal {
 		if v1.CreditAccountName == account {
 			totalValue += v1.Value

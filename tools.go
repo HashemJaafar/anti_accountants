@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"runtime/debug"
 	"sort"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -22,20 +21,6 @@ func FSwap[t any](a []t, b, c int)         { a[b], a[c] = a[c], a[b] }
 // FNow this function to get the current time in the format of TimeLayout to make the error less likely
 func FNow() []byte {
 	return []byte(time.Now().Format(CTimeLayout))
-}
-
-func FAssignNumberIfNumber(m map[string]float64, str string) {
-	number, err := strconv.ParseFloat(str, 64)
-	if err == nil {
-		m[str] = number
-	}
-}
-
-func FConvertNanToZero(VALUE float64) float64 {
-	if math.IsNaN(VALUE) {
-		return 0
-	}
-	return VALUE
 }
 
 func FInitializeMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr, i1 t1, i2 t2, i3 t3, i4 t4, i5 t5) map[t6]tr {
@@ -97,13 +82,6 @@ func FIsInfIn(numbers ...float64) bool {
 	return false
 }
 
-func FReturnSameSignOfNumberSign(numberSign, number float64) float64 {
-	if numberSign < 0 {
-		return -FAbs(number)
-	}
-	return FAbs(number)
-}
-
 func FAbs[t INumber](n t) t {
 	// this is alternative of math.Abs
 	if n < 0 {
@@ -152,7 +130,7 @@ func FSortTime(slice []time.Time, isAscending bool) {
 
 func FSortStatementNumber(slice []SStatmentWithAccount, isAscending bool) {
 	sort.Slice(slice, func(k1, k2 int) bool {
-		return slice[k1].SStatement.TNumber > slice[k2].SStatement.TNumber == isAscending
+		return slice[k1].SStatement1.Number > slice[k2].SStatement1.Number == isAscending
 	})
 }
 
@@ -227,127 +205,6 @@ func FUnpack[t any](slice [][]t) []t {
 	return result
 }
 
-func (s SFilterDate) FFilter(input time.Time) bool {
-	if !s.IsFilter {
-		return true
-	}
-
-	switch s.Way {
-	case CBetween:
-		max, min := FMaxMinDate(s.Slice)
-		return input.After(min) && input.Before(max)
-	case CNotBetween:
-		max, min := FMaxMinDate(s.Slice)
-		return !(input.After(min) && input.Before(max))
-	case CBigger:
-		max, _ := FMaxMinDate(s.Slice)
-		return input.After(max)
-	case CSmaller:
-		_, min := FMaxMinDate(s.Slice)
-		return input.Before(min)
-	case CInSlice:
-		_, isIn := FFind(input, s.Slice)
-		return isIn
-	case CNotInSlice:
-		_, isIn := FFind(input, s.Slice)
-		return !isIn
-	}
-
-	return false
-}
-
-func (s SFilterNumber) FFilter(input float64) bool {
-	if !s.IsFilter {
-		return true
-	}
-
-	switch s.Way {
-	case CBetween:
-		max, min := FMaxMin(s.Slice)
-		return input >= min && input <= max
-	case CNotBetween:
-		max, min := FMaxMin(s.Slice)
-		return !(input >= min && input <= max)
-	case CBigger:
-		max, _ := FMaxMin(s.Slice)
-		return input > max
-	case CSmaller:
-		_, min := FMaxMin(s.Slice)
-		return input < min
-	case CInSlice:
-		_, isIn := FFind(input, s.Slice)
-		return isIn
-	case CNotInSlice:
-		_, isIn := FFind(input, s.Slice)
-		return !isIn
-	}
-
-	return false
-}
-
-func (s SFilterString) FFilter(input string) bool {
-	if !s.IsFilter {
-		return true
-	}
-
-	switch s.Way {
-	case CInSlice:
-		_, isIn := FFind(input, s.Slice)
-		return isIn
-	case CNotInSlice:
-		_, isIn := FFind(input, s.Slice)
-		return isIn == false
-	case CElementsInElement:
-		return FElementsInElement(input, s.Slice)
-	case CElementsNotInElement:
-		return FElementsInElement(input, s.Slice) == false
-	}
-	return false
-}
-
-func (s SFilterAccount) FFilter(account SAccount, err error) bool {
-	if !s.IsFilter {
-		return true
-	}
-
-	return (err != nil) || // here if the account is not listed in the account list like AllAccounts it will show in statment
-		(s.IsCredit.FFilter(account.TIsCredit) &&
-			s.FathersName.FFilter(account.TAccountName, account.TAccountFathersName[VIndexOfAccountNumber]) &&
-			s.Levels.FFilter(account.TAccountLevels[VIndexOfAccountNumber]))
-}
-
-func (s SFilterFathersAccountsName) FFilter(accountName string, fathersAccountsNameForAccount []string) bool {
-	if !s.IsFilter {
-		return true
-	}
-	for _, v1 := range s.FathersName {
-		if v1 == accountName { // if accountName is in the slice
-			return s.InAccountName
-		}
-		for _, v2 := range fathersAccountsNameForAccount {
-			if v1 == v2 {
-				return s.InFathersName
-			}
-		}
-	}
-	return !s.InFathersName
-}
-
-func (s SFilterSliceUint) FFilter(input uint) bool {
-	if !s.IsFilter {
-		return true
-	}
-	_, isIn := FFind(input, s.Slice)
-	return isIn == s.InSlice
-}
-
-func (s SFilterBool) FFilter(input bool) bool {
-	if !s.IsFilter {
-		return true
-	}
-	return input == s.BoolValue
-}
-
 func FElementsInElement(element string, elements []string) bool {
 	for _, v1 := range elements {
 		if strings.Contains(element, v1) {
@@ -355,13 +212,6 @@ func FElementsInElement(element string, elements []string) bool {
 		}
 	}
 	return false
-}
-
-func FFilterDuplicate[t comparable](input1, input2 t, f bool) bool {
-	if !f {
-		return true
-	}
-	return input1 == input2
 }
 
 func FPrintMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr) {
@@ -408,15 +258,15 @@ func FPrintMap2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
 	VPrintTable.Flush()
 }
 
-func FPrintStatement(slice []SStatement) {
+func FPrintStatement(slice []SStatement1) {
 	fmt.Fprintln(VPrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "ChangeOrRatioOrBalance", "\t", "Number")
 	for _, v1 := range slice {
-		fmt.Fprintln(VPrintTable, v1.TAccount1Name, "\t", v1.TAccount2Name, "\t", v1.TPersonName, "\t", v1.TVpq, "\t", v1.TTypeOfVpq, "\t", v1.TChangeOrRatioOrBalance, "\t", v1.TNumber)
+		fmt.Fprintln(VPrintTable, v1.Account1Name, "\t", v1.Account2Name, "\t", v1.PersonName, "\t", v1.Vpq, "\t", v1.TypeOfVpq, "\t", v1.ChangeOrRatioOrBalance, "\t", v1.Number)
 	}
 	VPrintTable.Flush()
 }
 
-func FPrintJournal(slice []SJournal) {
+func FPrintJournal(slice []SJournal1) {
 	for _, v1 := range slice {
 		fmt.Fprintln(VPrintTable,
 			"\t", v1.IsReverse,
@@ -473,4 +323,132 @@ func FMaxMinDate(slice []time.Time) (time.Time, time.Time) {
 		}
 	}
 	return max, min
+}
+
+func FFilterDuplicate[t comparable](input1, input2 t, isFilter bool) bool {
+	return !isFilter || input1 == input2
+}
+
+func FFilterBool(input bool, f SFilterBool) bool {
+	return !f.IsFilter || input == f.BoolValue
+}
+
+func FFilterNumber[t uint | float64](input t, f SFilter[t]) bool {
+	switch f.Way {
+	case CDontFilter:
+		return true
+	case CBetween:
+		max, min := FMaxMin(f.Slice)
+		return input >= min && input <= max
+	case CNotBetween:
+		max, min := FMaxMin(f.Slice)
+		return !(input >= min && input <= max)
+	case CBigger:
+		max, _ := FMaxMin(f.Slice)
+		return input > max
+	case CSmaller:
+		_, min := FMaxMin(f.Slice)
+		return input < min
+	case CInSlice:
+		_, isIn := FFind(input, f.Slice)
+		return isIn
+	case CNotInSlice:
+		_, isIn := FFind(input, f.Slice)
+		return !isIn
+	}
+
+	return true
+}
+
+func FFilterTime(input time.Time, f SFilter[time.Time]) bool {
+	switch f.Way {
+	case CDontFilter:
+		return true
+	case CBetween:
+		max, min := FMaxMinDate(f.Slice)
+		return input.After(min) && input.Before(max)
+	case CNotBetween:
+		max, min := FMaxMinDate(f.Slice)
+		return !(input.After(min) && input.Before(max))
+	case CBigger:
+		max, _ := FMaxMinDate(f.Slice)
+		return input.After(max)
+	case CSmaller:
+		_, min := FMaxMinDate(f.Slice)
+		return input.Before(min)
+	case CInSlice:
+		_, isIn := FFind(input, f.Slice)
+		return isIn
+	case CNotInSlice:
+		_, isIn := FFind(input, f.Slice)
+		return !isIn
+	}
+
+	return true
+}
+
+func FFilterString(input string, f SFilter[string]) bool {
+	switch f.Way {
+	case CDontFilter:
+		return true
+	case CInSlice:
+		_, isIn := FFind(input, f.Slice)
+		return isIn
+	case CNotInSlice:
+		_, isIn := FFind(input, f.Slice)
+		return !isIn
+	case CElementsInElement:
+		return FElementsInElement(input, f.Slice)
+	case CElementsNotInElement:
+		return !FElementsInElement(input, f.Slice)
+	}
+
+	return true
+}
+
+func FFilterSlice[t uint | string](input []t, f SFilter[t]) bool {
+	switch f.Way {
+	case CDontFilter:
+		return true
+	case CInSlice:
+		for _, v1 := range input {
+			_, isIn := FFind(v1, f.Slice)
+			return isIn
+		}
+	case CNotInSlice:
+		for _, v1 := range input {
+			_, isIn := FFind(v1, f.Slice)
+			return !isIn
+		}
+	}
+
+	return true
+}
+
+func FFilterAccount(input SAccount1, f SAccount2) bool {
+	if FFilterBool(input.IsCredit, f.IsCredit) &&
+		FFilterString(input.CostFlowType, f.CostFlowType) &&
+		FFilterString(input.Inventory, f.Inventory) &&
+		FFilterString(input.Name, f.Name) &&
+		FFilterString(input.Notes, f.Notes) &&
+		FFilterSlice(input.Image, f.Image) &&
+		FFilterSlice(input.Barcode, f.Barcode) &&
+		FFilterSlice(input.Number[VIndexOfAccountNumber], f.Number) &&
+		FFilterNumber(input.Levels[VIndexOfAccountNumber], f.Levels) &&
+		FFilterSlice(input.FathersName[VIndexOfAccountNumber], f.FathersName) {
+		return true
+	}
+	return false
+}
+
+func FSetSliceOfTErr(err []error) []TErr {
+	var slice []TErr
+	for _, v1 := range err {
+		if v1 != nil {
+			slice = append(slice, TErr(v1.Error()))
+		} else {
+			slice = append(slice, TErr(""))
+		}
+	}
+	return slice
 }

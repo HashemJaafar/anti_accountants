@@ -16,7 +16,7 @@ func TestDbClose(t *testing.T) {
 }
 
 func TestDbLastLine(t *testing.T) {
-	a1 := FDbLastLine[SJournal](VDbJournal)
+	a1 := FDbLastLine[SJournal1](VDbJournal)
 	fmt.Println(a1)
 }
 
@@ -24,7 +24,7 @@ func TestDbRead(t *testing.T) {
 	VCompanyName = "anti_accountants"
 	FDbOpenAll()
 	_, inventory := FDbRead[SAPQ](VDbInventory)
-	_, journal := FDbRead[SJournal](VDbJournal)
+	_, journal := FDbRead[SJournal1](VDbJournal)
 	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
 	FDbCloseAll()
 	FPrintSlice(inventory)

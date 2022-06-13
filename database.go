@@ -10,38 +10,25 @@ import (
 
 func FDbOpenAll() {
 	var wait sync.WaitGroup
-	wait.Add(6)
 
-	go func() {
-		VDbAccounts = FDbOpen(VDbAccounts, CPathDataBase+VCompanyName+CPathAccounts)
+	open := func(db **badger.DB, path string) {
+		*db = FDbOpen(*db, CPathDataBase+VCompanyName+path)
 		wait.Done()
-	}()
-	go func() {
-		VDbJournal = FDbOpen(VDbJournal, CPathDataBase+VCompanyName+CPathJournal)
-		wait.Done()
-	}()
-	go func() {
-		VDbInventory = FDbOpen(VDbInventory, CPathDataBase+VCompanyName+CPathInventory)
-		wait.Done()
-	}()
-	go func() {
-		VDbAutoCompletionEntries = FDbOpen(VDbAutoCompletionEntries, CPathDataBase+VCompanyName+CPathAutoCompletionEntries)
-		wait.Done()
-	}()
-	go func() {
-		VDbEmployees = FDbOpen(VDbEmployees, CPathDataBase+VCompanyName+CPathEmployees)
-		wait.Done()
-	}()
-	go func() {
-		VDbJournalDrafts = FDbOpen(VDbJournalDrafts, CPathDataBase+VCompanyName+CPathDrafts)
-		wait.Done()
-	}()
+	}
 
+	wait.Add(7)
+	go open(&VDbAccounts, CPathAccounts)
+	go open(&VDbJournal, CPathJournal)
+	go open(&VDbInventory, CPathInventory)
+	go open(&VDbAutoCompletionEntries, CPathAutoCompletionEntries)
+	go open(&VDbEmployees, CPathEmployees)
+	go open(&VDbJournalDrafts, CPathJournalDrafts)
+	go open(&VDbInvoiceDrafts, CPathInvoiceDrafts)
 	wait.Wait()
 
 	wait.Add(2)
 	go func() {
-		_, VAccounts = FDbRead[SAccount](VDbAccounts)
+		_, VAccounts = FDbRead[SAccount1](VDbAccounts)
 		wait.Done()
 	}()
 	go func() {
@@ -53,33 +40,20 @@ func FDbOpenAll() {
 
 func FDbCloseAll() {
 	var wait sync.WaitGroup
-	wait.Add(6)
 
-	go func() {
-		FDbClose(VDbAccounts)
+	close := func(db *badger.DB) {
+		FDbClose(db)
 		wait.Done()
-	}()
-	go func() {
-		FDbClose(VDbJournal)
-		wait.Done()
-	}()
-	go func() {
-		FDbClose(VDbInventory)
-		wait.Done()
-	}()
-	go func() {
-		FDbClose(VDbAutoCompletionEntries)
-		wait.Done()
-	}()
-	go func() {
-		FDbClose(VDbEmployees)
-		wait.Done()
-	}()
-	go func() {
-		FDbClose(VDbJournalDrafts)
-		wait.Done()
-	}()
+	}
 
+	wait.Add(7)
+	go close(VDbAccounts)
+	go close(VDbJournal)
+	go close(VDbInventory)
+	go close(VDbAutoCompletionEntries)
+	go close(VDbEmployees)
+	go close(VDbJournalDrafts)
+	go close(VDbInvoiceDrafts)
 	wait.Wait()
 }
 
@@ -92,7 +66,7 @@ func FDbClose(db *badger.DB) {
 func FDbInsertIntoAccounts() {
 	VDbAccounts.DropAll()
 	for _, v1 := range VAccounts {
-		FDbUpdate(VDbAccounts, []byte(v1.TAccountName), v1)
+		FDbUpdate(VDbAccounts, []byte(v1.Name), v1)
 	}
 }
 
@@ -169,7 +143,7 @@ func FDbUpdate[t any](db *badger.DB, key []byte, Value t) {
 }
 
 func FChangeAccountName(old, new string) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
+	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.CreditAccountName == old {
 			v1.CreditAccountName = new
@@ -203,7 +177,7 @@ func FWeightedAverage(account string) {
 }
 
 func FChangeNotes(old, new string) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
+	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.Notes == old {
 			v1.Notes = new
@@ -213,7 +187,7 @@ func FChangeNotes(old, new string) {
 }
 
 func FChangeName(old, new string) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
+	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.Name == old {
 			v1.Name = new
@@ -223,7 +197,7 @@ func FChangeName(old, new string) {
 }
 
 func FChangeEmployeeName(old, new string) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
+	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.Employee == old {
 			v1.Employee = new
@@ -233,7 +207,7 @@ func FChangeEmployeeName(old, new string) {
 }
 
 func FChangeTypeOfCompoundEntry(old, new string) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
+	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.TypeOfCompoundEntry == old {
 			v1.TypeOfCompoundEntry = new
@@ -242,8 +216,8 @@ func FChangeTypeOfCompoundEntry(old, new string) {
 	}
 }
 
-func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund int, new SEntry) {
-	keys, journal := FDbRead[SJournal](VDbJournal)
+func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund uint, new SEntry) {
+	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.EntryNumberCompound == entryNumberCompund {
 			v1.Notes = new.Notes

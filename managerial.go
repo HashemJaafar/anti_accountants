@@ -8,26 +8,18 @@ import (
 func FCalculateCvpMap(cvp map[string]map[string]float64, print, checkIfKeysInTheEquations bool) {
 	for _, v1 := range cvp {
 		FCostVolumeProfit1(print, checkIfKeysInTheEquations, v1)
-		_, okVariableCostPerUnits := v1[CVariableCostPerUnits]
-		if !okVariableCostPerUnits {
-			v1[CVariableCostPerUnits] = 0
-			FCostVolumeProfit1(print, false, v1)
+
+		zeroIfNot := func(key string) {
+			_, isExist := v1[key]
+			if !isExist {
+				v1[key] = 0
+				FCostVolumeProfit1(print, false, v1)
+			}
 		}
-		_, okFixedCost := v1[CFixedCost]
-		if !okFixedCost {
-			v1[CFixedCost] = 0
-			FCostVolumeProfit1(print, false, v1)
-		}
-		_, okSalesPerUnits := v1[CSalesPerUnits]
-		if !okSalesPerUnits {
-			v1[CSalesPerUnits] = 0
-			FCostVolumeProfit1(print, false, v1)
-		}
-		_, okUnits := v1[CUnits]
-		if !okUnits {
-			v1[CUnits] = 0
-			FCostVolumeProfit1(print, false, v1)
-		}
+		zeroIfNot(CVariableCostPerUnits)
+		zeroIfNot(CFixedCost)
+		zeroIfNot(CSalesPerUnits)
+		zeroIfNot(CUnits)
 	}
 }
 
@@ -134,37 +126,6 @@ func FCostVolumeProfitSlice(cvp map[string]map[string]float64, distributionSteps
 	FTotalCostVolumeProfit(cvp, print)
 }
 
-func FLaborCost(print, checkIfKeysInTheEquations bool, m map[string]float64) {
-	equations := [][]string{
-		{"overtime_wage_rate", "bonus_percentage", "*", "hourly_wage_rate"},
-
-		{"overtime_wage", "overtime_hours", "*", "overtime_wage_rate"},
-		{"work_time_wage", "work_time_hours", "*", "hourly_wage_rate"},
-		{"holiday_wage", "holiday_hours", "*", "hourly_wage_rate"},
-		{"vacations_wage", "vacations_hours", "*", "hourly_wage_rate"},
-		{"normal_lost_time_wage", "normal_lost_time_hours", "*", "hourly_wage_rate"},
-		{"abnormal_lost_time_wage", "abnormal_lost_time_hours", "*", "hourly_wage_rate"},
-	}
-	FEquationsSolver(print, checkIfKeysInTheEquations, m, equations)
-}
-
-func FProcessCosting(print, checkIfKeysInTheEquations bool, m map[string]float64) {
-	equations := [][]string{
-		{"increase_or_decrease", "increase", "-", "decrease"},
-		{"increase_or_decrease", "ending_balance", "-", "beginning_balance"},
-		{"cost_of_goods_sold", "decrease", "-", "decreases_in_account_caused_by_not_sell"},
-		{"equivalent_units", "number_of_partially_completed_units", "*", "percentage_completion"},
-		{"equivalent_units_of_production_weighted_average_method", "units_transferred_to_the_next_department_or_to_finished_goods", "+", "equivalent_units_in_ending_work_in_process_inventory"},
-		{"cost_of_ending_work_in_process_inventory", "cost_of_beginning_work_in_process_inventory", "+", "cost_added_during_the_period"},
-		{"cost_per_equivalent_unit_weighted_average_method", "cost_of_ending_work_in_process_inventory", "/", "equivalent_units_of_production_weighted_average_method"},
-		{"equivalent_units_of_production_Fifo_method", "equivalent_units_of_production_weighted_average_method", "-", "equivalent_units_in_beginning_work_in_process_inventory"},
-		{"percentage_completion_minus_one", "1", "-", "percentage_completion"},
-		{"equivalent_units_to_complete_beginning_work_in_process_inventory", "equivalent_units_in_beginning_work_in_process_inventory", "*", "percentage_completion_minus_one"},
-		{"cost_per_equivalent_unit_Fifo_method", "cost_added_during_the_period", "/", "equivalent_units_of_production_Fifo_method"},
-	}
-	FEquationsSolver(print, checkIfKeysInTheEquations, m, equations)
-}
-
 func FTotalCostVolumeProfit(cvp map[string]map[string]float64, print bool) {
 	var units, sales, variableCost, fixedCost float64
 	for k1, v1 := range cvp {
@@ -195,12 +156,28 @@ func FTotalMixedCostInComplicatedAndMultiLevelStep(cvp map[string]map[string]flo
 }
 
 func FCostVolumeProfit2(units, salesPerUnit float64, variableCosts, fixedCosts []SAPQ) (SCvp, SCvp, []SAVQ, []SAVQ) {
+	FSetCostAndAVQ := func(variableCosts []SAPQ, a []SAVQ) (float64, []SAVQ) {
+		var Cost float64
+		for _, v1 := range variableCosts {
+			if v1.TQuantity == 0 {
+				continue
+			}
+			x := math.Ceil(units / v1.TQuantity)
+			Cost += x * v1.TPrice
+
+			a = append(a, SAVQ{
+				TAccountName: v1.TAccountName,
+				TValue:       x * v1.TPrice,
+				TQuantity:    x,
+			})
+		}
+		return Cost, a
+	}
+
 	var a []SAVQ
-	var variableCost float64
-	variableCost, a = FSetCostAndAVQ(variableCosts, units, variableCost, a)
+	variableCost, a := FSetCostAndAVQ(variableCosts, a)
 	var b []SAVQ
-	var fixedCost float64
-	fixedCost, b = FSetCostAndAVQ(fixedCosts, units, fixedCost, b)
+	fixedCost, b := FSetCostAndAVQ(fixedCosts, b)
 
 	sales := salesPerUnit * units
 	mixedCost := fixedCost + variableCost
@@ -226,21 +203,4 @@ func FCostVolumeProfit2(units, salesPerUnit float64, variableCosts, fixedCosts [
 	}
 
 	return o1, perUint, a, b
-}
-
-func FSetCostAndAVQ(variableCosts []SAPQ, units float64, variableCost float64, a []SAVQ) (float64, []SAVQ) {
-	for _, v1 := range variableCosts {
-		if v1.TQuantity == 0 {
-			continue
-		}
-		x := math.Ceil(units / v1.TQuantity)
-		variableCost += x * v1.TPrice
-
-		a = append(a, SAVQ{
-			TAccountName: v1.TAccountName,
-			TValue:       x * v1.TPrice,
-			TQuantity:    x,
-		})
-	}
-	return variableCost, a
 }
