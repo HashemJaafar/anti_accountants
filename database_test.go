@@ -23,13 +23,13 @@ func TestDbLastLine(t *testing.T) {
 func TestDbRead(t *testing.T) {
 	VCompanyName = "anti_accountants"
 	FDbOpenAll()
-	_, inventory := FDbRead[SAPQ](VDbInventory)
+	_, inventory := FDbRead[SAPQ1](VDbInventory)
 	_, journal := FDbRead[SJournal1](VDbJournal)
 	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
 	FDbCloseAll()
-	FPrintSlice(inventory)
-	FPrintJournal(journal)
-	FPrintSlice(VAutoCompletionEntries)
+	FPrintStructSlice(false, inventory)
+	FPrintStructSlice(false, journal)
+	FPrintStructSlice(false, VAutoCompletionEntries)
 }
 
 func TestDbUpdate(t *testing.T) {
@@ -41,9 +41,9 @@ func TestDbUpdate(t *testing.T) {
 
 func TestWeightedAverage(t *testing.T) {
 	FWeightedAverage("rent")
-	_, inventory := FDbRead[SAPQ](VDbInventory)
+	_, inventory := FDbRead[SAPQ1](VDbInventory)
 	FDbCloseAll()
-	FPrintSlice(inventory)
+	FPrintStructSlice(false, inventory)
 }
 
 func TestChangeName(t *testing.T) {

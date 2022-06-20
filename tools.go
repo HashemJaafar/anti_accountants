@@ -18,7 +18,6 @@ func FCutTheSlice[t any](a []t, b int) []t { return a[:len(a)-b] }
 func FRemove[t any](a []t, b int) []t      { return append(a[:b], a[b+1:]...) }
 func FSwap[t any](a []t, b, c int)         { a[b], a[c] = a[c], a[b] }
 
-// FNow this function to get the current time in the format of TimeLayout to make the error less likely
 func FNow() []byte {
 	return []byte(time.Now().Format(CTimeLayout))
 }
@@ -176,12 +175,6 @@ func FTest[t any](shouldEqual bool, actual, expected t) {
 	}
 }
 
-func FPrintSlice[t any](a1 []t) {
-	for _, v1 := range a1 {
-		fmt.Println(v1)
-	}
-}
-
 func FTranspose[t any](slice [][]t) [][]t {
 	xl := len(slice[0])
 	yl := len(slice)
@@ -258,34 +251,22 @@ func FPrintMap2[t1, t2 comparable, tr any](m map[t1]map[t2]tr) {
 	VPrintTable.Flush()
 }
 
-func FPrintStatement(slice []SStatement1) {
-	fmt.Fprintln(VPrintTable, "Account1", "\t", "Account2", "\t", "Name", "\t", "Vpq", "\t", "TypeOfVpq", "\t", "ChangeOrRatioOrBalance", "\t", "Number")
-	for _, v1 := range slice {
-		fmt.Fprintln(VPrintTable, v1.Account1Name, "\t", v1.Account2Name, "\t", v1.PersonName, "\t", v1.Vpq, "\t", v1.TypeOfVpq, "\t", v1.ChangeOrRatioOrBalance, "\t", v1.Number)
+func FPrintStructSlice[t any](printField bool, slice []t) {
+	if printField && len(slice) > 0 {
+		val := reflect.Indirect(reflect.ValueOf(slice[0]))
+		var values []string
+		for k1 := 0; k1 < val.NumField(); k1++ {
+			values = append(values, "\t", fmt.Sprint(val.Type().Field(k1).Name))
+		}
+		fmt.Fprintln(VPrintTable, values)
 	}
-	VPrintTable.Flush()
-}
-
-func FPrintJournal(slice []SJournal1) {
 	for _, v1 := range slice {
-		fmt.Fprintln(VPrintTable,
-			"\t", v1.IsReverse,
-			"\t", v1.IsReversed,
-			"\t", v1.ReverseEntryNumberCompound,
-			"\t", v1.ReverseEntryNumberSimple,
-			"\t", v1.EntryNumberCompound,
-			"\t", v1.EntryNumberSimple,
-			"\t", v1.Value,
-			"\t", v1.DebitPrice,
-			"\t", v1.CreditPrice,
-			"\t", v1.DebitQuantity,
-			"\t", v1.CreditQuantity,
-			"\t", v1.DebitAccountName,
-			"\t", v1.CreditAccountName,
-			"\t", v1.Notes,
-			"\t", v1.Name,
-			"\t", v1.Employee,
-			"\t", v1.TypeOfCompoundEntry)
+		val := reflect.Indirect(reflect.ValueOf(v1))
+		var values []string
+		for k1 := 0; k1 < val.NumField(); k1++ {
+			values = append(values, "\t", fmt.Sprint(val.Field(k1)))
+		}
+		fmt.Fprintln(VPrintTable, values)
 	}
 	VPrintTable.Flush()
 }

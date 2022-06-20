@@ -155,19 +155,19 @@ func FTotalMixedCostInComplicatedAndMultiLevelStep(cvp map[string]map[string]flo
 	return totalMixedCost
 }
 
-func FCostVolumeProfit2(units, salesPerUnit float64, variableCosts, fixedCosts []SAPQ) (SCvp, SCvp, []SAVQ, []SAVQ) {
-	FSetCostAndAVQ := func(variableCosts []SAPQ, a []SAVQ) (float64, []SAVQ) {
+func FCostVolumeProfit2(units, salesPerUnit float64, variableCosts, fixedCosts []SAPQ1) (SCvp, SCvp, []SAVQ, []SAVQ) {
+	FSetCostAndAVQ := func(variableCosts []SAPQ1, a []SAVQ) (float64, []SAVQ) {
 		var Cost float64
 		for _, v1 := range variableCosts {
-			if v1.TQuantity == 0 {
+			if v1.Quantity == 0 {
 				continue
 			}
-			x := math.Ceil(units / v1.TQuantity)
-			Cost += x * v1.TPrice
+			x := math.Ceil(units / v1.Quantity)
+			Cost += x * v1.Price
 
 			a = append(a, SAVQ{
-				TAccountName: v1.TAccountName,
-				TValue:       x * v1.TPrice,
+				TAccountName: v1.AccountName,
+				TValue:       x * v1.Price,
 				TQuantity:    x,
 			})
 		}

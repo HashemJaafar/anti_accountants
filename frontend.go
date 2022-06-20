@@ -13,6 +13,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+
+	// w "fyne.io/x/fyne/widget"
+
 	badger "github.com/dgraph-io/badger/v3"
 )
 
@@ -196,33 +199,15 @@ func (SPage) FAddAccount() fyne.CanvasObject {
 	weAccountBarcode := SWidget{}.FFWE("Barcode")
 	weAccountNumber := SWidget{}.FFWE("Number")
 
-	clearSelect := func(fc fyne.CanvasObject, isClearChecked bool) {
-		if fc.(*fyne.Container).Objects[0].(*widget.Check).Checked == isClearChecked {
-			fc.(*fyne.Container).Objects[1].(*widget.Select).SetSelectedIndex(0)
-		}
-	}
-
-	clearSelectEntry := func(fc fyne.CanvasObject, isClearChecked bool) {
-		if fc.(*fyne.Container).Objects[0].(*widget.Check).Checked == isClearChecked {
-			fc.(*fyne.Container).Objects[1].(*widget.SelectEntry).SetText("")
-		}
-	}
-
-	clearEntry := func(fc fyne.CanvasObject, isClearChecked bool) {
-		if fc.(*fyne.Container).Objects[0].(*widget.Check).Checked == isClearChecked {
-			fc.(*fyne.Container).Objects[1].(*widget.Entry).SetText("")
-		}
-	}
-
-	clear := func(isClearChecked bool) {
-		clearSelect(wsIsCredit, isClearChecked)
-		clearSelect(wsCostFlowType, isClearChecked)
-		clearSelectEntry(weInventory, isClearChecked)
-		clearEntry(weAccountName, isClearChecked)
-		clearEntry(weAccountNotes, isClearChecked)
-		SDelete{}.FLines(weAccountImage, 1, isClearChecked)
-		SDelete{}.FLines(weAccountBarcode, 1, isClearChecked)
-		SDelete{}.FLines(weAccountNumber, 1, isClearChecked)
+	clear := func(isChecked bool) {
+		SClear{wsIsCredit, isChecked}.FSelect()
+		SClear{wsCostFlowType, isChecked}.FSelect()
+		SClear{weInventory, isChecked}.FSelectEntry()
+		SClear{weAccountName, isChecked}.FEntry()
+		SClear{weAccountNotes, isChecked}.FEntry()
+		SDelete{}.FLines(weAccountImage, 1, isChecked)
+		SDelete{}.FLines(weAccountBarcode, 1, isChecked)
+		SDelete{}.FLines(weAccountNumber, 1, isChecked)
 	}
 
 	getWsText := func(fc fyne.CanvasObject) string {
@@ -633,7 +618,7 @@ func (SPageInvoiceEntries) FTheIndexOfTheFirstEntry() int  { return 4 }
 func (SPageInvoiceEntries) FAllAccounts() []string {
 	var allAccountNames []string
 	for _, v1 := range VAutoCompletionEntries {
-		allAccountNames = append(allAccountNames, v1.TAccountName)
+		allAccountNames = append(allAccountNames, v1.AccountName)
 	}
 	return allAccountNames
 }
@@ -645,30 +630,22 @@ func (s SPageInvoiceEntries) FSave(insert bool) error {
 		TypeOfCompoundEntry: s.FGetEntries().Objects[3].(*fyne.Container).Objects[1].(*widget.Entry).Text,
 	}
 
-	var entries1 []SAPQ
+	var entries1 []SAPQ1
 	for _, v1 := range s.FGetEntries().Objects[s.FTheIndexOfTheFirstEntry():] {
 		quantity, _ := strconv.ParseFloat(v1.(*fyne.Container).Objects[3].(*widget.Entry).Text, 64)
 
-		entries1 = append(entries1, SAPQ{
-			TAccountName: v1.(*fyne.Container).Objects[1].(*widget.SelectEntry).Text,
-			TQuantity:    quantity,
+		entries1 = append(entries1, SAPQ1{
+			AccountName: v1.(*fyne.Container).Objects[1].(*widget.SelectEntry).Text,
+			Quantity:    quantity,
 		})
 	}
 
-	_, err := FInvoiceJournalEntry("", 0, 0, entries1, entryInfo, insert)
+	_, err := FInvoiceJournalEntry("", "Invoice PQ", 0, 0, entries1, entryInfo, insert)
 	return err
 }
 
 func (s SPageInvoiceEntries) FClear(isChecked bool) {
-	for k1, v1 := range s.FGetEntries().Objects {
-		if k1 == s.FTheIndexOfTheFirstEntry() {
-			break
-		}
-		if v1.(*fyne.Container).Objects[0].(*widget.Check).Checked == isChecked {
-			v1.(*fyne.Container).Objects[1].(*widget.Entry).SetText("")
-		}
-	}
-
+	SDelete{}.FEmpty(s.FGetEntries(), s.FTheIndexOfTheFirstEntry(), isChecked)
 	SDelete{}.FLines(s.FGetEntries(), s.FTheIndexOfTheFirstEntry(), isChecked)
 }
 
@@ -723,15 +700,15 @@ func (s SPageJournalEntries) FSave(insert bool) error {
 		TypeOfCompoundEntry: s.FGetEntries().Objects[3].(*fyne.Container).Objects[1].(*widget.Entry).Text,
 	}
 
-	var entries1 []SAPQ
+	var entries1 []SAPQ1
 	for _, v1 := range s.FGetEntries().Objects[s.FTheIndexOfTheFirstEntry():] {
 		price, _ := strconv.ParseFloat(v1.(*fyne.Container).Objects[2].(*widget.Entry).Text, 64)
 		quantity, _ := strconv.ParseFloat(v1.(*fyne.Container).Objects[3].(*widget.Entry).Text, 64)
 
-		entries1 = append(entries1, SAPQ{
-			TAccountName: v1.(*fyne.Container).Objects[1].(*widget.SelectEntry).Text,
-			TPrice:       price,
-			TQuantity:    quantity,
+		entries1 = append(entries1, SAPQ1{
+			AccountName: v1.(*fyne.Container).Objects[1].(*widget.SelectEntry).Text,
+			Price:       price,
+			Quantity:    quantity,
 		})
 	}
 
@@ -740,15 +717,7 @@ func (s SPageJournalEntries) FSave(insert bool) error {
 }
 
 func (s SPageJournalEntries) FClear(isChecked bool) {
-	for k1, v1 := range s.FGetEntries().Objects {
-		if k1 == s.FTheIndexOfTheFirstEntry() {
-			break
-		}
-		if v1.(*fyne.Container).Objects[0].(*widget.Check).Checked == isChecked {
-			v1.(*fyne.Container).Objects[1].(*widget.Entry).SetText("")
-		}
-	}
-
+	SDelete{}.FEmpty(s.FGetEntries(), s.FTheIndexOfTheFirstEntry(), isChecked)
 	SDelete{}.FLines(s.FGetEntries(), s.FTheIndexOfTheFirstEntry(), isChecked)
 }
 
@@ -800,12 +769,9 @@ func (SWidget) FWlError() *widget.Label {
 }
 
 func (SWidget) FSelectEntry(options []string) *widget.SelectEntry {
+	// ws := w.NewCompletionEntry(options)
 	ws := widget.NewSelectEntry(options)
 	ws.OnChanged = func(option string) {
-		// if option == "" {
-		// 	ws.SetOptions(options)
-		// 	return
-		// }
 		var newOptions []string
 		for _, v1 := range options {
 			if strings.Contains(v1, option) {
@@ -908,6 +874,42 @@ func (SDelete) FLine(fcBig fyne.CanvasObject, fcSmall fyne.CanvasObject) []fyne.
 		}
 	}
 	return fcBig.(*fyne.Container).Objects
+}
+
+func (s SDelete) FEmpty(fc fyne.CanvasObject, TheIndexOfTheFirstEntry int, isChecked bool) {
+	for k1, v1 := range fc.(*fyne.Container).Objects {
+		if k1 == TheIndexOfTheFirstEntry {
+			break
+		}
+		SClear{v1, isChecked}.FEntry()
+	}
+}
+
+type SClear struct {
+	fc        fyne.CanvasObject
+	isChecked bool
+}
+
+func (s SClear) FIsChecked() bool {
+	return s.fc.(*fyne.Container).Objects[0].(*widget.Check).Checked == s.isChecked
+}
+
+func (s SClear) FSelect() {
+	if s.FIsChecked() {
+		s.fc.(*fyne.Container).Objects[1].(*widget.Select).SetSelectedIndex(0)
+	}
+}
+
+func (s SClear) FSelectEntry() {
+	if s.FIsChecked() {
+		s.fc.(*fyne.Container).Objects[1].(*widget.SelectEntry).SetText("")
+	}
+}
+
+func (s SClear) FEntry() {
+	if s.FIsChecked() {
+		s.fc.(*fyne.Container).Objects[1].(*widget.Entry).SetText("")
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

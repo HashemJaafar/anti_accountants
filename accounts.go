@@ -32,14 +32,14 @@ func FFindAccountFromName(accountName string) (SAccount1, int, error) {
 
 func FFindAutoCompletionFromName(accountName string) (SAutoCompletion, int, error) {
 	for k1, v1 := range VAutoCompletionEntries {
-		if accountName == v1.TAccountName {
+		if accountName == v1.AccountName {
 			return v1, k1, nil
 		}
 	}
 	return SAutoCompletion{}, 0, VErrorNotListed
 }
 
-func FSetTheAccountFieldToDefault(account SAccount1) (SAccount1, error) {
+func FSetTheAccountFieldToStandard(account SAccount1) (SAccount1, error) {
 	filter := func(slice []string) []string {
 		for k1 := 0; k1 < len(slice); k1++ {
 			if slice[k1] == "" {
@@ -72,7 +72,7 @@ func FAddAccount(isSave bool, account SAccount1) SAccount3 {
 		}
 	}
 
-	account, err := FSetTheAccountFieldToDefault(account)
+	account, err := FSetTheAccountFieldToStandard(account)
 	e(err, err != nil)
 	_, _, err = FFindAccountFromName(account.Name)
 	e(VErrorIsUsed, err == nil)
@@ -193,7 +193,7 @@ func FCheckTheTree() []error {
 }
 
 func FEditAccount(isDelete bool, index int, account SAccount1) {
-	account, err := FSetTheAccountFieldToDefault(account)
+	account, err := FSetTheAccountFieldToStandard(account)
 	if err != nil {
 		return
 	}
@@ -422,27 +422,27 @@ func FSetTheAccounts() {
 }
 
 func FAddAutoCompletion(a SAutoCompletion) error {
-	account, isExist, err := FAccountTerms(a.TAccountName, true, false)
+	account, isExist, err := FAccountTerms(a.AccountName, true, false)
 	if isExist && err != nil {
 		return err
 	}
-	accountCost, isExistCost, err := FAccountTerms(CPrefixCost+a.TAccountName, true, false)
+	accountCost, isExistCost, err := FAccountTerms(CPrefixCost+a.AccountName, true, false)
 	if isExistCost && err != nil {
 		return err
 	}
-	accountDiscount, isExistDiscount, err := FAccountTerms(CPrefixDiscount+a.TAccountName, true, false)
+	accountDiscount, isExistDiscount, err := FAccountTerms(CPrefixDiscount+a.AccountName, true, false)
 	if isExistDiscount && err != nil {
 		return err
 	}
-	accountTaxExpenses, isExistTaxExpenses, err := FAccountTerms(CPrefixTaxExpenses+a.TAccountName, true, false)
+	accountTaxExpenses, isExistTaxExpenses, err := FAccountTerms(CPrefixTaxExpenses+a.AccountName, true, false)
 	if isExistTaxExpenses && err != nil {
 		return err
 	}
-	accountTaxLiability, isExistTaxLiability, err := FAccountTerms(CPrefixTaxLiability+a.TAccountName, true, true)
+	accountTaxLiability, isExistTaxLiability, err := FAccountTerms(CPrefixTaxLiability+a.AccountName, true, true)
 	if isExistTaxLiability && err != nil {
 		return err
 	}
-	accountRevenue, isExistRevenue, err := FAccountTerms(CPrefixRevenue+a.TAccountName, true, true)
+	accountRevenue, isExistRevenue, err := FAccountTerms(CPrefixRevenue+a.AccountName, true, true)
 	if isExistRevenue && err != nil {
 		return err
 	}
@@ -462,12 +462,29 @@ func FAddAutoCompletion(a SAutoCompletion) error {
 
 	a.PriceRevenue = FAbs(a.PriceRevenue)
 	a.PriceTax = FAbs(a.PriceTax)
-	for k1, v1 := range a.PriceDiscount {
-		a.PriceDiscount[k1].TPrice = FAbs(v1.TPrice)
-		a.PriceDiscount[k1].TQuantity = FAbs(v1.TQuantity)
+
+	setDiscont := func(discountPrice float64) float64 {
+		discountPrice = FAbs(discountPrice)
+		if discountPrice > a.PriceRevenue {
+			discountPrice = a.PriceRevenue
+		}
+		return discountPrice
 	}
 
-	FDbUpdate(VDbAutoCompletionEntries, []byte(a.TAccountName), a)
+	a.DiscountPerOne = setDiscont(a.DiscountPerOne)
+	a.DiscountTotal = FAbs(a.DiscountTotal)
+	a.DiscountPerQuantity.TPrice = setDiscont(a.DiscountPerQuantity.TPrice)
+	a.DiscountPerQuantity.TQuantity = FAbs(a.DiscountPerQuantity.TQuantity)
+	for k1, v1 := range a.DiscountDecisionTree {
+		a.DiscountDecisionTree[k1].TPrice = setDiscont(v1.TPrice)
+		a.DiscountDecisionTree[k1].TQuantity = FAbs(v1.TQuantity)
+	}
+
+	if _, isIn := FFind(a.DiscountWay, VDiscountWay); !isIn {
+		a.DiscountWay = CDiscountPerOne
+	}
+
+	FDbUpdate(VDbAutoCompletionEntries, []byte(a.AccountName), a)
 	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
 
 	return nil

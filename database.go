@@ -16,22 +16,19 @@ func FDbOpenAll() {
 		wait.Done()
 	}
 
-	wait.Add(7)
-	go open(&VDbAccounts, CPathAccounts)
+	wait.Add(9)
 	go open(&VDbJournal, CPathJournal)
 	go open(&VDbInventory, CPathInventory)
-	go open(&VDbAutoCompletionEntries, CPathAutoCompletionEntries)
 	go open(&VDbEmployees, CPathEmployees)
 	go open(&VDbJournalDrafts, CPathJournalDrafts)
 	go open(&VDbInvoiceDrafts, CPathInvoiceDrafts)
-	wait.Wait()
-
-	wait.Add(2)
 	go func() {
+		open(&VDbAccounts, CPathAccounts)
 		_, VAccounts = FDbRead[SAccount1](VDbAccounts)
 		wait.Done()
 	}()
 	go func() {
+		open(&VDbAutoCompletionEntries, CPathAutoCompletionEntries)
 		_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
 		wait.Done()
 	}()
@@ -154,10 +151,10 @@ func FChangeAccountName(old, new string) {
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
-	keys, inventory := FDbRead[SAPQ](VDbInventory)
+	keys, inventory := FDbRead[SAPQ1](VDbInventory)
 	for k1, v1 := range inventory {
-		if v1.TAccountName == old {
-			v1.TAccountName = new
+		if v1.AccountName == old {
+			v1.AccountName = new
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
@@ -166,14 +163,14 @@ func FChangeAccountName(old, new string) {
 func FWeightedAverage(account string) {
 	_, price, quantity := FTotalValuePriceQuantity(account)
 
-	keys, inventory := FDbRead[SAPQ](VDbInventory)
+	keys, inventory := FDbRead[SAPQ1](VDbInventory)
 	for k1, v1 := range inventory {
-		if v1.TAccountName == account {
+		if v1.AccountName == account {
 			FDbDelete(VDbInventory, keys[k1])
 		}
 	}
 
-	FDbUpdate(VDbInventory, FNow(), SAPQ{account, price, FAbs(quantity)})
+	FDbUpdate(VDbInventory, FNow(), SAPQ1{account, price, quantity})
 }
 
 func FChangeNotes(old, new string) {

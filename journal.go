@@ -9,149 +9,142 @@ import (
 )
 
 //TODO
-func FValueAfterAdjustUsingAdjustingMethods(adjustingMethod string, minutesCurrent, minutesTotal, minutesPast, valueTotal float64) float64 {
-	percent := FRoot(valueTotal, minutesTotal)
-	switch adjustingMethod {
-	case CExponential:
-		return math.Pow(percent, minutesPast+minutesCurrent) - math.Pow(percent, minutesPast)
-	case CLogarithmic:
-		return (valueTotal / math.Pow(percent, minutesPast)) - (valueTotal / math.Pow(percent, minutesPast+minutesCurrent))
-	default:
-		return minutesCurrent * (valueTotal / minutesTotal)
-	}
-}
+// func FValueAfterAdjustUsingAdjustingMethods(adjustingMethod string, minutesCurrent, minutesTotal, minutesPast, valueTotal float64) float64 {
+// 	percent := FRoot(valueTotal, minutesTotal)
+// 	switch adjustingMethod {
+// 	case CExponential:
+// 		return math.Pow(percent, minutesPast+minutesCurrent) - math.Pow(percent, minutesPast)
+// 	case CLogarithmic:
+// 		return (valueTotal / math.Pow(percent, minutesPast)) - (valueTotal / math.Pow(percent, minutesPast+minutesCurrent))
+// 	default:
+// 		return minutesCurrent * (valueTotal / minutesTotal)
+// 	}
+// }
 
-func FCheckDebitEqualCredit(entries []SAPQAE) ([]SAPQAE, []SAPQAE, error) {
-	var debitEntries, creditEntries []SAPQAE
+func FCheckDebitEqualCredit(entries []SAPQ12SAccount1) ([]SAPQ12SAccount1, []SAPQ12SAccount1, error) {
+	var debitEntries, creditEntries []SAPQ12SAccount1
 	var zero float64
 	for _, v1 := range entries {
-		VALUE := v1.TPrice * v1.TQuantity
+		value := v1.SAPQ1.Price * v1.SAPQ1.Quantity
+		if value == 0 {
+			continue
+		}
+
 		switch v1.SAccount1.IsCredit {
 		case false:
-			zero += VALUE
-			if VALUE > 0 {
+			zero += value
+			if value > 0 {
 				debitEntries = append(debitEntries, v1)
-			} else if VALUE < 0 {
+			} else {
 				creditEntries = append(creditEntries, v1)
 			}
 		case true:
-			zero -= VALUE
-			if VALUE < 0 {
+			zero -= value
+			if value < 0 {
 				debitEntries = append(debitEntries, v1)
-			} else if VALUE > 0 {
+			} else {
 				creditEntries = append(creditEntries, v1)
 			}
 		}
 	}
-	if zero != 0 {
-		return debitEntries, creditEntries,
-			fmt.Errorf("the debit and credit should be equal. and the debit is more than credit by %v, the debitEntries is %v and the creditEntries is %v", zero, debitEntries, creditEntries)
-	}
+	s := fmt.Sprintf(", the debitEntries is %v and the creditEntries is %v", debitEntries, creditEntries)
 	if len(debitEntries) != 1 && len(creditEntries) != 1 {
-		return debitEntries, creditEntries, errors.New("should be one debit or one credit in the entry")
+		return debitEntries, creditEntries, errors.New("should be one debit or one credit in the entry" + s)
+	}
+	if zero != 0 {
+		return debitEntries, creditEntries, fmt.Errorf("the debit and credit should be equal. and the debit is more than credit by %v"+s, zero)
 	}
 	return debitEntries, creditEntries, nil
 }
 
-func FSetPriceAndQuantity(account SAPQAE, insert bool) SAPQAE {
-	if account.TQuantity > 0 {
+func FSetPriceAndQuantity(account SAPQ12SAccount1, insert bool) SAPQ12SAccount1 {
+	if account.SAPQ1.Quantity > 0 {
 		return account
 	}
 
 	var keys [][]byte
-	var inventory []SAPQ
+	var inventory []SAPQ1
 	switch account.SAccount1.CostFlowType {
 	case CFifo:
-		keys, inventory = FDbRead[SAPQ](VDbInventory)
+		keys, inventory = FDbRead[SAPQ1](VDbInventory)
 	case CLifo:
-		keys, inventory = FDbRead[SAPQ](VDbInventory)
+		keys, inventory = FDbRead[SAPQ1](VDbInventory)
 		FReverseSlice(keys)
 		FReverseSlice(inventory)
 	case CWma:
-		FWeightedAverage(account.TAccountName)
-		keys, inventory = FDbRead[SAPQ](VDbInventory)
+		FWeightedAverage(account.SAPQ1.AccountName)
+		keys, inventory = FDbRead[SAPQ1](VDbInventory)
 	default:
 		return account
 	}
 
-	QuantityCount := FAbs(account.TQuantity)
+	QuantityCount := FAbs(account.SAPQ1.Quantity)
 	var costs float64
 	for k1, v1 := range inventory {
-		if v1.TAccountName == account.TAccountName {
-			if QuantityCount <= v1.TQuantity {
-				costs -= v1.TPrice * QuantityCount
+		if v1.AccountName == account.SAPQ1.AccountName {
+			if QuantityCount <= v1.Quantity {
+				costs -= v1.Price * QuantityCount
 				if insert {
-					inventory[k1].TQuantity -= QuantityCount
+					inventory[k1].Quantity -= QuantityCount
 					FDbUpdate(VDbInventory, keys[k1], inventory[k1])
 				}
 				QuantityCount = 0
 				break
 			}
-			if QuantityCount > v1.TQuantity {
-				costs -= v1.TPrice * v1.TQuantity
+			if QuantityCount > v1.Quantity {
+				costs -= v1.Price * v1.Quantity
 				if insert {
 					FDbDelete(VDbInventory, keys[k1])
 				}
-				QuantityCount -= v1.TQuantity
+				QuantityCount -= v1.Quantity
 			}
 		}
 	}
-	if QuantityCount > 0 {
-		account.error = fmt.Errorf("the quantity of %s is too much", account.TAccountName)
-	}
-	account.TQuantity += QuantityCount
-	account.TPrice = costs / account.TQuantity
-	return account
-}
 
-func FGroupByAccount(entries []SAPQAE) []SAPQAE {
-	m := map[string]*SAPQAE{}
-	for _, v1 := range entries {
-		key := v1.TAccountName
-		sums := m[key]
-		if sums == nil {
-			sums = &SAPQAE{}
-			m[key] = sums
-		}
-		sums.TAccountName = v1.TAccountName
-		sums.TPrice += v1.TPrice * v1.TQuantity //here i store the VALUE in Price field
-		sums.TQuantity += v1.TQuantity
-		sums.SAccount1 = v1.SAccount1
-		sums.error = v1.error
+	if QuantityCount > 0 {
+		account.SAPQ2.Quantity = TErr("the quantity is too much")
 	}
-	entries = []SAPQAE{}
-	for _, v1 := range m {
-		entries = append(entries, SAPQAE{
-			TAccountName: v1.TAccountName,
-			TPrice:       v1.TPrice / v1.TQuantity,
-			TQuantity:    v1.TQuantity,
-			SAccount1:    v1.SAccount1,
-			error:        v1.error,
-		})
-	}
-	return entries
+	account.SAPQ1.Quantity += QuantityCount
+	account.SAPQ1.Price = costs / account.SAPQ1.Quantity
+	return account
 }
 
 func FInsertToDatabaseJournal(journal []SJournal1) {
 	last := FDbLastLine[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
+		v1.Date = time.Now()
 		v1.EntryNumberCompound = last.EntryNumberCompound + 1
 		v1.EntryNumberSimple = uint(k1) + 1
 
-		v1.DebitBalanceValue, v1.DebitBalancePrice, v1.DebitBalanceQuantity = FTotalValuePriceQuantity(v1.DebitAccountName)
-		v1.CreditBalanceValue, v1.CreditBalancePrice, v1.CreditBalanceQuantity = FTotalValuePriceQuantity(v1.CreditAccountName)
+		calculateBalance := func(accountName string, isCreditInTheEntry bool, inputQuantity float64) (float64, float64, float64) {
 
-		FDbUpdate(VDbJournal, FNow(), v1)
+			account, _, _ := FFindAccountFromName(accountName)
+			sign := 1.0
+			if account.IsCredit != isCreditInTheEntry {
+				sign = -1
+			}
+
+			value, _, quantity := FTotalValuePriceQuantity(accountName)
+			value += v1.Value * sign
+			quantity += inputQuantity * sign
+
+			return value, value / quantity, quantity
+		}
+
+		v1.DebitBalanceValue, v1.DebitBalancePrice, v1.DebitBalanceQuantity = calculateBalance(v1.DebitAccountName, false, v1.DebitQuantity)
+		v1.CreditBalanceValue, v1.CreditBalancePrice, v1.CreditBalanceQuantity = calculateBalance(v1.CreditAccountName, true, v1.CreditQuantity)
+
+		FDbUpdate(VDbJournal, []byte(v1.Date.Format(CTimeLayout)), v1)
 	}
 }
 
-func FInsertToJournal(debitEntries, creditEntries []SAPQAE, entryInfo SEntry) []SJournal1 {
+func FInsertToJournal(debitEntries, creditEntries []SAPQ12SAccount1, entryInfo SEntry) []SJournal1 {
 	var simpleEntries []SJournal1
 	for _, debitEntry := range debitEntries {
 		for _, creditEntry := range creditEntries {
-			value := FSmallest(FAbs(debitEntry.TPrice*debitEntry.TQuantity), FAbs(creditEntry.TPrice*creditEntry.TQuantity))
+			value := FSmallest(FAbs(debitEntry.SAPQ1.Price*debitEntry.SAPQ1.Quantity), FAbs(creditEntry.SAPQ1.Price*creditEntry.SAPQ1.Quantity))
 			simpleEntries = append(simpleEntries, SJournal1{
-				Date:                       time.Now(),
+				Date:                       time.Time{},
 				IsReverse:                  false,
 				IsReversed:                 false,
 				ReverseEntryNumberCompound: 0,
@@ -159,15 +152,15 @@ func FInsertToJournal(debitEntries, creditEntries []SAPQAE, entryInfo SEntry) []
 				EntryNumberCompound:        0,
 				EntryNumberSimple:          0,
 				Value:                      value,
-				DebitAccountName:           debitEntry.TAccountName,
-				DebitPrice:                 debitEntry.TPrice,
-				DebitQuantity:              value / debitEntry.TPrice,
+				DebitAccountName:           debitEntry.SAPQ1.AccountName,
+				DebitPrice:                 debitEntry.SAPQ1.Price,
+				DebitQuantity:              value / debitEntry.SAPQ1.Price,
 				DebitBalanceValue:          0,
 				DebitBalancePrice:          0,
 				DebitBalanceQuantity:       0,
-				CreditAccountName:          creditEntry.TAccountName,
-				CreditPrice:                creditEntry.TPrice,
-				CreditQuantity:             value / creditEntry.TPrice,
+				CreditAccountName:          creditEntry.SAPQ1.AccountName,
+				CreditPrice:                creditEntry.SAPQ1.Price,
+				CreditQuantity:             value / creditEntry.SAPQ1.Price,
 				CreditBalanceValue:         0,
 				CreditBalancePrice:         0,
 				CreditBalanceQuantity:      0,
@@ -181,68 +174,226 @@ func FInsertToJournal(debitEntries, creditEntries []SAPQAE, entryInfo SEntry) []
 	return simpleEntries
 }
 
-func FSimpleJournalEntry(entries []SAPQ, entryInfo SEntry, insert bool) ([]SAPQAE, error) {
-	newEntries1 := FSetEntries(entries, false)
-	newEntries1 = FGroupByAccount(newEntries1)
+func FSetEntries(entries []SAPQ1) []SAPQ12SAccount1 {
+	var newEntries []SAPQ12SAccount1
+	for _, v1 := range entries {
+		account, _, errAccountName := FFindAccountFromNameOrBarcode(v1.AccountName)
 
-	for k1, v1 := range newEntries1 {
-		if v1.error == nil {
-			newEntries1[k1] = FSetPriceAndQuantity(v1, false)
+		var err SAPQ2
+		if errAccountName != nil {
+			err.AccountName = TErr(errAccountName.Error())
 		}
-	}
+		if account.CostFlowType == CHighLevelAccount {
+			err.AccountName = TErr("is " + CHighLevelAccount)
+		}
+		if v1.Price == 0 {
+			err.Price = TErr("is zero")
+		}
+		if v1.Quantity == 0 {
+			err.Quantity = TErr("is zero")
+		}
 
-	debitEntries, creditEntries, err := FCheckDebitEqualCredit(newEntries1)
-	if err != nil {
-		return append(debitEntries, creditEntries...), err
+		newEntries = append(newEntries, SAPQ12SAccount1{
+			SAPQ1:     SAPQ1{v1.AccountName, FAbs(v1.Price), v1.Quantity},
+			SAPQ2:     err,
+			SAccount1: account,
+		})
 	}
-
-	if insert {
-		simpleEntries := FInsertToJournal(debitEntries, creditEntries, entryInfo)
-		FInsertToDatabase(simpleEntries, newEntries1)
-	}
-
-	return append(debitEntries, creditEntries...), nil
+	return newEntries
 }
 
-func FInvoiceJournalEntry(payAccountName string, payAccountPrice, invoiceDiscountPrice float64, inventoryAccounts []SAPQ, entryInfo SEntry, insert bool) ([]SAPQ, error) {
-
-	if _, isExist, err := FAccountTerms(payAccountName, true, false); !isExist || err != nil {
-		return inventoryAccounts, err
+func FGroupByAccount(entries []SAPQ12SAccount1) []SAPQ12SAccount1 {
+	m := map[string]*SAPQ12SAccount1{}
+	for _, v1 := range entries {
+		key := v1.SAPQ1.AccountName
+		sums := m[key]
+		if sums == nil {
+			sums = &SAPQ12SAccount1{}
+			m[key] = sums
+		}
+		sums.SAPQ1.AccountName = v1.SAPQ1.AccountName
+		sums.SAPQ1.Price += v1.SAPQ1.Price * v1.SAPQ1.Quantity //here i store the VALUE in Price field
+		sums.SAPQ1.Quantity += v1.SAPQ1.Quantity
+		sums.SAPQ2 = v1.SAPQ2
+		sums.SAccount1 = v1.SAccount1
 	}
-	if _, isExist, err := FAccountTerms(VInvoiceDiscount, true, false); !isExist || err != nil {
-		return inventoryAccounts, err
+	entries = []SAPQ12SAccount1{}
+	for _, v1 := range m {
+		v1.SAPQ1.Price = v1.SAPQ1.Price / v1.SAPQ1.Quantity
+		entries = append(entries, SAPQ12SAccount1{
+			SAPQ1:     v1.SAPQ1,
+			SAPQ2:     v1.SAPQ2,
+			SAccount1: v1.SAccount1,
+		})
 	}
+	return entries
+}
 
-	newEntries1 := FSetEntries(inventoryAccounts, true)
+func FSimpleJournalEntry(entries []SAPQ1, entryInfo SEntry, insert bool) ([]SAPQ12SAccount1, error) {
+	newEntries1 := FSetEntries(entries)
 	newEntries1 = FGroupByAccount(newEntries1)
 
 	for k1, v1 := range newEntries1 {
 		newEntries1[k1] = FSetPriceAndQuantity(v1, false)
 	}
 
-	newEntries2 := FAutoComplete(newEntries1, payAccountName, payAccountPrice)
-	inventoryAccounts = FConvertAPQICToAPQB(newEntries1)
+	debitEntries, creditEntries, err := FCheckDebitEqualCredit(newEntries1)
+	newEntries1 = append(debitEntries, creditEntries...)
 
-	var newEntries3 []SJournal1
-	newEntries1 = []SAPQAE{}
-	for _, v1 := range newEntries2 {
-		debitEntries, creditEntries, err := FCheckDebitEqualCredit(v1)
-		if err != nil {
-			return inventoryAccounts, err
+	if err != nil {
+		return newEntries1, err
+	}
+
+	for _, v1 := range newEntries1 {
+		if v1.SAPQ2.AccountName != "" || v1.SAPQ2.Price != "" || v1.SAPQ2.Quantity != "" {
+			return newEntries1, nil
 		}
-		newEntries1 = append(newEntries1, debitEntries...)
-		newEntries1 = append(newEntries1, creditEntries...)
-		newEntries3 = append(newEntries3, FInsertToJournal(debitEntries, creditEntries, entryInfo)...)
 	}
 
 	if insert {
-		FInsertToDatabase(newEntries3, newEntries1)
+		FInsertToDatabase(FInsertToJournal(debitEntries, creditEntries, entryInfo), newEntries1)
 	}
 
-	return inventoryAccounts, nil
+	return newEntries1, nil
 }
 
-func FInsertToDatabase(entriesJournal []SJournal1, entriesInventory []SAPQAE) {
+func FInvoiceJournalEntry(AccountNamePay, AccountNameInvoiceDiscount string, PricePay, TotalInvoiceDiscount float64, entries []SAPQ1, entryInfo SEntry, insert bool) ([]SAPQ12SAccount1, error) {
+
+	newEntries1 := FSetEntries(entries)
+	newEntries1 = FGroupByAccount(newEntries1)
+
+	type entry struct {
+		Inventory       SAPQ12SAccount1
+		Cost            SAPQ12SAccount1
+		TaxExpenses     SAPQ12SAccount1
+		TaxLiability    SAPQ12SAccount1
+		Revenue         SAPQ12SAccount1
+		Discount        SAPQ12SAccount1
+		Pay             SAPQ12SAccount1
+		InvoiceDiscount SAPQ12SAccount1
+	}
+	var totalvalueOfInvoiceDiscountAndPay float64
+	var newEntries2 []entry
+	for k1, v1 := range newEntries1 {
+
+		v1.SAPQ2.Price = ""
+		v1.SAPQ1.Quantity = -FAbs(v1.SAPQ1.Quantity)
+		v1 = FSetPriceAndQuantity(v1, false)
+		autoCompletion, _, err := FFindAutoCompletionFromName(v1.SAPQ1.AccountName)
+		if err != nil {
+			v1.SAPQ2.AccountName = TErr(err.Error())
+		}
+
+		quantity := FAbs(v1.SAPQ1.Quantity)
+		addEntry := func(entry *SAPQ12SAccount1, prefix string, price float64, isCredit bool) {
+			if price > 0 {
+				q := quantity
+				if prefix == "" {
+					q = -quantity
+				}
+				*entry = SAPQ12SAccount1{
+					SAPQ1:     SAPQ1{prefix + autoCompletion.AccountName, price, q},
+					SAPQ2:     SAPQ2{},
+					SAccount1: SAccount1{IsCredit: isCredit},
+				}
+			}
+		}
+
+		var entries entry
+		addEntry(&entries.Inventory, "", v1.SAPQ1.Price, false)
+		addEntry(&entries.Cost, CPrefixCost, v1.SAPQ1.Price, false)
+		addEntry(&entries.TaxExpenses, CPrefixTaxExpenses, autoCompletion.PriceTax, false)
+		addEntry(&entries.TaxLiability, CPrefixTaxLiability, autoCompletion.PriceTax, true)
+		addEntry(&entries.Revenue, CPrefixRevenue, autoCompletion.PriceRevenue, true)
+
+		setDiscount := func(discountPrice float64) {
+			addEntry(&entries.Discount, CPrefixDiscount, discountPrice, false)
+			totalvalueOfInvoiceDiscountAndPay += (autoCompletion.PriceRevenue - discountPrice) * quantity
+		}
+
+		switch autoCompletion.DiscountWay {
+		case CDiscountPerOne:
+			setDiscount(autoCompletion.DiscountPerOne)
+		case CDiscountTotal:
+			discountPrice := FAbs(autoCompletion.DiscountTotal / quantity)
+			if discountPrice > autoCompletion.PriceRevenue {
+				discountPrice = autoCompletion.PriceRevenue
+			}
+			setDiscount(discountPrice)
+		case CDiscountPerQuantity:
+			setDiscount(math.Floor(quantity/autoCompletion.DiscountPerQuantity.TQuantity) * autoCompletion.DiscountPerQuantity.TPrice)
+		case CDiscountDecisionTree:
+			var discountPrice float64
+			for _, v2 := range autoCompletion.DiscountDecisionTree {
+				if v2.TQuantity > quantity {
+					discountPrice = v2.TPrice
+				}
+			}
+			setDiscount(discountPrice)
+		}
+
+		newEntries2 = append(newEntries2, entries)
+		newEntries1[k1] = v1
+	}
+
+	if TotalInvoiceDiscount > totalvalueOfInvoiceDiscountAndPay {
+		TotalInvoiceDiscount = totalvalueOfInvoiceDiscountAndPay
+	}
+
+	var newEntries3 [][]SAPQ12SAccount1
+	for _, v1 := range newEntries2 {
+		valueRevenue := v1.Revenue.SAPQ1.Price * v1.Revenue.SAPQ1.Quantity
+		valueDiscount := v1.Discount.SAPQ1.Price * v1.Discount.SAPQ1.Quantity
+		valueOfInvoiceDiscountAndPay := valueRevenue - valueDiscount
+
+		valueInvoiceDiscount := (TotalInvoiceDiscount / totalvalueOfInvoiceDiscountAndPay) * valueOfInvoiceDiscountAndPay
+		v1.InvoiceDiscount = SAPQ12SAccount1{
+			SAPQ1:     SAPQ1{AccountNameInvoiceDiscount, valueInvoiceDiscount, 1},
+			SAPQ2:     SAPQ2{},
+			SAccount1: SAccount1{IsCredit: false},
+		}
+
+		valuePay := valueOfInvoiceDiscountAndPay - valueInvoiceDiscount
+		v1.Pay = SAPQ12SAccount1{
+			SAPQ1:     SAPQ1{AccountNamePay, PricePay, valuePay / PricePay},
+			SAPQ2:     SAPQ2{},
+			SAccount1: SAccount1{IsCredit: false},
+		}
+
+		newEntries3 = append(newEntries3, []SAPQ12SAccount1{v1.Inventory, v1.Cost}, []SAPQ12SAccount1{v1.TaxExpenses, v1.TaxLiability}, []SAPQ12SAccount1{v1.Revenue, v1.Discount, v1.Pay, v1.InvoiceDiscount})
+	}
+
+	var newEntries4 []SJournal1
+	for _, v1 := range newEntries3 {
+		debitEntries, creditEntries, err := FCheckDebitEqualCredit(v1)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		newEntries4 = append(newEntries4, FInsertToJournal(debitEntries, creditEntries, entryInfo)...)
+	}
+
+	if _, isExist, err := FAccountTerms(AccountNamePay, true, false); !isExist || err != nil {
+		return newEntries1, err
+	}
+	if _, isExist, err := FAccountTerms(AccountNameInvoiceDiscount, true, false); !isExist || err != nil {
+		return newEntries1, err
+	}
+
+	for _, v1 := range newEntries1 {
+		if v1.SAPQ2.AccountName != "" || v1.SAPQ2.Price != "" || v1.SAPQ2.Quantity != "" {
+			return newEntries1, nil
+		}
+	}
+
+	if insert {
+		FInsertToDatabase(newEntries4, newEntries1)
+	}
+
+	return newEntries1, nil
+}
+
+func FInsertToDatabase(entriesJournal []SJournal1, entriesInventory []SAPQ12SAccount1) {
 	var wait sync.WaitGroup
 	wait.Add(2)
 
@@ -258,114 +409,14 @@ func FInsertToDatabase(entriesJournal []SJournal1, entriesInventory []SAPQAE) {
 	wait.Wait()
 }
 
-func FAutoComplete(inventoryAccounts []SAPQAE, payAccountName string, payAccountPrice float64) [][]SAPQAE {
-	var simpleInfoAPQ [][]SAPQAE
-	for _, v1 := range inventoryAccounts {
-
-		autoCompletion, _, err := FFindAutoCompletionFromName(v1.TAccountName)
-		if err != nil {
-			continue
-		}
-
-		var inv []SAPQAE
-		var tax []SAPQAE
-		var pay []SAPQAE
-
-		quantity := FAbs(v1.TQuantity)
-		var valueRevenue float64
-		var valueDiscount float64
-
-		inv = append(inv, SAPQAE{autoCompletion.TAccountName, v1.TPrice, v1.TQuantity, SAccount1{IsCredit: false}, nil})
-		inv = append(inv, SAPQAE{CPrefixCost + autoCompletion.TAccountName, v1.TPrice, quantity, SAccount1{IsCredit: false}, nil})
-
-		if autoCompletion.PriceTax > 0 {
-			tax = append(tax, SAPQAE{CPrefixTaxExpenses + autoCompletion.TAccountName, autoCompletion.PriceTax, quantity, SAccount1{IsCredit: false}, nil})
-			tax = append(tax, SAPQAE{CPrefixTaxLiability + autoCompletion.TAccountName, autoCompletion.PriceTax, quantity, SAccount1{IsCredit: true}, nil})
-		}
-
-		if autoCompletion.PriceRevenue > 0 {
-			pay = append(pay, SAPQAE{CPrefixRevenue + autoCompletion.TAccountName, autoCompletion.PriceRevenue, quantity, SAccount1{IsCredit: true}, nil})
-			valueRevenue = quantity * autoCompletion.PriceRevenue
-		}
-
-		var priceDiscount float64
-		for _, v1 := range autoCompletion.PriceDiscount {
-			if v1.TQuantity > quantity {
-				priceDiscount = v1.TPrice
-			}
-		}
-		priceDiscount = FAbs(priceDiscount)
-
-		if priceDiscount > 0 {
-			pay = append(pay, SAPQAE{CPrefixDiscount + autoCompletion.TAccountName, priceDiscount, quantity, SAccount1{IsCredit: false}, nil})
-			valueDiscount = quantity * priceDiscount
-		}
-
-		payValue := valueRevenue - valueDiscount
-		pay = append(pay, SAPQAE{payAccountName, payAccountPrice, payValue / payAccountPrice, SAccount1{IsCredit: false}, nil})
-
-		simpleInfoAPQ = append(simpleInfoAPQ, inv)
-		if len(tax) > 1 {
-			simpleInfoAPQ = append(simpleInfoAPQ, tax)
-		}
-		if len(pay) > 1 {
-			simpleInfoAPQ = append(simpleInfoAPQ, pay)
-		}
-
-	}
-	return simpleInfoAPQ
-}
-
-func FConvertAPQICToAPQB(entries []SAPQAE) []SAPQ {
-	var newEntries []SAPQ
+func FInsertToDatabaseInventory(entries []SAPQ12SAccount1) {
 	for _, v1 := range entries {
-		newEntries = append(newEntries, SAPQ{v1.TAccountName, v1.TPrice, v1.TQuantity})
-	}
-	return newEntries
-}
-
-func FInsertToDatabaseInventory(entries []SAPQAE) {
-	for _, v1 := range entries {
-		if v1.TQuantity > 0 {
-			FDbUpdate(VDbInventory, FNow(), SAPQ{v1.TAccountName, v1.TPrice, v1.TQuantity})
+		if v1.SAPQ1.Quantity > 0 {
+			FDbUpdate(VDbInventory, FNow(), SAPQ1{v1.SAPQ1.AccountName, v1.SAPQ1.Price, v1.SAPQ1.Quantity})
 		} else {
 			FSetPriceAndQuantity(v1, true)
 		}
 	}
-}
-
-func FSetEntries(entries []SAPQ, isInvoice bool) []SAPQAE {
-	var newEntries []SAPQAE
-	for _, v1 := range entries {
-		account, _, err1 := FFindAccountFromNameOrBarcode(v1.TAccountName)
-		if isInvoice {
-			if account.IsCredit || v1.TQuantity >= 0 {
-				continue
-			}
-			v1.TPrice = 1
-		}
-
-		var err2 error
-		switch {
-		case err1 != nil:
-			err2 = err1
-		case account.CostFlowType == CHighLevelAccount:
-			err2 = errors.New("you can't use high level account in journal")
-		case v1.TQuantity == 0:
-			err2 = errors.New("quantity can't be 0")
-		case v1.TPrice == 0:
-			err2 = errors.New("price can't be 0")
-		}
-
-		newEntries = append(newEntries, SAPQAE{
-			TAccountName: v1.TAccountName,
-			TPrice:       FAbs(v1.TPrice),
-			TQuantity:    v1.TQuantity,
-			SAccount1:    account,
-			error:        err2,
-		})
-	}
-	return newEntries
 }
 
 func FReverseEntries(entriesKeys [][]byte, entries []SJournal1, nameEmployee string) {
@@ -379,15 +430,23 @@ func FReverseEntries(entriesKeys [][]byte, entries []SJournal1, nameEmployee str
 		account, _, _ = FFindAccountFromName(v1.DebitAccountName)
 		v1.DebitQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, false, v1.DebitQuantity)
 
-		entryCredit := FSetPriceAndQuantity(SAPQAE{v1.CreditAccountName, v1.CreditPrice, v1.CreditQuantity, SAccount1{IsCredit: false, CostFlowType: CFifo}, nil}, false)
-		entryDebit := FSetPriceAndQuantity(SAPQAE{v1.DebitAccountName, v1.DebitPrice, v1.DebitQuantity, SAccount1{IsCredit: false, CostFlowType: CFifo}, nil}, false)
+		entryCredit := FSetPriceAndQuantity(SAPQ12SAccount1{
+			SAPQ1:     SAPQ1{v1.CreditAccountName, v1.CreditPrice, v1.CreditQuantity},
+			SAPQ2:     SAPQ2{},
+			SAccount1: account,
+		}, false)
+		entryDebit := FSetPriceAndQuantity(SAPQ12SAccount1{
+			SAPQ1:     SAPQ1{v1.DebitAccountName, v1.DebitPrice, v1.DebitQuantity},
+			SAPQ2:     SAPQ2{},
+			SAccount1: account,
+		}, false)
 
-		if entryCredit.TQuantity == v1.CreditQuantity && entryDebit.TQuantity == v1.DebitQuantity {
+		if entryCredit.SAPQ1.Quantity == v1.CreditQuantity && entryDebit.SAPQ1.Quantity == v1.DebitQuantity {
 
 			entryCredit.SAccount1.CostFlowType = CWma
 			entryDebit.SAccount1.CostFlowType = CWma
 
-			FInsertToDatabaseInventory([]SAPQAE{entryCredit, entryDebit})
+			FInsertToDatabaseInventory([]SAPQ12SAccount1{entryCredit, entryDebit})
 
 			v1.CreditPrice, v1.DebitPrice = v1.DebitPrice, v1.CreditPrice
 			v1.CreditQuantity, v1.DebitQuantity = FAbs(v1.DebitQuantity), FAbs(v1.CreditQuantity)
@@ -407,40 +466,6 @@ func FReverseEntries(entriesKeys [][]byte, entries []SJournal1, nameEmployee str
 	}
 
 	FInsertToDatabaseJournal(entryToReverse)
-}
-
-func FConvertJournalToAPQA(entries []SJournal1) []SAPQAE {
-	var newEntries []SAPQAE
-	for _, v1 := range entries {
-		account, _, _ := FFindAccountFromName(v1.DebitAccountName)
-		newEntries = append(newEntries, SAPQAE{
-			TAccountName: v1.DebitAccountName,
-			TPrice:       v1.DebitPrice,
-			TQuantity:    FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, false, v1.DebitQuantity),
-			SAccount1:    account,
-		})
-
-		account, _, _ = FFindAccountFromName(v1.CreditAccountName)
-		newEntries = append(newEntries, SAPQAE{
-			TAccountName: v1.CreditAccountName,
-			TPrice:       v1.CreditPrice,
-			TQuantity:    FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, true, v1.CreditQuantity),
-			SAccount1:    account,
-		})
-	}
-	return FGroupByAccount(newEntries)
-}
-
-func FConvertAPQAToAPQB(entries []SAPQAE) []SAPQ {
-	var newEntries []SAPQ
-	for _, v1 := range entries {
-		newEntries = append(newEntries, SAPQ{
-			TAccountName: v1.TAccountName,
-			TPrice:       v1.TPrice,
-			TQuantity:    v1.TQuantity,
-		})
-	}
-	return newEntries
 }
 
 func FJournalFilter(journal []SJournal1, f SJournal2, isDebitAndCredit bool) []SJournal1 {
@@ -585,17 +610,14 @@ func FConvertTheSignOfDoubleEntryToSingleEntry(isCredit, isCreditInTheEntry bool
 }
 
 func FTotalValuePriceQuantity(account string) (float64, float64, float64) {
-	var totalValue, totalQuantity float64
 	_, journal := FDbRead[SJournal1](VDbJournal)
-	for _, v1 := range journal {
-		if v1.CreditAccountName == account {
-			totalValue += v1.Value
-			totalQuantity += v1.CreditQuantity
+	for k1 := len(journal) - 1; k1 >= 0; k1-- {
+		if journal[k1].DebitAccountName == account {
+			return journal[k1].DebitBalanceValue, journal[k1].DebitBalancePrice, journal[k1].DebitBalanceQuantity
 		}
-		if v1.DebitAccountName == account {
-			totalValue -= v1.Value
-			totalQuantity -= v1.DebitQuantity
+		if journal[k1].CreditAccountName == account {
+			return journal[k1].CreditBalanceValue, journal[k1].CreditBalancePrice, journal[k1].CreditBalanceQuantity
 		}
 	}
-	return FAbs(totalValue), FAbs(totalValue / totalQuantity), FAbs(totalQuantity)
+	return 0, 0, 0
 }

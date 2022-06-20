@@ -16,18 +16,18 @@ func TestMixCostVolumeProfit(t *testing.T) {
 }
 
 func TestFCostVolumeProfit(t *testing.T) {
-	a1, a2, a3, a4 := FCostVolumeProfit2(1200, 12000, []SAPQ{
+	a1, a2, a3, a4 := FCostVolumeProfit2(1200, 12000, []SAPQ1{
 		{"a", 250, 1},
 		{"b", 500, 1},
 		{"c", 300, 1},
 		{"d", 8000, 100},
-	}, []SAPQ{
+	}, []SAPQ1{
 		{"e", 500000, 1000},
 		{"f", 700000, 600},
 	})
 
 	FPrintCvp(a1)
 	FPrintCvp(a2)
-	FPrintSlice(a3)
-	FPrintSlice(a4)
+	FPrintStructSlice(false, a3)
+	FPrintStructSlice(false, a4)
 }

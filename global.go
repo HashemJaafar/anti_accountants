@@ -118,6 +118,12 @@ const (
 	CPrefixTaxExpenses  = "tax expenses of "
 	CPrefixTaxLiability = "tax liability of "
 	CPrefixRevenue      = "revenue of "
+
+	// Discount Way
+	CDiscountPerOne       = "PerOne"
+	CDiscountTotal        = "Total"
+	CDiscountPerQuantity  = "PerQuantity"
+	CDiscountDecisionTree = "DecisionTree"
 )
 
 var (
@@ -141,6 +147,7 @@ var (
 	VPrintTable      = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	VAllCostFlowType = []string{CHighLevelAccount, CFifo, CLifo, CWma}
 	VLowCostFlowType = []string{CFifo, CLifo, CWma}
+	VDiscountWay     = []string{CDiscountPerOne, CDiscountTotal, CDiscountPerQuantity, CDiscountDecisionTree}
 
 	//errors
 	VErrorNotListed = errors.New("is not listed")
@@ -182,18 +189,18 @@ type SPQ struct {
 	TQuantity
 }
 
-type SAPQ struct {
-	TAccountName
-	TPrice
-	TQuantity
+type SAPQ1 SAPQ[string, float64]
+type SAPQ2 SAPQ[TErr, TErr]
+type SAPQ[t1 string | TErr, t2 float64 | TErr] struct {
+	AccountName t1
+	Price       t2
+	Quantity    t2
 }
 
-type SAPQAE struct {
-	TAccountName
-	TPrice
-	TQuantity
+type SAPQ12SAccount1 struct {
+	SAPQ1
+	SAPQ2
 	SAccount1
-	error
 }
 
 type SAccount1 SAccount[bool, string, string, string, string, []string, []string, [][]uint, []uint, [][]string]
@@ -342,10 +349,14 @@ type SOneStepDistribution struct {
 }
 
 type SAutoCompletion struct {
-	TAccountName  string
-	PriceRevenue  float64
-	PriceTax      float64
-	PriceDiscount []SPQ
+	AccountName          string
+	PriceRevenue         float64
+	PriceTax             float64
+	DiscountWay          string
+	DiscountPerOne       float64
+	DiscountTotal        float64
+	DiscountPerQuantity  SPQ
+	DiscountDecisionTree []SPQ
 }
 
 type SCvp struct {

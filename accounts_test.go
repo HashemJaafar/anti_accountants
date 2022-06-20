@@ -119,7 +119,7 @@ func TestAddAccount(t *testing.T) {
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
 		CostFlowType: CWma,
-		Name:         VInvoiceDiscount,
+		Name:         "Invoice PQ",
 		Number:       [][]uint{{3, 2, 2, 1, 1}},
 	})
 	FTest(true, a1, SAccount3{})
@@ -178,10 +178,12 @@ func TestCheckTheTree(t *testing.T) {
 }
 
 func TestEditAccount(t *testing.T) {
-	account, index, err := FFindAccountFromName(CPrefixRevenue + "book")
+	VCompanyName = "anti_accountants"
+	FDbOpenAll()
+	account, index, err := FFindAccountFromName("cash")
 	fmt.Println(err)
 	if err == nil {
-		account.Number = [][]uint{{3, 2, 1, 2}}
+		account.IsCredit = false
 		FEditAccount(false, index, account)
 	}
 	FDbCloseAll()
@@ -260,6 +262,7 @@ func TestMaxLenForAccountNumber(t *testing.T) {
 func TestPrintFormatedAccounts(t *testing.T) {
 	VCompanyName = "anti_accountants"
 	FDbOpenAll()
+	FDbCloseAll()
 	FPrintFormatedAccounts()
 }
 
@@ -272,10 +275,21 @@ func TestSetTheAccounts(t *testing.T) {
 }
 
 func TestAddAutoCompletion(t *testing.T) {
-	a1 := FAddAutoCompletion(SAutoCompletion{"book2", 5, 0, []SPQ{}})
+	VCompanyName = "anti_accountants"
+	FDbOpenAll()
+	a1 := FAddAutoCompletion(SAutoCompletion{
+		AccountName:          "book",
+		PriceRevenue:         1250,
+		PriceTax:             250,
+		DiscountWay:          CDiscountPerOne,
+		DiscountPerOne:       250,
+		DiscountTotal:        0,
+		DiscountPerQuantity:  SPQ{},
+		DiscountDecisionTree: []SPQ{},
+	})
 	FDbCloseAll()
-	FPrintSlice(VAutoCompletionEntries)
-	FTest(true, a1, nil)
+	fmt.Println(a1)
+	FPrintStructSlice(false, VAutoCompletionEntries)
 }
 
 func TestFAddAccount(t *testing.T) {
