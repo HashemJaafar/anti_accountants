@@ -625,9 +625,9 @@ func (SPageInvoiceEntries) FAllAccounts() []string {
 
 func (s SPageInvoiceEntries) FSave(insert bool) error {
 	entryInfo := SEntry{
-		Notes:               s.FGetEntries().Objects[1].(*fyne.Container).Objects[1].(*widget.Entry).Text,
-		Name:                s.FGetEntries().Objects[2].(*fyne.Container).Objects[1].(*widget.Entry).Text,
-		TypeOfCompoundEntry: s.FGetEntries().Objects[3].(*fyne.Container).Objects[1].(*widget.Entry).Text,
+		Notes: s.FGetEntries().Objects[1].(*fyne.Container).Objects[1].(*widget.Entry).Text,
+		Name:  s.FGetEntries().Objects[2].(*fyne.Container).Objects[1].(*widget.Entry).Text,
+		Label: s.FGetEntries().Objects[3].(*fyne.Container).Objects[1].(*widget.Entry).Text,
 	}
 
 	var entries1 []SAPQ1
@@ -640,7 +640,7 @@ func (s SPageInvoiceEntries) FSave(insert bool) error {
 		})
 	}
 
-	_, err := FInvoiceJournalEntry("", "Invoice PQ", 0, 0, entries1, entryInfo, insert)
+	_, _, err := FEntryInvoice("", "Invoice PQ", 0, 0, entries1, entryInfo, insert)
 	return err
 }
 
@@ -695,9 +695,9 @@ func (SPageJournalEntries) FAllAccounts() []string {
 
 func (s SPageJournalEntries) FSave(insert bool) error {
 	entryInfo := SEntry{
-		Notes:               s.FGetEntries().Objects[1].(*fyne.Container).Objects[1].(*widget.Entry).Text,
-		Name:                s.FGetEntries().Objects[2].(*fyne.Container).Objects[1].(*widget.Entry).Text,
-		TypeOfCompoundEntry: s.FGetEntries().Objects[3].(*fyne.Container).Objects[1].(*widget.Entry).Text,
+		Notes: s.FGetEntries().Objects[1].(*fyne.Container).Objects[1].(*widget.Entry).Text,
+		Name:  s.FGetEntries().Objects[2].(*fyne.Container).Objects[1].(*widget.Entry).Text,
+		Label: s.FGetEntries().Objects[3].(*fyne.Container).Objects[1].(*widget.Entry).Text,
 	}
 
 	var entries1 []SAPQ1
@@ -712,7 +712,7 @@ func (s SPageJournalEntries) FSave(insert bool) error {
 		})
 	}
 
-	_, err := FSimpleJournalEntry(entries1, entryInfo, insert)
+	_, err := FEntryAutoComplete(entries1, entryInfo, insert, "")
 	return err
 }
 
@@ -942,6 +942,9 @@ func FSetTheEntries(page IPageEntries) fyne.CanvasObject {
 
 	go func() {
 		for range time.Tick(time.Second / 4) {
+			if FIsAnyClosed() {
+				continue
+			}
 			err := page.FSave(false)
 			FDisplayTheError(err, wlError)
 			if len(page.FGetEntries().Objects) == page.FTheIndexOfTheFirstEntry() {

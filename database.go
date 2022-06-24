@@ -60,6 +60,16 @@ func FDbClose(db *badger.DB) {
 	}
 }
 
+func FIsAnyClosed() bool {
+	return VDbAccounts.IsClosed() ||
+		VDbJournal.IsClosed() ||
+		VDbInventory.IsClosed() ||
+		VDbAutoCompletionEntries.IsClosed() ||
+		VDbEmployees.IsClosed() ||
+		VDbJournalDrafts.IsClosed() ||
+		VDbInvoiceDrafts.IsClosed()
+}
+
 func FDbInsertIntoAccounts() {
 	VDbAccounts.DropAll()
 	for _, v1 := range VAccounts {
@@ -115,7 +125,8 @@ func FDbRead[t any](db *badger.DB) ([][]byte, []t) {
 			item := it.Item()
 			item.Value(func(val []byte) error {
 				var Value t
-				json.Unmarshal(val, &Value)
+				err := json.Unmarshal(val, &Value)
+				FPanicIfErr(err)
 				Values = append(Values, Value)
 				keys = append(keys, item.Key())
 				return nil
@@ -219,7 +230,7 @@ func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund uint, new SEntry) {
 		if v1.EntryNumberCompound == entryNumberCompund {
 			v1.Notes = new.Notes
 			v1.Name = new.Name
-			v1.TypeOfCompoundEntry = new.TypeOfCompoundEntry
+			v1.TypeOfCompoundEntry = new.Label
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}

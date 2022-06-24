@@ -178,10 +178,10 @@ type (
 )
 
 type SEntry struct {
-	Notes               string
-	Name                string
-	Employee            string
-	TypeOfCompoundEntry string
+	Notes    string
+	Name     string
+	Employee string
+	Label    string
 }
 
 type SPQ struct {

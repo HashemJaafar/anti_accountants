@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 	"text/tabwriter"
@@ -460,11 +461,11 @@ func FAddAutoCompletion(a SAutoCompletion) error {
 	add(isExistTaxLiability, accountTaxLiability)
 	add(isExistRevenue, accountRevenue)
 
-	a.PriceRevenue = FAbs(a.PriceRevenue)
-	a.PriceTax = FAbs(a.PriceTax)
+	a.PriceRevenue = math.Abs(a.PriceRevenue)
+	a.PriceTax = math.Abs(a.PriceTax)
 
 	setDiscont := func(discountPrice float64) float64 {
-		discountPrice = FAbs(discountPrice)
+		discountPrice = math.Abs(discountPrice)
 		if discountPrice > a.PriceRevenue {
 			discountPrice = a.PriceRevenue
 		}
@@ -472,12 +473,12 @@ func FAddAutoCompletion(a SAutoCompletion) error {
 	}
 
 	a.DiscountPerOne = setDiscont(a.DiscountPerOne)
-	a.DiscountTotal = FAbs(a.DiscountTotal)
+	a.DiscountTotal = math.Abs(a.DiscountTotal)
 	a.DiscountPerQuantity.TPrice = setDiscont(a.DiscountPerQuantity.TPrice)
-	a.DiscountPerQuantity.TQuantity = FAbs(a.DiscountPerQuantity.TQuantity)
+	a.DiscountPerQuantity.TQuantity = math.Abs(a.DiscountPerQuantity.TQuantity)
 	for k1, v1 := range a.DiscountDecisionTree {
 		a.DiscountDecisionTree[k1].TPrice = setDiscont(v1.TPrice)
-		a.DiscountDecisionTree[k1].TQuantity = FAbs(v1.TQuantity)
+		a.DiscountDecisionTree[k1].TQuantity = math.Abs(v1.TQuantity)
 	}
 
 	if _, isIn := FFind(a.DiscountWay, VDiscountWay); !isIn {

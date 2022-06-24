@@ -22,6 +22,12 @@ func FNow() []byte {
 	return []byte(time.Now().Format(CTimeLayout))
 }
 
+func FPanicIfErr(err error) {
+	if err != nil {
+		log.Panicln(err)
+	}
+}
+
 func FInitializeMap6[t1, t2, t3, t4, t5, t6 comparable, tr any](m map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr, i1 t1, i2 t2, i3 t3, i4 t4, i5 t5) map[t6]tr {
 	if m == nil {
 		m = map[t1]map[t2]map[t3]map[t4]map[t5]map[t6]tr{}
@@ -79,14 +85,6 @@ func FIsInfIn(numbers ...float64) bool {
 		}
 	}
 	return false
-}
-
-func FAbs[t INumber](n t) t {
-	// this is alternative of math.Abs
-	if n < 0 {
-		return -n
-	}
-	return n
 }
 
 func FReturnSetAndDuplicatesSlices[t any](slice []t) ([]t, []t) {
@@ -172,6 +170,8 @@ func FTest[t any](shouldEqual bool, actual, expected t) {
 			}
 		}()
 		log.Panic()
+	} else {
+		fmt.Println("\033[32m pass \U0001f44d \033[0m") //green
 	}
 }
 

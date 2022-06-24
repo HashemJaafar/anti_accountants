@@ -8,8 +8,6 @@ import (
 )
 
 func TestAddAccount(t *testing.T) {
-	VCompanyName = "anti_accountants"
-	FDbOpenAll()
 	var a1 SAccount3
 
 	a1 = FAddAccount(true, SAccount1{
@@ -148,7 +146,6 @@ func TestAddAccount(t *testing.T) {
 	})
 	FTest(true, a1, SAccount3{})
 
-	FDbCloseAll()
 	FPrintFormatedAccounts()
 }
 
@@ -178,15 +175,12 @@ func TestCheckTheTree(t *testing.T) {
 }
 
 func TestEditAccount(t *testing.T) {
-	VCompanyName = "anti_accountants"
-	FDbOpenAll()
 	account, index, err := FFindAccountFromName("cash")
 	fmt.Println(err)
 	if err == nil {
 		account.IsCredit = false
 		FEditAccount(false, index, account)
 	}
-	FDbCloseAll()
 	FPrintFormatedAccounts()
 }
 
@@ -260,23 +254,15 @@ func TestMaxLenForAccountNumber(t *testing.T) {
 }
 
 func TestPrintFormatedAccounts(t *testing.T) {
-	VCompanyName = "anti_accountants"
-	FDbOpenAll()
-	FDbCloseAll()
 	FPrintFormatedAccounts()
 }
 
 func TestSetTheAccounts(t *testing.T) {
-	VCompanyName = "anti_accountants"
-	FDbOpenAll()
 	FSetTheAccounts()
-	FDbCloseAll()
 	FPrintFormatedAccounts()
 }
 
 func TestAddAutoCompletion(t *testing.T) {
-	VCompanyName = "anti_accountants"
-	FDbOpenAll()
 	a1 := FAddAutoCompletion(SAutoCompletion{
 		AccountName:          "book",
 		PriceRevenue:         1250,
@@ -287,14 +273,11 @@ func TestAddAutoCompletion(t *testing.T) {
 		DiscountPerQuantity:  SPQ{},
 		DiscountDecisionTree: []SPQ{},
 	})
-	FDbCloseAll()
 	fmt.Println(a1)
 	FPrintStructSlice(false, VAutoCompletionEntries)
 }
 
 func TestFAddAccount(t *testing.T) {
-	VCompanyName = "a"
-	FDbOpenAll()
 	a1 := FAddAccount(true, SAccount1{
 		IsCredit:     false,
 		CostFlowType: "",
@@ -308,6 +291,11 @@ func TestFAddAccount(t *testing.T) {
 		FathersName:  [][]string{},
 	})
 	FPrintFormatedAccounts()
-	FDbCloseAll()
 	log.Println(a1)
+}
+
+func TestPrint(t *testing.T) {
+	for _, v1 := range VAccounts {
+		fmt.Printf("%#v\n", v1)
+	}
 }

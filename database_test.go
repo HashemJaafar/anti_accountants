@@ -21,39 +21,27 @@ func TestDbLastLine(t *testing.T) {
 }
 
 func TestDbRead(t *testing.T) {
-	VCompanyName = "anti_accountants"
-	FDbOpenAll()
 	_, inventory := FDbRead[SAPQ1](VDbInventory)
 	_, journal := FDbRead[SJournal1](VDbJournal)
 	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
-	FDbCloseAll()
 	FPrintStructSlice(false, inventory)
 	FPrintStructSlice(false, journal)
 	FPrintStructSlice(false, VAutoCompletionEntries)
 }
 
 func TestDbUpdate(t *testing.T) {
-	VCompanyName = "anti_accountants"
 	VDbEmployees = FDbOpen(VDbEmployees, CPathDataBase+VCompanyName+CPathEmployees)
 	FDbUpdate(VDbEmployees, []byte("hashem"), "hajasa")
-	FDbCloseAll()
 }
 
 func TestWeightedAverage(t *testing.T) {
 	FWeightedAverage("rent")
 	_, inventory := FDbRead[SAPQ1](VDbInventory)
-	FDbCloseAll()
 	FPrintStructSlice(false, inventory)
 }
 
 func TestChangeName(t *testing.T) {
 	FChangeName("zizi", "zaid")
-}
-
-func TestFDbOpenAll(t *testing.T) {
-	VCompanyName = "aisdj"
-	FDbOpenAll()
-	FDbCloseAll()
 }
 
 func TestFDbOpen(t *testing.T) {
@@ -63,13 +51,11 @@ func TestFDbOpen(t *testing.T) {
 }
 
 func TestFDbRead(t *testing.T) {
-	VCompanyName = "anti_accountants"
 	VDbEmployees = FDbOpen(VDbEmployees, CPathDataBase+VCompanyName+CPathEmployees)
 	keys, passwords := FDbRead[string](VDbEmployees)
 	employees := FConvertFromByteSliceToString(keys)
 	fmt.Println(employees)
 	fmt.Println(passwords)
-	FDbCloseAll()
 }
 
 func TestFDbClose(t *testing.T) {

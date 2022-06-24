@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"strings"
 	"time"
 )
@@ -36,11 +37,11 @@ func FStatementStep1(journal []SJournal1, dateStart, dateEnd time.Time) TStateme
 		m := FInitializeMap6(newStatement, v1.CreditAccountName, v1.DebitAccountName, v1.Name, CValue, isBeforeDateStart)
 		m[true] += v1.Value
 		m = FInitializeMap6(newStatement, v1.CreditAccountName, v1.DebitAccountName, v1.Name, CQuantity, isBeforeDateStart)
-		m[true] += FAbs(v1.CreditQuantity)
+		m[true] += math.Abs(v1.CreditQuantity)
 		m = FInitializeMap6(newStatement, v1.DebitAccountName, v1.CreditAccountName, v1.Name, CValue, isBeforeDateStart)
 		m[false] += v1.Value
 		m = FInitializeMap6(newStatement, v1.DebitAccountName, v1.CreditAccountName, v1.Name, CQuantity, isBeforeDateStart)
-		m[false] += FAbs(v1.DebitQuantity)
+		m[false] += math.Abs(v1.DebitQuantity)
 	}
 
 	for _, v1 := range journal {

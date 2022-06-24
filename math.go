@@ -38,22 +38,15 @@ func FEquationSolver(print bool, m map[string]float64, a, b, sign, c string) {
 			}
 		}
 
-		convertNanToZero := func(value float64) float64 {
-			if math.IsNaN(value) {
-				return 0
-			}
-			return value
-		}
-
 		la, oka := m[a]
 		lb, okb := m[b]
 		lc, okc := m[c]
-		m[a] = convertNanToZero(la)
-		m[b] = convertNanToZero(lb)
-		m[c] = convertNanToZero(lc)
-		aValue = convertNanToZero(aValue)
-		bValue = convertNanToZero(bValue)
-		cValue = convertNanToZero(cValue)
+		m[a] = FConvertNanToZero(la)
+		m[b] = FConvertNanToZero(lb)
+		m[c] = FConvertNanToZero(lc)
+		aValue = FConvertNanToZero(aValue)
+		bValue = FConvertNanToZero(bValue)
+		cValue = FConvertNanToZero(cValue)
 		switch {
 		case !oka && okb && okc:
 			m[a] = aValue
@@ -154,4 +147,11 @@ func FMaxMin[t INumber](slice []t) (t, t) {
 		}
 	}
 	return max, min
+}
+
+func FConvertNanToZero(value float64) float64 {
+	if math.IsNaN(value) {
+		return 0
+	}
+	return value
 }
