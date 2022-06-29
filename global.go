@@ -1,4 +1,4 @@
-package main
+package anti_accountants
 
 import (
 	"errors"
@@ -127,10 +127,7 @@ const (
 )
 
 var (
-	VIndexOfAccountNumber = 0
-	VInvoiceDiscount      = "Invoice PQ"
-
-	VInvoiceDiscountsList    []SPQ
+	VIndexOfAccountNumber    uint
 	VCompanyName             string
 	VEmployeeName            string
 	VDbAccounts              *badger.DB
@@ -154,7 +151,7 @@ var (
 	VErrorIsUsed    = errors.New("is used")
 
 	//this var for Test function
-	VFailTestNumber int
+	VFailTestNumber uint
 )
 
 type INumber interface{ int | uint | float64 | float32 }
@@ -263,7 +260,7 @@ type SJournal[
 	Notes                      t5
 	Name                       t5
 	Employee                   t5
-	TypeOfCompoundEntry        t5
+	Label                      t5
 }
 
 type SStatement1 SStatement[string, string, float64]

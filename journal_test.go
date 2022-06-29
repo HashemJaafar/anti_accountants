@@ -1,4 +1,4 @@
-package main
+package anti_accountants
 
 import (
 	"fmt"
@@ -125,7 +125,11 @@ func TestFSetPriceAndQuantityByValue(t *testing.T) {
 		SAccount1: SAccount1{CostFlowType: CFifo},
 	})
 
-	fmt.Println(a1)
+	FTest(true, a1, SAPQ12SAccount1{
+		SAPQ1:     SAPQ1{"book", 1.9875776397515528, -402.5},
+		SAPQ2:     SAPQ2{"", "", ""},
+		SAccount1: SAccount1{false, "Fifo", "", "", "", []string(nil), []string(nil), [][]uint(nil), []uint(nil), [][]string(nil)},
+	})
 }
 
 func TestFEntryAutoComplete(t *testing.T) {

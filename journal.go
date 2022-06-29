@@ -1,4 +1,4 @@
-package main
+package anti_accountants
 
 import (
 	"errors"
@@ -257,7 +257,7 @@ func FInsertToJournal(debitEntries, creditEntries []SAPQ12SAccount1, entryInfo S
 				Notes:                      entryInfo.Notes,
 				Name:                       entryInfo.Name,
 				Employee:                   entryInfo.Employee,
-				TypeOfCompoundEntry:        entryInfo.Label,
+				Label:                      entryInfo.Label,
 			})
 		}
 	}
@@ -794,7 +794,7 @@ func FJournalFilter(journal []SJournal1, f SJournal2, isDebitAndCredit bool) []S
 		f.Notes.Way == CDontFilter &&
 		f.Name.Way == CDontFilter &&
 		f.Employee.Way == CDontFilter &&
-		f.TypeOfCompoundEntry.Way == CDontFilter {
+		f.Label.Way == CDontFilter {
 		return journal
 	}
 
@@ -832,7 +832,7 @@ func FJournalFilter(journal []SJournal1, f SJournal2, isDebitAndCredit bool) []S
 			FFilterString(v1.Notes, f.Notes) &&
 			FFilterString(v1.Name, f.Name) &&
 			FFilterString(v1.Employee, f.Employee) &&
-			FFilterString(v1.TypeOfCompoundEntry, f.TypeOfCompoundEntry) {
+			FFilterString(v1.Label, f.Label) {
 			newJournal = append(newJournal, v1)
 		}
 	}
@@ -863,7 +863,7 @@ func FFindDuplicateElement(journal []SJournal1, f SJournal3) []SJournal1 {
 		!f.Notes &&
 		!f.Name &&
 		!f.Employee &&
-		!f.TypeOfCompoundEntry {
+		!f.Label {
 		return journal
 	}
 
@@ -894,7 +894,7 @@ func FFindDuplicateElement(journal []SJournal1, f SJournal3) []SJournal1 {
 				FFilterDuplicate(v1.Notes, v2.Notes, f.Notes) &&
 				FFilterDuplicate(v1.Name, v2.Name, f.Name) &&
 				FFilterDuplicate(v1.Employee, v2.Employee, f.Employee) &&
-				FFilterDuplicate(v1.TypeOfCompoundEntry, v2.TypeOfCompoundEntry, f.TypeOfCompoundEntry) {
+				FFilterDuplicate(v1.Label, v2.Label, f.Label) {
 				newJournal = append(newJournal, v1)
 				break
 			}

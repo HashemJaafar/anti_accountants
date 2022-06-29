@@ -1,4 +1,4 @@
-package main
+package anti_accountants
 
 import (
 	"testing"

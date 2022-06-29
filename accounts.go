@@ -1,22 +1,22 @@
-package main
+package anti_accountants
 
 import (
 	"errors"
 	"fmt"
 	"math"
-	"os"
 	"reflect"
-	"text/tabwriter"
 )
 
-func FFindAccountFromNameOrBarcode(nameOrBarcode string) (SAccount1, int, error) {
+func FFindAccountFromNameOrBarcode(inventory, nameOrBarcode string) (SAccount1, int, error) {
 	for k1, v1 := range VAccounts {
-		if nameOrBarcode == v1.Name {
-			return v1, k1, nil
-		}
-		_, isIn := FFind(nameOrBarcode, v1.Barcode)
-		if isIn {
-			return v1, k1, nil
+		if v1.Inventory == inventory {
+			if nameOrBarcode == v1.Name {
+				return v1, k1, nil
+			}
+			_, isIn := FFind(nameOrBarcode, v1.Barcode)
+			if isIn {
+				return v1, k1, nil
+			}
 		}
 	}
 	return SAccount1{}, 0, VErrorNotListed
@@ -123,76 +123,6 @@ func FErrorUsedBarcode(account SAccount1) []error {
 	return err
 }
 
-func FCheckIfAccountNumberDuplicated() []error {
-	var errors []error
-	maxLen := FMaxLenForAccountNumber()
-	for k1 := 0; k1 < maxLen; k1++ {
-	big_loop:
-		for k2, v2 := range VAccounts {
-			if len(v2.Number[k1]) > 0 {
-				for k3, v3 := range VAccounts {
-					if k2 != k3 && reflect.DeepEqual(v2.Number[k1], v3.Number[k1]) {
-						errors = append(errors, fmt.Errorf("the account number %v for %v is duplicated", v2.Number[k1], v2))
-						continue big_loop
-					}
-				}
-			}
-		}
-	}
-	errors, _ = FReturnSetAndDuplicatesSlices(errors)
-	return errors
-}
-
-func FCheckIfLowLevelAccountForAll() []error {
-	var errors []error
-	maxLen := FMaxLenForAccountNumber()
-	for k1 := 1; k1 < maxLen; k1++ {
-	big_loop:
-		for k2, v2 := range VAccounts {
-			if len(v2.Number[k1]) > 0 {
-				for _, v3 := range VAccounts {
-					if len(v3.Number[k1]) > 0 {
-						if FIsItSubAccountUsingNumber(v2.Number[k1], v3.Number[k1]) {
-							continue big_loop
-						}
-					}
-				}
-				if VAccounts[k2].CostFlowType != CHighLevelAccount {
-					errors = append(errors, fmt.Errorf("should be low level account in all account numbers %v", VAccounts[k2]))
-				}
-			}
-		}
-	}
-	return errors
-}
-
-func FCheckIfTheTreeConnected() []error {
-	var errors []error
-	maxLen := FMaxLenForAccountNumber()
-	for k1 := 0; k1 < maxLen; k1++ {
-	big_loop:
-		for _, v2 := range VAccounts {
-			if len(v2.Number[k1]) > 1 {
-				for _, v3 := range VAccounts {
-					if FIsItTheFather(v3.Number[k1], v2.Number[k1]) {
-						continue big_loop
-					}
-				}
-				errors = append(errors, fmt.Errorf("the account number %v for %v not conected to the tree", v2.Number[k1], v2))
-			}
-		}
-	}
-	return errors
-}
-
-func FCheckTheTree() []error {
-	var errorsMessages []error
-	errorsMessages = append(errorsMessages, FCheckIfLowLevelAccountForAll()...)
-	errorsMessages = append(errorsMessages, FCheckIfAccountNumberDuplicated()...)
-	errorsMessages = append(errorsMessages, FCheckIfTheTreeConnected()...)
-	return errorsMessages
-}
-
 func FEditAccount(isDelete bool, index int, account SAccount1) {
 	account, err := FSetTheAccountFieldToStandard(account)
 	if err != nil {
@@ -238,84 +168,29 @@ func FEditAccount(isDelete bool, index int, account SAccount1) {
 	FDbInsertIntoAccounts()
 }
 
-func FFormatSliceOfSliceOfStringToString(a [][]string) string {
-	var str string
-	for _, v1 := range a {
-		str += "{"
-		for _, v2 := range v1 {
-			str += "\"" + v2 + "\","
-		}
-		str += "}\t,"
-	}
-	return "[][]string{" + str + "}"
-}
-
-func FFormatSliceOfSliceOfUintToString(a [][]uint) string {
-	var str string
-	for _, v1 := range a {
-		str += "{"
-		for _, v2 := range v1 {
-			str += fmt.Sprint(v2) + ","
-		}
-		str += "}\t,"
-	}
-	return "[][]uint{" + str + "}"
-}
-
-func FFormatSliceOfUintToString(a []uint) string {
-	var str string
-	for _, v1 := range a {
-		str += fmt.Sprint(v1) + ","
-	}
-	return "[]uint{" + str + "}"
-}
-
-func FFormatStringSliceToString(a []string) string {
-	var str string
-	for _, v1 := range a {
-		str += "\"" + v1 + "\","
-	}
-	return "[]string{" + str + "}"
-}
-
 func FIsItHighThanByOrder(accountNumber1, accountNumber2 []uint) bool {
 	l1 := len(accountNumber1)
 	l2 := len(accountNumber2)
 	for k1 := 0; k1 < FSmallest(l1, l2); k1++ {
 		if accountNumber1[k1] < accountNumber2[k1] {
 			return true
-		} else if accountNumber1[k1] > accountNumber2[k1] {
+		}
+		if accountNumber1[k1] > accountNumber2[k1] {
 			return false
 		}
 	}
 	return l2 > l1
 }
 
-func FIsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
+func FIsItSubAccountUsingNumber(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
 	lenHigherLevelAccountNumber := len(higherLevelAccountNumber)
 	lenLowerLevelAccountNumber := len(lowerLevelAccountNumber)
-	if lenHigherLevelAccountNumber == 0 || lenLowerLevelAccountNumber == 0 {
-		return false
-	}
-	if lenHigherLevelAccountNumber >= lenLowerLevelAccountNumber {
-		return false
-	}
-	if reflect.DeepEqual(higherLevelAccountNumber, lowerLevelAccountNumber) {
-		return false
-	}
-	return true
-}
 
-func FIsItSubAccountUsingName(higherLevelAccount, lowerLevelAccount string) bool {
-	a1, _, _ := FFindAccountFromName(higherLevelAccount)
-	a2, _, _ := FFindAccountFromName(lowerLevelAccount)
-	return FIsItSubAccountUsingNumber(a1.Number[VIndexOfAccountNumber], a2.Number[VIndexOfAccountNumber])
-}
-
-func FIsItSubAccountUsingNumber(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
-	if !FIsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumber) {
+	if lenHigherLevelAccountNumber == 0 || lenLowerLevelAccountNumber == 0 ||
+		lenHigherLevelAccountNumber >= lenLowerLevelAccountNumber {
 		return false
 	}
+
 	for k1, v1 := range higherLevelAccountNumber {
 		if v1 != lowerLevelAccountNumber[k1] {
 			return false
@@ -325,10 +200,12 @@ func FIsItSubAccountUsingNumber(higherLevelAccountNumber, lowerLevelAccountNumbe
 }
 
 func FIsItTheFather(higherLevelAccountNumber, lowerLevelAccountNumber []uint) bool {
-	if !FIsItPossibleToBeSubAccount(higherLevelAccountNumber, lowerLevelAccountNumber) {
+	lenHigherLevelAccountNumber := len(higherLevelAccountNumber)
+	lenLowerLevelAccountNumber := len(lowerLevelAccountNumber)
+	if lenHigherLevelAccountNumber == 0 || lenLowerLevelAccountNumber == 0 {
 		return false
 	}
-	return reflect.DeepEqual(higherLevelAccountNumber, FCutTheSlice(lowerLevelAccountNumber, 1))
+	return reflect.DeepEqual(higherLevelAccountNumber, lowerLevelAccountNumber[:lenLowerLevelAccountNumber-1])
 }
 
 func FIsUsedInJournal(accountName string) bool {
@@ -344,12 +221,7 @@ func FIsUsedInJournal(accountName string) bool {
 func FMaxLenForAccountNumber() int {
 	var maxLen int
 	for _, v1 := range VAccounts {
-		var length int
-		for _, v2 := range v1.Number {
-			if len(v2) > 0 {
-				length++
-			}
-		}
+		length := len(v1.Number)
 		if length > maxLen {
 			maxLen = length
 		}
@@ -357,25 +229,7 @@ func FMaxLenForAccountNumber() int {
 	return maxLen
 }
 
-func FPrintFormatedAccounts() {
-	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	for _, v1 := range VAccounts {
-		isCredit := fmt.Sprint(v1.IsCredit)
-		costFlowType := "\t,\"" + v1.CostFlowType + "\""
-		inventory := "\t,\"" + v1.Inventory + "\""
-		accountName := "\t,\"" + v1.Name + "\""
-		notes := "\t,\"" + v1.Notes + "\""
-		image := "\t," + FFormatStringSliceToString(v1.Image)
-		barcodes := "\t," + FFormatStringSliceToString(v1.Barcode)
-		accountNumber := "\t," + FFormatSliceOfSliceOfUintToString(v1.Number)
-		accountLevels := "\t," + FFormatSliceOfUintToString(v1.Levels)
-		fathersAccountsName := "\t," + FFormatSliceOfSliceOfStringToString(v1.FathersName)
-		fmt.Fprintln(p, "{", isCredit, costFlowType, inventory, accountName, notes, image, barcodes, accountNumber, accountLevels, fathersAccountsName, "},")
-	}
-	p.Flush()
-}
-
-func FSetTheAccounts() {
+func FSetTheAccounts() []SAccount3 {
 	maxLen := FMaxLenForAccountNumber()
 
 	for k1, v1 := range VAccounts {
@@ -420,6 +274,53 @@ func FSetTheAccounts() {
 			}
 		}
 	}
+
+	accountErrors := make([]SAccount3, len(VAccounts))
+	for k1, v1 := range VAccounts {
+		accountErrors[k1].Barcode = make([]TErr, len(v1.Barcode))
+		accountErrors[k1].Number = make([]TErr, maxLen)
+	}
+
+	for k1 := 0; k1 < maxLen; k1++ {
+		for k2, v2 := range VAccounts {
+			lenV2Number := len(v2.Number[k1])
+			if lenV2Number > 0 {
+				var haveFather bool
+				for k3, v3 := range VAccounts {
+					if len(v3.Number[k1]) > 0 {
+						if VAccounts[k2].CostFlowType != CHighLevelAccount && FIsItSubAccountUsingNumber(v2.Number[k1], v3.Number[k1]) {
+							accountErrors[k2].Number[k1] = TErr("should be low level account in all columns number")
+						}
+						if k2 != k3 && reflect.DeepEqual(v2.Number[k1], v3.Number[k1]) {
+							accountErrors[k2].Number[k1] = TErr("duplicated")
+						}
+						if FIsItTheFather(v3.Number[k1], v2.Number[k1]) {
+							haveFather = true
+						}
+					}
+				}
+				if lenV2Number > 1 && !haveFather {
+					accountErrors[k2].Number[k1] = TErr("this account don't have father")
+				}
+			}
+		}
+	}
+
+	for k1, v1 := range VAccounts {
+		for k2, v2 := range VAccounts {
+			if k1 != k2 && v1.Inventory == v2.Inventory {
+				for k3, v3 := range v1.Barcode {
+					for _, v4 := range v2.Barcode {
+						if v3 == v4 {
+							accountErrors[k1].Barcode[k3] = TErr("duplicated")
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return accountErrors
 }
 
 func FAddAutoCompletion(a SAutoCompletion) error {

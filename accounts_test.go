@@ -1,10 +1,11 @@
-package main
+package anti_accountants
 
 import (
-	"errors"
 	"fmt"
 	"log"
+	"os"
 	"testing"
+	"text/tabwriter"
 )
 
 func TestAddAccount(t *testing.T) {
@@ -145,33 +146,6 @@ func TestAddAccount(t *testing.T) {
 		Number:       [][]uint{{3, 2, 2, 2, 1}},
 	})
 	FTest(true, a1, SAccount3{})
-
-	FPrintFormatedAccounts()
-}
-
-func TestCheckIfAccountNumberDuplicated(t *testing.T) {
-	a := FCheckIfAccountNumberDuplicated()
-	fmt.Println(a)
-	FTest(true, a, []error{errors.New("the account number [2] for {false false true Fifo e  [] [] [[4] [2]] [] [] 0 0 0 false} duplicated")})
-}
-
-func TestCheckIfLowLevelAccountForAll(t *testing.T) {
-	a := FCheckIfLowLevelAccountForAll()
-	FTest(true, a, []error{errors.New("should be low level account in all account numbers {false false false  b  [] [] [[1 1] [1 2]] [] [] 0 0 0 false}")})
-}
-
-func TestCheckIfTheTreeConnected(t *testing.T) {
-	a := FCheckIfTheTreeConnected()
-	fmt.Println(a)
-	FTest(true, a, []error{errors.New("the account number [2 1 8] for {true false true Fifo f  [] [] [[4 1] [2 1 8]] [] [] 0 0 0 false} not conected to the tree")})
-}
-
-func TestCheckTheTree(t *testing.T) {
-	a1 := FCheckTheTree()
-	FTest(true, a1, []error{
-		errors.New("should be low level account in all account numbers {false false false  b  [] [] [[1 1] [1 2]] [] [] 0 0 0 false}"),
-		errors.New("the account number [2 1 8] for {true false true Fifo f  [] [] [[4 1] [2 1 8]] [] [] 0 0 0 false} not conected to the tree"),
-	})
 }
 
 func TestEditAccount(t *testing.T) {
@@ -181,66 +155,34 @@ func TestEditAccount(t *testing.T) {
 		account.IsCredit = false
 		FEditAccount(false, index, account)
 	}
-	FPrintFormatedAccounts()
 }
 
 func TestIsItHighThanByOrder(t *testing.T) {
-	a := FIsItHighThanByOrder([]uint{1}, []uint{1, 2})
-	FTest(true, a, true)
-	a = FIsItHighThanByOrder([]uint{1}, []uint{1})
-	FTest(true, a, false)
-	a = FIsItHighThanByOrder([]uint{1, 2}, []uint{1})
-	FTest(true, a, false)
-	a = FIsItHighThanByOrder([]uint{3}, []uint{1, 1})
-	FTest(true, a, false)
-	a = FIsItHighThanByOrder([]uint{1, 5}, []uint{3})
-	FTest(true, a, true)
-	a = FIsItHighThanByOrder([]uint{1, 1}, []uint{1, 2})
-	FTest(true, a, true)
-	a = FIsItHighThanByOrder([]uint{4}, []uint{1, 2})
-	FTest(true, a, false)
-}
-
-func TestIsItPossibleToBeSubAccount(t *testing.T) {
-	a := FIsItPossibleToBeSubAccount([]uint{1}, []uint{1, 2})
-	FTest(true, a, true)
-	a = FIsItPossibleToBeSubAccount([]uint{1}, []uint{2})
-	FTest(true, a, false)
-	a = FIsItPossibleToBeSubAccount([]uint{}, []uint{2})
-	FTest(true, a, false)
-	a = FIsItPossibleToBeSubAccount([]uint{1}, []uint{1, 1, 2})
-	FTest(true, a, true)
-}
-
-func TestIsItSubAccountUsingName(t *testing.T) {
-	VIndexOfAccountNumber = 0
-	a := FIsItSubAccountUsingName("ASSETS", "CASH_AND_CASH_EQUIVALENTS")
-	FTest(true, a, true)
-	a = FIsItSubAccountUsingName("CASH_AND_CASH_EQUIVALENTS", "ASSETS")
-	FTest(true, a, false)
-	VIndexOfAccountNumber = 1
-	a = FIsItSubAccountUsingName("ASSETS", "CASH_AND_CASH_EQUIVALENTS")
-	FTest(true, a, false)
+	FTest(true, FIsItHighThanByOrder([]uint{1}, []uint{1, 2}), true)
+	FTest(true, FIsItHighThanByOrder([]uint{1}, []uint{2}), true)
+	FTest(true, FIsItHighThanByOrder([]uint{}, []uint{2}), true)
+	FTest(true, FIsItHighThanByOrder([]uint{1, 1}, []uint{1, 1, 2}), true)
+	FTest(true, FIsItHighThanByOrder([]uint{1}, []uint{2, 1}), true)
+	FTest(true, FIsItHighThanByOrder([]uint{2, 1}, []uint{1, 1}), false)
+	FTest(true, FIsItHighThanByOrder([]uint{1, 1}, []uint{1}), false)
 }
 
 func TestIsItSubAccountUsingNumber(t *testing.T) {
-	a := FIsItSubAccountUsingNumber([]uint{1}, []uint{1, 2})
-	FTest(true, a, true)
-	a = FIsItSubAccountUsingNumber([]uint{1}, []uint{2})
-	FTest(true, a, false)
-	a = FIsItSubAccountUsingNumber([]uint{}, []uint{2})
-	FTest(true, a, false)
+	FTest(true, FIsItSubAccountUsingNumber([]uint{1}, []uint{1, 2}), true)
+	FTest(true, FIsItSubAccountUsingNumber([]uint{1}, []uint{2}), false)
+	FTest(true, FIsItSubAccountUsingNumber([]uint{}, []uint{2}), false)
+	FTest(true, FIsItSubAccountUsingNumber([]uint{1}, []uint{1, 1, 2}), true)
+	FTest(true, FIsItSubAccountUsingNumber([]uint{1}, []uint{2, 1}), false)
+	FTest(true, FIsItSubAccountUsingNumber([]uint{1}, []uint{1, 1}), true)
 }
 
 func TestIsItTheFather(t *testing.T) {
-	a := FIsItTheFather([]uint{1}, []uint{1, 2})
-	FTest(true, a, true)
-	a = FIsItTheFather([]uint{1}, []uint{2})
-	FTest(true, a, false)
-	a = FIsItTheFather([]uint{}, []uint{2})
-	FTest(true, a, false)
-	a = FIsItTheFather([]uint{1}, []uint{1, 1, 2})
-	FTest(true, a, false)
+	FTest(true, FIsItTheFather([]uint{1}, []uint{1, 2}), true)
+	FTest(true, FIsItTheFather([]uint{1}, []uint{2}), false)
+	FTest(true, FIsItTheFather([]uint{}, []uint{2}), false)
+	FTest(true, FIsItTheFather([]uint{1}, []uint{1, 1, 2}), false)
+	FTest(true, FIsItTheFather([]uint{1}, []uint{2, 1}), false)
+	FTest(true, FIsItTheFather([]uint{1}, []uint{1, 1}), true)
 }
 
 func TestIsUsedInJournal(t *testing.T) {
@@ -249,17 +191,11 @@ func TestIsUsedInJournal(t *testing.T) {
 }
 
 func TestMaxLenForAccountNumber(t *testing.T) {
-	a := FMaxLenForAccountNumber()
-	FTest(true, a, 2)
-}
-
-func TestPrintFormatedAccounts(t *testing.T) {
-	FPrintFormatedAccounts()
+	FTest(true, FMaxLenForAccountNumber(), 2)
 }
 
 func TestSetTheAccounts(t *testing.T) {
 	FSetTheAccounts()
-	FPrintFormatedAccounts()
 }
 
 func TestAddAutoCompletion(t *testing.T) {
@@ -282,7 +218,7 @@ func TestFAddAccount(t *testing.T) {
 		IsCredit:     false,
 		CostFlowType: "",
 		Inventory:    "home",
-		Name:         "book",
+		Name:         "book2",
 		Notes:        "",
 		Image:        []string{},
 		Barcode:      []string{"1", "2"},
@@ -290,12 +226,18 @@ func TestFAddAccount(t *testing.T) {
 		Levels:       []uint{},
 		FathersName:  [][]string{},
 	})
-	FPrintFormatedAccounts()
 	log.Println(a1)
 }
 
 func TestPrint(t *testing.T) {
+	p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	for _, v1 := range VAccounts {
-		fmt.Printf("%#v\n", v1)
+		fmt.Fprintf(p, "%#v\n", v1)
 	}
+	p.Flush()
+}
+
+func TestFCheckTheTree(t *testing.T) {
+	a1 := FSetTheAccounts()
+	FPrintStructSlice(true, a1)
 }

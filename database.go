@@ -1,4 +1,4 @@
-package main
+package anti_accountants
 
 import (
 	"encoding/json"
@@ -217,8 +217,8 @@ func FChangeEmployeeName(old, new string) {
 func FChangeTypeOfCompoundEntry(old, new string) {
 	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
-		if v1.TypeOfCompoundEntry == old {
-			v1.TypeOfCompoundEntry = new
+		if v1.Label == old {
+			v1.Label = new
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
@@ -230,7 +230,7 @@ func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund uint, new SEntry) {
 		if v1.EntryNumberCompound == entryNumberCompund {
 			v1.Notes = new.Notes
 			v1.Name = new.Name
-			v1.TypeOfCompoundEntry = new.Label
+			v1.Label = new.Label
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}

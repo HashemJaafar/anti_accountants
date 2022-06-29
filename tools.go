@@ -1,4 +1,4 @@
-package main
+package anti_accountants
 
 import (
 	"fmt"
@@ -14,9 +14,8 @@ import (
 	"time"
 )
 
-func FCutTheSlice[t any](a []t, b int) []t { return a[:len(a)-b] }
-func FRemove[t any](a []t, b int) []t      { return append(a[:b], a[b+1:]...) }
-func FSwap[t any](a []t, b, c int)         { a[b], a[c] = a[c], a[b] }
+func FRemove[t any](a []t, b int) []t { return append(a[:b], a[b+1:]...) }
+func FSwap[t any](a []t, b, c int)    { a[b], a[c] = a[c], a[b] }
 
 func FNow() []byte {
 	return []byte(time.Now().Format(CTimeLayout))
@@ -152,10 +151,10 @@ func FTest[t any](shouldEqual bool, actual, expected t) {
 	if reflect.DeepEqual(actual, expected) != shouldEqual {
 		VFailTestNumber++
 		p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		fmt.Fprintln(p, "\033[32m", "fail_test_number\t:", VFailTestNumber) //green
-		fmt.Fprintln(p, "\033[35m", "should_equal\t:", shouldEqual)         //purple
-		fmt.Fprintln(p, "\033[34m", "actual\t:", actual)                    //blue
-		fmt.Fprintln(p, "\033[33m", "expected\t:", expected)                //yellow
+		fmt.Fprintln(p, "\033[32m fail_test_number\t:", VFailTestNumber) //green
+		fmt.Fprintln(p, "\033[35m should_equal\t:", shouldEqual)         //purple
+		fmt.Fprintf(p, "\033[34m actual\t:%#v\n", actual)                //blue
+		fmt.Fprintf(p, "\033[33m expected\t:%#v\n", expected)            //yellow
 		p.Flush()
 
 		// fmt.Println("\033[34m") //blue
@@ -171,7 +170,8 @@ func FTest[t any](shouldEqual bool, actual, expected t) {
 		}()
 		log.Panic()
 	} else {
-		fmt.Println("\033[32m pass \U0001f44d \033[0m") //green
+		fmt.Print("\033[32m ")
+		log.Println("pass \U0001f44d \033[0m") //green
 	}
 }
 
