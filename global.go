@@ -24,9 +24,6 @@ const (
 	CWma              = "Wma"
 	CHighLevelAccount = "HighLevelAccount"
 
-	CCredit = "Credit"
-	CDebit  = "Debit"
-
 	CLinear      = "Linear"
 	CExponential = "Exponential"
 	CLogarithmic = "Logarithmic"
@@ -112,15 +109,9 @@ const (
 	CAscending  = "Ascending"
 	CDescending = "Descending"
 
-	// Prefixes of inventory account
-	CPrefixCost         = "cost of "
-	CPrefixDiscount     = "discount of "
-	CPrefixTaxExpenses  = "tax expenses of "
-	CPrefixTaxLiability = "tax liability of "
-	CPrefixRevenue      = "revenue of "
-
 	// Discount Way
-	CDiscountPerOne       = "PerOne"
+	CDiscountPrice        = "Price"
+	CDiscountPercent      = "Percent"
 	CDiscountTotal        = "Total"
 	CDiscountPerQuantity  = "PerQuantity"
 	CDiscountDecisionTree = "DecisionTree"
@@ -140,13 +131,11 @@ var (
 	VAccounts                []SAccount1
 	VAutoCompletionEntries   []SAutoCompletion
 
-	// standards
 	VPrintTable      = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	VAllCostFlowType = []string{CHighLevelAccount, CFifo, CLifo, CWma}
 	VLowCostFlowType = []string{CFifo, CLifo, CWma}
-	VDiscountWay     = []string{CDiscountPerOne, CDiscountTotal, CDiscountPerQuantity, CDiscountDecisionTree}
+	VDiscountWay     = []string{CDiscountPrice, CDiscountPercent, CDiscountTotal, CDiscountPerQuantity, CDiscountDecisionTree}
 
-	//errors
 	VErrorNotListed = errors.New("is not listed")
 	VErrorIsUsed    = errors.New("is used")
 
@@ -174,11 +163,15 @@ type (
 	TStatement3             = map[TAccount1Name]map[TAccount2Name]map[TPersonName]map[TVpq]map[TTypeOfVpq]map[TChangeOrRatioOrBalance]TNumber
 )
 
-type SEntry struct {
-	Notes    string
-	Name     string
-	Employee string
-	Label    string
+type SEntry1 SEntry[string, []string]
+type SEntry[
+	t1 string | bool | SFilter[string],
+	t2 []string | bool | SFilter[string],
+] struct {
+	Notes    t1
+	Name     t1
+	Employee t1
+	Labels   t2
 }
 
 type SPQ struct {
@@ -200,42 +193,39 @@ type SAPQ12SAccount1 struct {
 	SAccount1
 }
 
-type SAccount1 SAccount[bool, string, string, string, string, []string, []string, [][]uint, []uint, [][]string]
-type SAccount2 SAccount[SFilterBool, SFilter[string], SFilter[string], SFilter[string], SFilter[string], SFilter[string], SFilter[string], SFilter[uint], SFilter[uint], SFilter[string]]
-type SAccount3 SAccount[TErr, TErr, TErr, TErr, TErr, TErr, []TErr, []TErr, TErr, TErr]
+type SAccount1 SAccount[bool, string, string, string, []string, [][]uint, []uint, [][]string]
+type SAccount2 SAccount[SFilterBool, SFilter[string], SFilter[string], SFilter[string], SFilter[string], SFilter[uint], SFilter[uint], SFilter[string]]
+type SAccount3 SAccount[TErr, TErr, TErr, TErr, TErr, []TErr, TErr, TErr]
 type SAccount[
 	IsCredit bool | SFilterBool | TErr,
 	CostFlowType string | SFilter[string] | TErr,
-	Inventory string | SFilter[string] | TErr,
 	Name string | SFilter[string] | TErr,
 	Notes string | SFilter[string] | TErr,
 	Image []string | SFilter[string] | TErr,
-	Barcode []string | SFilter[string] | []TErr,
 	Number [][]uint | SFilter[uint] | []string | []TErr,
 	Levels []uint | SFilter[uint] | TErr,
 	FathersName [][]string | SFilter[string] | TErr,
 ] struct {
 	IsCredit     IsCredit
 	CostFlowType CostFlowType
-	Inventory    Inventory
 	Name         Name
 	Notes        Notes
 	Image        Image
-	Barcode      Barcode
 	Number       Number
 	Levels       Levels
 	FathersName  FathersName
 }
 
-type SJournal1 SJournal[time.Time, bool, uint, float64, string]
-type SJournal2 SJournal[SFilter[time.Time], SFilterBool, SFilter[uint], SFilter[float64], SFilter[string]]
-type SJournal3 SJournal[bool, bool, bool, bool, bool]
+type SJournal1 SJournal[time.Time, bool, uint, float64, string, []string]
+type SJournal2 SJournal[SFilter[time.Time], SFilterBool, SFilter[uint], SFilter[float64], SFilter[string], SFilter[string]]
+type SJournal3 SJournal[bool, bool, bool, bool, bool, bool]
 type SJournal[
 	t1 time.Time | bool | SFilter[time.Time],
 	t2 bool | SFilterBool,
 	t3 uint | bool | SFilter[uint],
 	t4 float64 | bool | SFilter[float64],
 	t5 string | bool | SFilter[string],
+	t6 []string | bool | SFilter[string],
 ] struct {
 	Date                       t1
 	IsReverse                  t2
@@ -257,10 +247,7 @@ type SJournal[
 	CreditBalanceValue         t4
 	CreditBalancePrice         t4
 	CreditBalanceQuantity      t4
-	Notes                      t5
-	Name                       t5
-	Employee                   t5
-	Label                      t5
+	SEntry[t5, t6]
 }
 
 type SStatement1 SStatement[string, string, float64]
@@ -345,15 +332,36 @@ type SOneStepDistribution struct {
 	To                     map[string]float64
 }
 
+type SInvoiceEntry struct {
+	RevenueNameError error
+	QuantityError    error
+	Group            string
+	Revenue          string
+	PriceRevenue     float64
+	PriceTax         float64
+	DiscountWay      string
+	Discount         float64
+	Quantity         float64
+}
+
 type SAutoCompletion struct {
-	AccountName          string
-	PriceRevenue         float64
-	PriceTax             float64
-	DiscountWay          string
-	DiscountPerOne       float64
-	DiscountTotal        float64
-	DiscountPerQuantity  SPQ
-	DiscountDecisionTree []SPQ
+	Group                   string
+	Barcode                 []string
+	Inventory               string
+	CostOfGoodsSold         string
+	TaxExpenses             string
+	TaxLiability            string
+	Revenue                 string
+	Discount                string
+	AddCostOfGoodsSoldEntry bool
+	PriceTax                float64
+	PriceRevenue            float64
+	DiscountWay             string
+	DiscountPrice           float64
+	DiscountPercent         float64
+	DiscountTotal           float64
+	DiscountPerQuantity     SPQ
+	DiscountDecisionTree    []SPQ
 }
 
 type SCvp struct {

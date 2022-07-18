@@ -10,6 +10,7 @@ import (
 
 func TestAddAccount(t *testing.T) {
 	var a1 SAccount3
+	e1 := SAccount3{IsCredit: "", CostFlowType: "", Name: "", Notes: "", Image: "", Number: []TErr{""}, Levels: "", FathersName: ""}
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
@@ -17,7 +18,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "assets",
 		Number:       [][]uint{{1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
@@ -25,7 +26,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "current assets",
 		Number:       [][]uint{{1, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
@@ -33,7 +34,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "cash",
 		Number:       [][]uint{{1, 1, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
@@ -41,7 +42,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "invnetory",
 		Number:       [][]uint{{1, 1, 3}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
@@ -49,7 +50,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "book",
 		Number:       [][]uint{{1, 1, 3, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     true,
@@ -57,7 +58,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "liabilities",
 		Number:       [][]uint{{2}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     true,
@@ -65,7 +66,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "owner's equity",
 		Number:       [][]uint{{3}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     true,
@@ -73,7 +74,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "retained earnings",
 		Number:       [][]uint{{3, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     true,
@@ -81,7 +82,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "income",
 		Number:       [][]uint{{3, 2}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     true,
@@ -89,7 +90,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "revenue",
 		Number:       [][]uint{{3, 2, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     true,
@@ -97,7 +98,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "rent",
 		Number:       [][]uint{{3, 2, 1, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
@@ -105,7 +106,7 @@ func TestAddAccount(t *testing.T) {
 		Name:         "expense",
 		Number:       [][]uint{{3, 2, 2}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
@@ -113,23 +114,23 @@ func TestAddAccount(t *testing.T) {
 		Name:         "discounts",
 		Number:       [][]uint{{3, 2, 2, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
 		CostFlowType: CWma,
-		Name:         "Invoice PQ",
+		Name:         "Invoice discount",
 		Number:       [][]uint{{3, 2, 2, 1, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
 		CostFlowType: CWma,
-		Name:         CPrefixDiscount + "book",
+		Name:         "Discount of book",
 		Number:       [][]uint{{3, 2, 2, 1, 2}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
@@ -137,15 +138,15 @@ func TestAddAccount(t *testing.T) {
 		Name:         "cost of goods sold",
 		Number:       [][]uint{{3, 2, 2, 2}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     false,
 		CostFlowType: CWma,
-		Name:         CPrefixCost + "book",
+		Name:         "Cost of book",
 		Number:       [][]uint{{3, 2, 2, 2, 1}},
 	})
-	FTest(true, a1, SAccount3{})
+	FTest(true, a1, e1)
 }
 
 func TestEditAccount(t *testing.T) {
@@ -199,29 +200,58 @@ func TestSetTheAccounts(t *testing.T) {
 }
 
 func TestAddAutoCompletion(t *testing.T) {
-	a1 := FAddAutoCompletion(SAutoCompletion{
-		AccountName:          "book",
-		PriceRevenue:         1250,
-		PriceTax:             250,
-		DiscountWay:          CDiscountPerOne,
-		DiscountPerOne:       250,
-		DiscountTotal:        0,
-		DiscountPerQuantity:  SPQ{},
-		DiscountDecisionTree: []SPQ{},
+	var a1 error
+
+	a1 = FAddAutoCompletion(SAutoCompletion{
+		Group:                   "1",
+		Barcode:                 []string{},
+		Inventory:               "Inventory item 1",
+		CostOfGoodsSold:         "CostOfGoodsSold item 1",
+		TaxExpenses:             "TaxExpenses item 1",
+		TaxLiability:            "TaxLiability item 1",
+		Revenue:                 "Revenue item 1",
+		Discount:                "Discount item 1",
+		AddCostOfGoodsSoldEntry: false,
+		PriceTax:                0,
+		PriceRevenue:            1250,
+		DiscountWay:             CDiscountPrice,
+		DiscountPrice:           0,
+		DiscountPercent:         0,
+		DiscountTotal:           0,
+		DiscountPerQuantity:     SPQ{},
+		DiscountDecisionTree:    []SPQ{},
 	})
-	fmt.Println(a1)
-	FPrintStructSlice(false, VAutoCompletionEntries)
+	FTest(true, a1, nil)
+
+	a1 = FAddAutoCompletion(SAutoCompletion{
+		Group:                   "1",
+		Barcode:                 []string{},
+		Inventory:               "Inventory item 2",
+		CostOfGoodsSold:         "CostOfGoodsSold item 2",
+		TaxExpenses:             "TaxExpenses item 2",
+		TaxLiability:            "TaxLiability item 2",
+		Revenue:                 "Revenue item 2",
+		Discount:                "Discount item 2",
+		AddCostOfGoodsSoldEntry: true,
+		PriceTax:                200,
+		PriceRevenue:            1000,
+		DiscountWay:             CDiscountPrice,
+		DiscountPrice:           100,
+		DiscountPercent:         0,
+		DiscountTotal:           0,
+		DiscountPerQuantity:     SPQ{},
+		DiscountDecisionTree:    []SPQ{},
+	})
+	FTest(true, a1, nil)
 }
 
 func TestFAddAccount(t *testing.T) {
 	a1 := FAddAccount(true, SAccount1{
 		IsCredit:     false,
 		CostFlowType: "",
-		Inventory:    "home",
 		Name:         "book2",
 		Notes:        "",
 		Image:        []string{},
-		Barcode:      []string{"1", "2"},
 		Number:       [][]uint{{1}, {1}},
 		Levels:       []uint{},
 		FathersName:  [][]string{},

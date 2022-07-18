@@ -155,3 +155,12 @@ func FConvertNanToZero(value float64) float64 {
 	}
 	return value
 }
+
+func FSetXEqualToYIfBiggerThanY(X, Y float64) float64 {
+	X = math.Abs(X)
+	Y = math.Abs(Y)
+	if X > Y {
+		X = Y
+	}
+	return X
+}

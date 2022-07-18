@@ -217,20 +217,20 @@ func FChangeEmployeeName(old, new string) {
 func FChangeTypeOfCompoundEntry(old, new string) {
 	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
-		if v1.Label == old {
-			v1.Label = new
+		if index, isIn := FFind(old, v1.Labels); isIn {
+			v1.Labels[index] = new
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
 }
 
-func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund uint, new SEntry) {
+func FChangeEntryInfoByEntryNumberCompund(entryNumberCompund uint, new SEntry1) {
 	keys, journal := FDbRead[SJournal1](VDbJournal)
 	for k1, v1 := range journal {
 		if v1.EntryNumberCompound == entryNumberCompund {
 			v1.Notes = new.Notes
 			v1.Name = new.Name
-			v1.Label = new.Label
+			v1.Labels = new.Labels
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}

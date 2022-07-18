@@ -7,10 +7,10 @@ import (
 	"reflect"
 )
 
-func FFindAccountFromNameOrBarcode(inventory, nameOrBarcode string) (SAccount1, int, error) {
-	for k1, v1 := range VAccounts {
-		if v1.Inventory == inventory {
-			if nameOrBarcode == v1.Name {
+func FFindAutoCompletionFromNameOrBarcode(Group, nameOrBarcode string) (SAutoCompletion, int, error) {
+	for k1, v1 := range VAutoCompletionEntries {
+		if v1.Group == Group {
+			if nameOrBarcode == v1.Revenue {
 				return v1, k1, nil
 			}
 			_, isIn := FFind(nameOrBarcode, v1.Barcode)
@@ -19,7 +19,7 @@ func FFindAccountFromNameOrBarcode(inventory, nameOrBarcode string) (SAccount1, 
 			}
 		}
 	}
-	return SAccount1{}, 0, VErrorNotListed
+	return SAutoCompletion{}, 0, VErrorNotListed
 }
 
 func FFindAccountFromName(accountName string) (SAccount1, int, error) {
@@ -33,7 +33,7 @@ func FFindAccountFromName(accountName string) (SAccount1, int, error) {
 
 func FFindAutoCompletionFromName(accountName string) (SAutoCompletion, int, error) {
 	for k1, v1 := range VAutoCompletionEntries {
-		if accountName == v1.AccountName {
+		if accountName == v1.Revenue {
 			return v1, k1, nil
 		}
 	}
@@ -53,7 +53,6 @@ func FSetTheAccountFieldToStandard(account SAccount1) (SAccount1, error) {
 	}
 
 	account.Image = filter(account.Image)
-	account.Barcode = filter(account.Barcode)
 
 	if account.Name == "" {
 		return account, errors.New("the account name is empty")
@@ -66,8 +65,8 @@ func FAddAccount(isSave bool, account SAccount1) SAccount3 {
 	var isErr bool
 	var accountError SAccount3
 
-	e := func(err error, ifTreu bool) {
-		if ifTreu {
+	e := func(err error, ifTrue bool) {
+		if ifTrue {
 			accountError.Name = TErr(err.Error())
 			isErr = true
 		}
@@ -78,16 +77,17 @@ func FAddAccount(isSave bool, account SAccount1) SAccount3 {
 	_, _, err = FFindAccountFromName(account.Name)
 	e(VErrorIsUsed, err == nil)
 
-	accountError.Barcode = FSetSliceOfTErr(FErrorUsedBarcode(account))
 	accountError.Number = FSetSliceOfTErr(FErrorUsedNumber(account))
 
-	if isErr || !isSave {
+	if isErr {
 		return accountError
 	}
 
-	VAccounts = append(VAccounts, account)
-	FSetTheAccounts()
-	FDbInsertIntoAccounts()
+	if isSave {
+		VAccounts = append(VAccounts, account)
+		FSetTheAccounts()
+		FDbInsertIntoAccounts()
+	}
 	return accountError
 }
 
@@ -98,22 +98,6 @@ func FErrorUsedNumber(account SAccount1) []error {
 			for k3, v3 := range v2.Number {
 				if k1 == k3 {
 					if reflect.DeepEqual(v1, v3) {
-						err[k1] = VErrorIsUsed
-					}
-				}
-			}
-		}
-	}
-	return err
-}
-
-func FErrorUsedBarcode(account SAccount1) []error {
-	err := make([]error, len(account.Barcode))
-	for k1, v1 := range account.Barcode {
-		for _, v2 := range VAccounts {
-			if v2.Inventory == account.Inventory {
-				for _, v3 := range v2.Barcode {
-					if v1 == v3 {
 						err[k1] = VErrorIsUsed
 					}
 				}
@@ -158,8 +142,6 @@ func FEditAccount(isDelete bool, index int, account SAccount1) {
 		VAccounts[index].CostFlowType = account.CostFlowType
 	}
 
-	VAccounts[index].Inventory = account.Inventory
-	VAccounts[index].Barcode = account.Barcode
 	VAccounts[index].Notes = account.Notes
 	VAccounts[index].Image = account.Image
 	VAccounts[index].Number = account.Number
@@ -276,8 +258,7 @@ func FSetTheAccounts() []SAccount3 {
 	}
 
 	accountErrors := make([]SAccount3, len(VAccounts))
-	for k1, v1 := range VAccounts {
-		accountErrors[k1].Barcode = make([]TErr, len(v1.Barcode))
+	for k1 := range VAccounts {
 		accountErrors[k1].Number = make([]TErr, maxLen)
 	}
 
@@ -306,119 +287,84 @@ func FSetTheAccounts() []SAccount3 {
 		}
 	}
 
-	for k1, v1 := range VAccounts {
-		for k2, v2 := range VAccounts {
-			if k1 != k2 && v1.Inventory == v2.Inventory {
-				for k3, v3 := range v1.Barcode {
-					for _, v4 := range v2.Barcode {
-						if v3 == v4 {
-							accountErrors[k1].Barcode[k3] = TErr("duplicated")
-						}
-					}
-				}
-			}
-		}
-	}
-
 	return accountErrors
 }
 
 func FAddAutoCompletion(a SAutoCompletion) error {
-	account, isExist, err := FAccountTerms(a.AccountName, true, false)
-	if isExist && err != nil {
+	accountInventory, err := FAccountTerms(a.Inventory, false)
+	if err != nil && err != VErrorNotListed {
 		return err
 	}
-	accountCost, isExistCost, err := FAccountTerms(CPrefixCost+a.AccountName, true, false)
-	if isExistCost && err != nil {
+	accountCostOfGoodsSold, err := FAccountTerms(a.CostOfGoodsSold, false)
+	if err != nil && err != VErrorNotListed {
 		return err
 	}
-	accountDiscount, isExistDiscount, err := FAccountTerms(CPrefixDiscount+a.AccountName, true, false)
-	if isExistDiscount && err != nil {
+	accountTaxExpenses, err := FAccountTerms(a.TaxExpenses, false)
+	if err != nil && err != VErrorNotListed {
 		return err
 	}
-	accountTaxExpenses, isExistTaxExpenses, err := FAccountTerms(CPrefixTaxExpenses+a.AccountName, true, false)
-	if isExistTaxExpenses && err != nil {
+	accountTaxLiability, err := FAccountTerms(a.TaxLiability, true)
+	if err != nil && err != VErrorNotListed {
 		return err
 	}
-	accountTaxLiability, isExistTaxLiability, err := FAccountTerms(CPrefixTaxLiability+a.AccountName, true, true)
-	if isExistTaxLiability && err != nil {
+	accountRevenue, err := FAccountTerms(a.Revenue, true)
+	if err != nil && err != VErrorNotListed {
 		return err
 	}
-	accountRevenue, isExistRevenue, err := FAccountTerms(CPrefixRevenue+a.AccountName, true, true)
-	if isExistRevenue && err != nil {
+	accountDiscount, err := FAccountTerms(a.Discount, false)
+	if err != nil && err != VErrorNotListed {
 		return err
 	}
 
-	add := func(isExist bool, account SAccount1) {
-		if !isExist {
-			FAddAccount(true, account)
-		}
-	}
+	FAddAccount(true, accountInventory)
+	FAddAccount(true, accountCostOfGoodsSold)
+	FAddAccount(true, accountTaxExpenses)
+	FAddAccount(true, accountTaxLiability)
+	FAddAccount(true, accountRevenue)
+	FAddAccount(true, accountDiscount)
 
-	add(isExist, account)
-	add(isExistCost, accountCost)
-	add(isExistDiscount, accountDiscount)
-	add(isExistTaxExpenses, accountTaxExpenses)
-	add(isExistTaxLiability, accountTaxLiability)
-	add(isExistRevenue, accountRevenue)
-
-	a.PriceRevenue = math.Abs(a.PriceRevenue)
 	a.PriceTax = math.Abs(a.PriceTax)
-
-	setDiscont := func(discountPrice float64) float64 {
-		discountPrice = math.Abs(discountPrice)
-		if discountPrice > a.PriceRevenue {
-			discountPrice = a.PriceRevenue
-		}
-		return discountPrice
-	}
-
-	a.DiscountPerOne = setDiscont(a.DiscountPerOne)
+	a.PriceRevenue = math.Abs(a.PriceRevenue)
+	a.DiscountPrice = FSetXEqualToYIfBiggerThanY(a.DiscountPrice, a.PriceRevenue)
+	a.DiscountPercent = FSetXEqualToYIfBiggerThanY(a.DiscountPercent, 1)
 	a.DiscountTotal = math.Abs(a.DiscountTotal)
-	a.DiscountPerQuantity.TPrice = setDiscont(a.DiscountPerQuantity.TPrice)
+	a.DiscountPerQuantity.TPrice = FSetXEqualToYIfBiggerThanY(a.DiscountPerQuantity.TPrice, a.PriceRevenue)
 	a.DiscountPerQuantity.TQuantity = math.Abs(a.DiscountPerQuantity.TQuantity)
 	for k1, v1 := range a.DiscountDecisionTree {
-		a.DiscountDecisionTree[k1].TPrice = setDiscont(v1.TPrice)
+		a.DiscountDecisionTree[k1].TPrice = FSetXEqualToYIfBiggerThanY(v1.TPrice, a.PriceRevenue)
 		a.DiscountDecisionTree[k1].TQuantity = math.Abs(v1.TQuantity)
 	}
 
 	if _, isIn := FFind(a.DiscountWay, VDiscountWay); !isIn {
-		a.DiscountWay = CDiscountPerOne
+		a.DiscountWay = CDiscountPrice
 	}
 
-	FDbUpdate(VDbAutoCompletionEntries, []byte(a.AccountName), a)
+	FDbUpdate(VDbAutoCompletionEntries, []byte(a.Inventory), a)
 	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
 
 	return nil
 }
 
-func FAccountTerms(accountName string, isLowLevel, isCredit bool) (SAccount1, bool, error) {
+func FAccountTerms(accountName string, isCredit bool) (SAccount1, error) {
 	account, _, err := FFindAccountFromName(accountName)
-	newAccount := SAccount1{CostFlowType: CFifo, IsCredit: isCredit, Name: accountName}
 
 	if err != nil {
-		return newAccount, false, err
+		return SAccount1{CostFlowType: CFifo, IsCredit: isCredit, Name: accountName}, err
 	}
 
-	if isLowLevel {
-		if account.CostFlowType == CHighLevelAccount {
-			return newAccount, true, fmt.Errorf("(%v) should be Low Level account", accountName)
-		}
-	} else {
-		if account.CostFlowType != CHighLevelAccount {
-			return newAccount, true, fmt.Errorf("(%v) should not be Low Level account", accountName)
-		}
+	if account.CostFlowType == CHighLevelAccount {
+		return account, fmt.Errorf("(%v) should be Low Level account", accountName)
 	}
 
 	if isCredit {
 		if !account.IsCredit {
-			return newAccount, true, fmt.Errorf("(%v) should be credit account", accountName)
+			return account, fmt.Errorf("(%v) should be credit account", accountName)
 		}
 	} else {
 		if account.IsCredit {
-			return newAccount, true, fmt.Errorf("(%v) should not be credit account", accountName)
+			return account, fmt.Errorf("(%v) should not be credit account", accountName)
 		}
 	}
 
-	return newAccount, true, nil
+	return account, nil
 }

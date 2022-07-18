@@ -306,8 +306,8 @@ func FMaxMinDate(slice []time.Time) (time.Time, time.Time) {
 	return max, min
 }
 
-func FFilterDuplicate[t comparable](input1, input2 t, isFilter bool) bool {
-	return !isFilter || input1 == input2
+func FFilterDuplicate[t any](input1, input2 t, isFilter bool) bool {
+	return !isFilter || reflect.DeepEqual(input1, input2)
 }
 
 func FFilterBool(input bool, f SFilterBool) bool {
@@ -409,11 +409,9 @@ func FFilterSlice[t uint | string](input []t, f SFilter[t]) bool {
 func FFilterAccount(input SAccount1, f SAccount2) bool {
 	if FFilterBool(input.IsCredit, f.IsCredit) &&
 		FFilterString(input.CostFlowType, f.CostFlowType) &&
-		FFilterString(input.Inventory, f.Inventory) &&
 		FFilterString(input.Name, f.Name) &&
 		FFilterString(input.Notes, f.Notes) &&
 		FFilterSlice(input.Image, f.Image) &&
-		FFilterSlice(input.Barcode, f.Barcode) &&
 		FFilterSlice(input.Number[VIndexOfAccountNumber], f.Number) &&
 		FFilterNumber(input.Levels[VIndexOfAccountNumber], f.Levels) &&
 		FFilterSlice(input.FathersName[VIndexOfAccountNumber], f.FathersName) {
