@@ -166,6 +166,7 @@ func TestIsItHighThanByOrder(t *testing.T) {
 	FTest(true, FIsItHighThanByOrder([]uint{1}, []uint{2, 1}), true)
 	FTest(true, FIsItHighThanByOrder([]uint{2, 1}, []uint{1, 1}), false)
 	FTest(true, FIsItHighThanByOrder([]uint{1, 1}, []uint{1}), false)
+	FTest(true, FIsItHighThanByOrder([]uint{1, 1}, []uint{1, 1}), false)
 }
 
 func TestIsItSubAccountUsingNumber(t *testing.T) {
@@ -200,47 +201,69 @@ func TestSetTheAccounts(t *testing.T) {
 }
 
 func TestAddAutoCompletion(t *testing.T) {
+	VDbAccounts.DropAll()
+	VDbAutoCompletionEntries.DropAll()
+
+	TestAddAccount(t)
 	var a1 error
 
-	a1 = FAddAutoCompletion(SAutoCompletion{
-		Group:                   "1",
-		Barcode:                 []string{},
-		Inventory:               "Inventory item 1",
-		CostOfGoodsSold:         "CostOfGoodsSold item 1",
-		TaxExpenses:             "TaxExpenses item 1",
-		TaxLiability:            "TaxLiability item 1",
-		Revenue:                 "Revenue item 1",
-		Discount:                "Discount item 1",
-		AddCostOfGoodsSoldEntry: false,
-		PriceTax:                0,
-		PriceRevenue:            1250,
-		DiscountWay:             CDiscountPrice,
-		DiscountPrice:           0,
-		DiscountPercent:         0,
-		DiscountTotal:           0,
-		DiscountPerQuantity:     SPQ{},
-		DiscountDecisionTree:    []SPQ{},
+	a1 = FAddAutoCompletion(SAutoCompletion1{
+		Group:                "1",
+		Barcode:              []string{},
+		Inventory:            "Inventory item 1",
+		CostOfGoodsSold:      "CostOfGoodsSold item 1",
+		TaxExpenses:          "TaxExpenses item 1",
+		TaxLiability:         "TaxLiability item 1",
+		Revenue:              "Revenue item 1",
+		Discount:             "Discount item 1",
+		PriceTax:             0,
+		PriceRevenue:         1250,
+		DiscountWay:          CDiscountPrice,
+		DiscountPrice:        0,
+		DiscountPercent:      0,
+		DiscountTotal:        0,
+		DiscountPerQuantity:  SPQ{},
+		DiscountDecisionTree: []SPQ{},
 	})
 	FTest(true, a1, nil)
 
-	a1 = FAddAutoCompletion(SAutoCompletion{
-		Group:                   "1",
-		Barcode:                 []string{},
-		Inventory:               "Inventory item 2",
-		CostOfGoodsSold:         "CostOfGoodsSold item 2",
-		TaxExpenses:             "TaxExpenses item 2",
-		TaxLiability:            "TaxLiability item 2",
-		Revenue:                 "Revenue item 2",
-		Discount:                "Discount item 2",
-		AddCostOfGoodsSoldEntry: true,
-		PriceTax:                200,
-		PriceRevenue:            1000,
-		DiscountWay:             CDiscountPrice,
-		DiscountPrice:           100,
-		DiscountPercent:         0,
-		DiscountTotal:           0,
-		DiscountPerQuantity:     SPQ{},
-		DiscountDecisionTree:    []SPQ{},
+	a1 = FAddAutoCompletion(SAutoCompletion1{
+		Group:                "1",
+		Barcode:              []string{},
+		Inventory:            "Inventory item 2",
+		CostOfGoodsSold:      "CostOfGoodsSold item 2",
+		TaxExpenses:          "TaxExpenses item 2",
+		TaxLiability:         "TaxLiability item 2",
+		Revenue:              "Revenue item 2",
+		Discount:             "Discount item 2",
+		PriceTax:             200,
+		PriceRevenue:         1000,
+		DiscountWay:          CDiscountPrice,
+		DiscountPrice:        100,
+		DiscountPercent:      0,
+		DiscountTotal:        0,
+		DiscountPerQuantity:  SPQ{},
+		DiscountDecisionTree: []SPQ{},
+	})
+	FTest(true, a1, nil)
+
+	a1 = FAddAutoCompletion(SAutoCompletion1{
+		Group:                "1",
+		Barcode:              []string{},
+		Inventory:            "",
+		CostOfGoodsSold:      "",
+		TaxExpenses:          "",
+		TaxLiability:         "TaxLiability item 3",
+		Revenue:              "Revenue item 3",
+		Discount:             "Discount item 3",
+		PriceTax:             200,
+		PriceRevenue:         1000,
+		DiscountWay:          CDiscountPrice,
+		DiscountPrice:        100,
+		DiscountPercent:      0,
+		DiscountTotal:        0,
+		DiscountPerQuantity:  SPQ{},
+		DiscountDecisionTree: []SPQ{},
 	})
 	FTest(true, a1, nil)
 }

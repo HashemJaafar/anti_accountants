@@ -642,8 +642,7 @@ func FEntryInvoice(AccountNameReceive, AccountNameInvoiceDiscount string, PriceR
 
 		quantityPostive := math.Abs(v1.Quantity)
 
-		autoCompletion, _, _ := FFindAutoCompletionFromName(v1.Revenue)
-		accountInventory, _, err := FFindAccountFromName(autoCompletion.Inventory)
+		autoCompletion, _, err := FFindAutoCompletionFromName(v1.Revenue)
 		if err != nil {
 			return items, nil, nil
 		}
@@ -684,19 +683,26 @@ func FEntryInvoice(AccountNameReceive, AccountNameInvoiceDiscount string, PriceR
 			}
 		}
 
-		addEntry := func(accountName string, price, quantity float64, isCredit bool) SAPQ12SAccount1 {
+		addEntry := func(account SAccount1, price, quantity float64) SAPQ12SAccount1 {
 			if price > 0 {
 				return SAPQ12SAccount1{
-					SAPQ1:     SAPQ1{accountName, price, quantity},
+					SAPQ1:     SAPQ1{account.Name, price, quantity},
 					SAPQ2:     SAPQ2{},
-					SAccount1: SAccount1{IsCredit: isCredit, CostFlowType: accountInventory.CostFlowType},
+					SAccount1: account,
 				}
 			}
 			return SAPQ12SAccount1{}
 		}
 
+		accountInventory, _, errInventory := FFindAccountFromName(autoCompletion.Inventory)
+		accountCostOfGoodsSold, _, errCostOfGoodsSold := FFindAccountFromName(autoCompletion.CostOfGoodsSold)
+		accountTaxExpenses, _, errTaxExpenses := FFindAccountFromName(autoCompletion.TaxExpenses)
+		accountTaxLiability, _, errTaxLiability := FFindAccountFromName(autoCompletion.TaxLiability)
+		accountRevenue, _, errRevenue := FFindAccountFromName(autoCompletion.Revenue)
+		accountDiscount, _, errDiscount := FFindAccountFromName(autoCompletion.Discount)
+
 		var entry entry
-		if autoCompletion.AddCostOfGoodsSoldEntry {
+		if errInventory == nil && errCostOfGoodsSold == nil {
 			var price float64
 			quantity := -quantityPostive
 			err := FSetPriceAndQuantityByQuantity(accountInventory.Name, accountInventory.CostFlowType, &quantity, &price, false)
@@ -704,15 +710,23 @@ func FEntryInvoice(AccountNameReceive, AccountNameInvoiceDiscount string, PriceR
 				v1.QuantityError = err
 			}
 
-			entry.Inventory = addEntry(autoCompletion.Inventory, price, quantity, false)
-			entry.CostOfGoodsSold = addEntry(autoCompletion.CostOfGoodsSold, price, math.Abs(quantity), false)
+			entry.Inventory = addEntry(accountInventory, price, quantity)
+			entry.CostOfGoodsSold = addEntry(accountCostOfGoodsSold, price, math.Abs(quantity))
 		}
 
-		entry.TaxExpenses = addEntry(autoCompletion.TaxExpenses, autoCompletion.PriceTax, quantityPostive, false)
-		entry.TaxLiability = addEntry(autoCompletion.TaxLiability, autoCompletion.PriceTax, quantityPostive, true)
-		entry.Revenue = addEntry(autoCompletion.Revenue, autoCompletion.PriceRevenue, quantityPostive, true)
-		entry.Discount = addEntry(autoCompletion.Discount, discountPrice, quantityPostive, false)
-		valueOfInvoiceDiscountAndReceiveTotal += (autoCompletion.PriceRevenue - discountPrice) * quantityPostive
+		if errTaxExpenses == nil && errTaxLiability == nil {
+			entry.TaxExpenses = addEntry(accountTaxExpenses, autoCompletion.PriceTax, quantityPostive)
+			entry.TaxLiability = addEntry(accountTaxLiability, autoCompletion.PriceTax, quantityPostive)
+		}
+
+		if errRevenue == nil {
+			entry.Revenue = addEntry(accountRevenue, autoCompletion.PriceRevenue, quantityPostive)
+		}
+
+		if errDiscount == nil {
+			entry.Discount = addEntry(accountDiscount, discountPrice, quantityPostive)
+			valueOfInvoiceDiscountAndReceiveTotal += (autoCompletion.PriceRevenue - discountPrice) * quantityPostive
+		}
 
 		newEntries2 = append(newEntries2, entry)
 		items[k1] = v1

@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-func FFindAutoCompletionFromNameOrBarcode(Group, nameOrBarcode string) (SAutoCompletion, int, error) {
+func FFindAutoCompletionFromNameOrBarcode(Group, nameOrBarcode string) (SAutoCompletion1, int, error) {
 	for k1, v1 := range VAutoCompletionEntries {
 		if v1.Group == Group {
 			if nameOrBarcode == v1.Revenue {
@@ -19,7 +19,7 @@ func FFindAutoCompletionFromNameOrBarcode(Group, nameOrBarcode string) (SAutoCom
 			}
 		}
 	}
-	return SAutoCompletion{}, 0, VErrorNotListed
+	return SAutoCompletion1{}, 0, VErrorNotListed
 }
 
 func FFindAccountFromName(accountName string) (SAccount1, int, error) {
@@ -31,13 +31,13 @@ func FFindAccountFromName(accountName string) (SAccount1, int, error) {
 	return SAccount1{}, 0, VErrorNotListed
 }
 
-func FFindAutoCompletionFromName(accountName string) (SAutoCompletion, int, error) {
+func FFindAutoCompletionFromName(accountName string) (SAutoCompletion1, int, error) {
 	for k1, v1 := range VAutoCompletionEntries {
 		if accountName == v1.Revenue {
 			return v1, k1, nil
 		}
 	}
-	return SAutoCompletion{}, 0, VErrorNotListed
+	return SAutoCompletion1{}, 0, VErrorNotListed
 }
 
 func FSetTheAccountFieldToStandard(account SAccount1) (SAccount1, error) {
@@ -249,8 +249,12 @@ func FSetTheAccounts() []SAccount3 {
 		if len(VAccounts[k1].Number) > 0 {
 			for k2 := range VAccounts {
 				if len(VAccounts[k2].Number) > 0 {
-					if k1 < k2 && !FIsItHighThanByOrder(VAccounts[k1].Number[VIndexOfAccountNumber], VAccounts[k2].Number[VIndexOfAccountNumber]) {
-						FSwap(VAccounts, k1, k2)
+					if k1 < k2 {
+						if !FIsItHighThanByOrder(VAccounts[k1].Number[VIndexOfAccountNumber], VAccounts[k2].Number[VIndexOfAccountNumber]) {
+							FSwap(VAccounts, k1, k2)
+						} else if reflect.DeepEqual(VAccounts[k1].Number[VIndexOfAccountNumber], VAccounts[k2].Number[VIndexOfAccountNumber]) && VAccounts[k1].Name > VAccounts[k2].Name {
+							FSwap(VAccounts, k1, k2)
+						}
 					}
 				}
 			}
@@ -290,57 +294,71 @@ func FSetTheAccounts() []SAccount3 {
 	return accountErrors
 }
 
-func FAddAutoCompletion(a SAutoCompletion) error {
-	accountInventory, err := FAccountTerms(a.Inventory, false)
-	if err != nil && err != VErrorNotListed {
-		return err
-	}
-	accountCostOfGoodsSold, err := FAccountTerms(a.CostOfGoodsSold, false)
-	if err != nil && err != VErrorNotListed {
-		return err
-	}
-	accountTaxExpenses, err := FAccountTerms(a.TaxExpenses, false)
-	if err != nil && err != VErrorNotListed {
-		return err
-	}
-	accountTaxLiability, err := FAccountTerms(a.TaxLiability, true)
-	if err != nil && err != VErrorNotListed {
-		return err
-	}
-	accountRevenue, err := FAccountTerms(a.Revenue, true)
-	if err != nil && err != VErrorNotListed {
-		return err
-	}
-	accountDiscount, err := FAccountTerms(a.Discount, false)
-	if err != nil && err != VErrorNotListed {
-		return err
+func FAddAutoCompletion(a SAutoCompletion1) error {
+	var accountInventory, accountCostOfGoodsSold, accountTaxExpenses, accountTaxLiability, accountDiscount, accountRevenue SAccount1
+	var err error
+
+	if a.Inventory != "" && a.CostOfGoodsSold != "" {
+		accountInventory, err = FAccountTerms(a.Inventory, false)
+		if err != nil && err != VErrorNotListed {
+			return err
+		}
+		accountCostOfGoodsSold, err = FAccountTerms(a.CostOfGoodsSold, false)
+		if err != nil && err != VErrorNotListed {
+			return err
+		}
 	}
 
-	FAddAccount(true, accountInventory)
-	FAddAccount(true, accountCostOfGoodsSold)
-	FAddAccount(true, accountTaxExpenses)
-	FAddAccount(true, accountTaxLiability)
-	FAddAccount(true, accountRevenue)
-	FAddAccount(true, accountDiscount)
-
-	a.PriceTax = math.Abs(a.PriceTax)
-	a.PriceRevenue = math.Abs(a.PriceRevenue)
-	a.DiscountPrice = FSetXEqualToYIfBiggerThanY(a.DiscountPrice, a.PriceRevenue)
-	a.DiscountPercent = FSetXEqualToYIfBiggerThanY(a.DiscountPercent, 1)
-	a.DiscountTotal = math.Abs(a.DiscountTotal)
-	a.DiscountPerQuantity.TPrice = FSetXEqualToYIfBiggerThanY(a.DiscountPerQuantity.TPrice, a.PriceRevenue)
-	a.DiscountPerQuantity.TQuantity = math.Abs(a.DiscountPerQuantity.TQuantity)
-	for k1, v1 := range a.DiscountDecisionTree {
-		a.DiscountDecisionTree[k1].TPrice = FSetXEqualToYIfBiggerThanY(v1.TPrice, a.PriceRevenue)
-		a.DiscountDecisionTree[k1].TQuantity = math.Abs(v1.TQuantity)
+	if a.TaxExpenses != "" && a.TaxLiability != "" {
+		accountTaxExpenses, err = FAccountTerms(a.TaxExpenses, false)
+		if err != nil && err != VErrorNotListed {
+			return err
+		}
+		accountTaxLiability, err = FAccountTerms(a.TaxLiability, true)
+		if err != nil && err != VErrorNotListed {
+			return err
+		}
 	}
 
-	if _, isIn := FFind(a.DiscountWay, VDiscountWay); !isIn {
-		a.DiscountWay = CDiscountPrice
+	if a.Discount != "" {
+		accountDiscount, err = FAccountTerms(a.Discount, false)
+		if err != nil && err != VErrorNotListed {
+			return err
+		}
 	}
 
-	FDbUpdate(VDbAutoCompletionEntries, []byte(a.Inventory), a)
-	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
+	if a.Revenue != "" {
+		accountRevenue, err = FAccountTerms(a.Revenue, true)
+		if err != nil && err != VErrorNotListed {
+			return err
+		}
+
+		FAddAccount(true, accountInventory)
+		FAddAccount(true, accountCostOfGoodsSold)
+		FAddAccount(true, accountTaxExpenses)
+		FAddAccount(true, accountTaxLiability)
+		FAddAccount(true, accountDiscount)
+		FAddAccount(true, accountRevenue)
+
+		a.PriceTax = math.Abs(a.PriceTax)
+		a.PriceRevenue = math.Abs(a.PriceRevenue)
+		a.DiscountPrice = FSetXEqualToYIfBiggerThanY(a.DiscountPrice, a.PriceRevenue)
+		a.DiscountPercent = FSetXEqualToYIfBiggerThanY(a.DiscountPercent, 1)
+		a.DiscountTotal = math.Abs(a.DiscountTotal)
+		a.DiscountPerQuantity.TPrice = FSetXEqualToYIfBiggerThanY(a.DiscountPerQuantity.TPrice, a.PriceRevenue)
+		a.DiscountPerQuantity.TQuantity = math.Abs(a.DiscountPerQuantity.TQuantity)
+		for k1, v1 := range a.DiscountDecisionTree {
+			a.DiscountDecisionTree[k1].TPrice = FSetXEqualToYIfBiggerThanY(v1.TPrice, a.PriceRevenue)
+			a.DiscountDecisionTree[k1].TQuantity = math.Abs(v1.TQuantity)
+		}
+
+		if _, isIn := FFind(a.DiscountWay, VDiscountWay); !isIn {
+			a.DiscountWay = CDiscountPrice
+		}
+
+		FDbUpdate(VDbAutoCompletionEntries, []byte(a.Revenue), a)
+		_, VAutoCompletionEntries = FDbRead[SAutoCompletion1](VDbAutoCompletionEntries)
+	}
 
 	return nil
 }

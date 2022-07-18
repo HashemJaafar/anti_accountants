@@ -23,7 +23,7 @@ func TestDbLastLine(t *testing.T) {
 func TestDbRead(t *testing.T) {
 	_, inventory := FDbRead[SAPQ1](VDbInventory)
 	_, journal := FDbRead[SJournal1](VDbJournal)
-	_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
+	_, VAutoCompletionEntries = FDbRead[SAutoCompletion1](VDbAutoCompletionEntries)
 	FPrintStructSlice(false, inventory)
 	FPrintStructSlice(false, journal)
 	FPrintStructSlice(false, VAutoCompletionEntries)

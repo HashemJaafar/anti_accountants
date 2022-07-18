@@ -29,7 +29,7 @@ func FDbOpenAll() {
 	}()
 	go func() {
 		open(&VDbAutoCompletionEntries, CPathAutoCompletionEntries)
-		_, VAutoCompletionEntries = FDbRead[SAutoCompletion](VDbAutoCompletionEntries)
+		_, VAutoCompletionEntries = FDbRead[SAutoCompletion1](VDbAutoCompletionEntries)
 		wait.Done()
 	}()
 	wait.Wait()

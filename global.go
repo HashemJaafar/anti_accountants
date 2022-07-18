@@ -129,7 +129,7 @@ var (
 	VDbJournalDrafts         *badger.DB
 	VDbInvoiceDrafts         *badger.DB
 	VAccounts                []SAccount1
-	VAutoCompletionEntries   []SAutoCompletion
+	VAutoCompletionEntries   []SAutoCompletion1
 
 	VPrintTable      = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	VAllCostFlowType = []string{CHighLevelAccount, CFifo, CLifo, CWma}
@@ -344,24 +344,42 @@ type SInvoiceEntry struct {
 	Quantity         float64
 }
 
-type SAutoCompletion struct {
-	Group                   string
-	Barcode                 []string
-	Inventory               string
-	CostOfGoodsSold         string
-	TaxExpenses             string
-	TaxLiability            string
-	Revenue                 string
-	Discount                string
-	AddCostOfGoodsSoldEntry bool
-	PriceTax                float64
-	PriceRevenue            float64
-	DiscountWay             string
-	DiscountPrice           float64
-	DiscountPercent         float64
-	DiscountTotal           float64
-	DiscountPerQuantity     SPQ
-	DiscountDecisionTree    []SPQ
+type SAutoCompletion1 SAutoCompletion[string, []string, string, string, string, string, string, string, float64, float64, string, float64, float64, float64, SPQ, []SPQ]
+type SAutoCompletion2 SAutoCompletion[TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr, TErr]
+type SAutoCompletion[
+	Group string | SFilter[string] | TErr,
+	Barcode []string | SFilter[string] | TErr,
+	Inventory string | SFilter[string] | TErr,
+	CostOfGoodsSold string | SFilter[string] | TErr,
+	TaxExpenses string | SFilter[string] | TErr,
+	TaxLiability string | SFilter[string] | TErr,
+	Revenue string | SFilter[string] | TErr,
+	Discount string | SFilter[string] | TErr,
+	PriceTax float64 | SFilter[float64] | TErr,
+	PriceRevenue float64 | SFilter[float64] | TErr,
+	DiscountWay string | SFilter[string] | TErr,
+	DiscountPrice float64 | SFilter[float64] | TErr,
+	DiscountPercent float64 | SFilter[float64] | TErr,
+	DiscountTotal float64 | SFilter[float64] | TErr,
+	DiscountPerQuantity SPQ | TErr,
+	DiscountDecisionTree []SPQ | TErr,
+] struct {
+	Group                Group
+	Barcode              Barcode
+	Inventory            Inventory
+	CostOfGoodsSold      CostOfGoodsSold
+	TaxExpenses          TaxExpenses
+	TaxLiability         TaxLiability
+	Revenue              Revenue
+	Discount             Discount
+	PriceTax             PriceTax
+	PriceRevenue         PriceRevenue
+	DiscountWay          DiscountWay
+	DiscountPrice        DiscountPrice
+	DiscountPercent      DiscountPercent
+	DiscountTotal        DiscountTotal
+	DiscountPerQuantity  DiscountPerQuantity
+	DiscountDecisionTree DiscountDecisionTree
 }
 
 type SCvp struct {
