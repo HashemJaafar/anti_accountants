@@ -2,7 +2,6 @@ package anti_accountants
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 )
@@ -33,91 +32,37 @@ func TestFEntryInvoice(t *testing.T) {
 	var a2, a3 error
 	var e1 []SInvoiceEntry
 
-	e1 = []SInvoiceEntry{{nil, nil, "1", "Revenue item 1", 5, 1, CDiscountTotal, 2, 4}}
+	e1 = []SInvoiceEntry{{nil, nil, "1", "Revenue item 1", 5, 1, 2, CDiscountTotal, 4}}
 	a1, a2, a3 = FEntryInvoice("cash", "Invoice discount", 1, 2500, e1, SEntry1{Labels: []string{"Invoice"}}, true)
 	FTest(true, a1, e1)
 	FTest(true, a2, nil)
 	FTest(true, a3, nil)
 
-	e1 = []SInvoiceEntry{{nil, nil, "1", "Revenue item 1", 0, 0, "", 0, 4}}
+	e1 = []SInvoiceEntry{{nil, nil, "1", "Revenue item 1", 0, 0, 0, CDiscountTotal, 4}}
 	a1, a2, a3 = FEntryInvoice("cash", "Invoice discount", 1, 2500, e1, SEntry1{Labels: []string{"Invoice"}}, true)
 	FTest(true, a1, e1)
 	FTest(true, a2, nil)
 	FTest(true, a3, nil)
 
-	e1 = []SInvoiceEntry{{nil, nil, "1", "Revenue item 2", 0, 0, "", 0, 4}}
+	e1 = []SInvoiceEntry{{nil, nil, "1", "Revenue item 2", 0, 0, 0, CDiscountTotal, 4}}
 	a1, a2, a3 = FEntryInvoice("cash", "Invoice discount", 1, 2500, e1, SEntry1{Labels: []string{"Invoice"}}, true)
 	FTest(true, a1, e1)
 	FTest(true, a2, nil)
 	FTest(true, a3, nil)
 
-	e1 = []SInvoiceEntry{{nil, errors.New("you order 30 and you have 16"), "1", "Revenue item 2", 0, 0, "", 0, 30}}
+	e1 = []SInvoiceEntry{{nil, errors.New("you order 30 and you have 16"), "1", "Revenue item 2", 0, 0, 0, CDiscountTotal, 30}}
 	a1, a2, a3 = FEntryInvoice("cash", "Invoice discount", 1, 2500, e1, SEntry1{Labels: []string{"Invoice"}}, true)
-	fmt.Println(a1[0].QuantityError)
 	FTest(true, a1, e1)
 	FTest(true, a2, nil)
 	FTest(true, a3, nil)
 }
 
-func TestFEntryReconciliationWithAccount(t *testing.T) {
-	var err error
-
-	err = FEntryReconciliationWithAccount(SAPQ1{
-		AccountName: "rent",
-		Price:       250,
-		Quantity:    6,
-	}, "cash", 1, SEntry1{Labels: []string{"ReconciliationWithAccount"}}, true)
-	FTest(true, err, nil)
-
-	err = FEntryReconciliationWithAccount(SAPQ1{
-		AccountName: "rent",
-		Price:       250,
-		Quantity:    3,
-	}, "cash", 1, SEntry1{Labels: []string{"ReconciliationWithAccount"}}, true)
-	FTest(true, err, nil)
-
-	err = FEntryReconciliationWithAccount(SAPQ1{
-		AccountName: "book",
-		Price:       1,
-		Quantity:    100,
-	}, "cash", 1, SEntry1{Labels: []string{"ReconciliationWithAccount"}}, true)
-	FTest(true, err, nil)
-
-	err = FEntryReconciliationWithAccount(SAPQ1{
-		AccountName: "book",
-		Price:       1,
-		Quantity:    200,
-	}, "cash", 1, SEntry1{Labels: []string{"ReconciliationWithAccount"}}, true)
-	FTest(true, err, nil)
-
-	err = FEntryReconciliationWithAccount(SAPQ1{
-		AccountName: "book",
-		Price:       1,
-		Quantity:    150,
-	}, "cash", 1, SEntry1{Labels: []string{"ReconciliationWithAccount"}}, true)
-	FTest(true, err, nil)
-
-	err = FEntryReconciliationWithAccount(SAPQ1{
-		AccountName: "book",
-		Price:       2,
-		Quantity:    300000000,
-	}, "cash", 1, SEntry1{Labels: []string{"ReconciliationWithAccount"}}, true)
-	FTest(true, err, errors.New("you don't have enough cash to reconcile"))
-
-	err = FEntryReconciliationWithAccount(SAPQ1{
-		AccountName: "book",
-		Price:       0,
-		Quantity:    0,
-	}, "cash", 1, SEntry1{Labels: []string{"ReconciliationWithAccount"}}, true)
-	FTest(true, err, errors.New("you don't have enough cash to reconcile"))
-}
-
-func TestFEntryReconciliation(t *testing.T) {
-	FTest(true, FEntryReconciliation("book", 200, SEntry1{Labels: []string{"Reconciliation"}}, true), nil)
-	FTest(false, FEntryReconciliation("b", 100, SEntry1{Labels: []string{"Reconciliation"}}, true), nil)
-	FTest(true, FEntryReconciliation("book", 300, SEntry1{Labels: []string{"Reconciliation"}}, true), nil)
-	FTest(true, FEntryReconciliation("book", 50, SEntry1{Labels: []string{"Reconciliation"}}, true), nil)
-	FTest(true, FEntryReconciliation("book", 2000, SEntry1{Labels: []string{"Reconciliation"}}, true), nil)
+func TestFEntryChangeQuantity(t *testing.T) {
+	FTest(true, FEntryChangeQuantity("book", 200, SEntry1{Labels: []string{"ChangeQuantity"}}, true), nil)
+	FTest(false, FEntryChangeQuantity("b", 100, SEntry1{Labels: []string{"ChangeQuantity"}}, true), nil)
+	FTest(true, FEntryChangeQuantity("book", 300, SEntry1{Labels: []string{"ChangeQuantity"}}, true), nil)
+	FTest(true, FEntryChangeQuantity("book", 50, SEntry1{Labels: []string{"ChangeQuantity"}}, true), nil)
+	FTest(true, FEntryChangeQuantity("book", 2000, SEntry1{Labels: []string{"ChangeQuantity"}}, true), nil)
 }
 
 func TestFEntryClose(t *testing.T) {
@@ -237,6 +182,18 @@ func TestFEntryAutoComplete(t *testing.T) {
 		{"Inventory item 2", 1, 20},
 	}, SEntry1{Labels: []string{"AutoComplete"}}, true, "cash")
 	FTest(true, a2, nil)
+
+	_, a2 = FEntryAutoComplete([]SAPQ1{
+		{"cash", 1, -5},
+		{"cars", 1, 20},
+	}, SEntry1{Labels: []string{"AutoComplete"}}, true, "cash")
+	FTest(true, a2, nil)
+
+	_, a2 = FEntryAutoComplete([]SAPQ1{
+		{"cash", 1, -5},
+		{"color", 1, 20},
+	}, SEntry1{Labels: []string{"AutoComplete"}}, true, "cash")
+	FTest(true, a2, nil)
 }
 
 func TestMakeJournal(t *testing.T) {
@@ -245,7 +202,93 @@ func TestMakeJournal(t *testing.T) {
 
 	TestFEntryAutoComplete(t)
 	TestFEntryInvoice(t)
-	TestFEntryReconciliationWithAccount(t)
-	TestFEntryReconciliation(t)
+	TestFEntryChangeQuantity(t)
 	TestFEntryClose(t)
+	TestFEntryAddValueWithoutChangeQuantity(t)
+}
+
+func TestFEntryAddValueWithoutChangeQuantity(t *testing.T) {
+	var a1 error
+
+	a1 = FEntryAddValueWithoutChangeQuantity(SAPQ1{"color", 2, -4}, "cars", SEntry1{Labels: []string{"AddValueWithoutChangeQuantity"}}, false)
+	FTest(true, a1, nil)
+	a1 = FEntryAddValueWithoutChangeQuantity(SAPQ1{"color", 2, 4}, "cars", SEntry1{Labels: []string{"AddValueWithoutChangeQuantity"}}, false)
+	FTest(true, a1, nil)
+	a1 = FEntryAddValueWithoutChangeQuantity(SAPQ1{"color", 2, 50}, "cars", SEntry1{Labels: []string{"AddValueWithoutChangeQuantity"}}, false)
+	FTest(true, a1, nil)
+	a1 = FEntryAddValueWithoutChangeQuantity(SAPQ1{"color", 2, -50}, "cars", SEntry1{Labels: []string{"AddValueWithoutChangeQuantity"}}, false)
+	FTest(true, a1, nil)
+}
+
+func TestFCompleteTheEntry(t *testing.T) {
+	{
+		i1 := []SAPQ12SAccount1{{
+			SAPQ1:     SAPQ1{"cars", 100, 1},
+			SAPQ2:     SAPQ2{},
+			SAccount1: SAccount1{CostFlowType: CWma},
+		}}
+		i2 := []SAPQ12SAccount1{{
+			SAPQ1:     SAPQ1{"color", 1, -20},
+			SAPQ2:     SAPQ2{},
+			SAccount1: SAccount1{CostFlowType: CWma},
+		}}
+		i3 := 100.0
+		i4 := 20.0
+
+		e1 := i1
+		e2 := i2
+		e3 := i3
+		e4 := i4
+
+		a1 := FCompleteTheEntry(&i1, &i2, &i3, &i4,
+			SAPQ12SAccount1{
+				SAPQ1:     SAPQ1{"cars", 100, -4},
+				SAPQ2:     SAPQ2{},
+				SAccount1: SAccount1{CostFlowType: CWma},
+			},
+		)
+
+		FTest(true, a1, errors.New("you don't have enough quantity"))
+		FTest(true, i1, e1)
+		FTest(true, i2, e2)
+		FTest(true, i3, e3)
+		FTest(true, i4, e4)
+	}
+
+	{
+		i1 := []SAPQ12SAccount1{{
+			SAPQ1:     SAPQ1{"cars", 10, 1},
+			SAPQ2:     SAPQ2{},
+			SAccount1: SAccount1{CostFlowType: CWma},
+		}}
+		i2 := []SAPQ12SAccount1{{
+			SAPQ1:     SAPQ1{"color", 1, -6},
+			SAPQ2:     SAPQ2{},
+			SAccount1: SAccount1{CostFlowType: CWma},
+		}}
+		i3 := 10.0
+		i4 := 6.0
+
+		e1 := i1
+		e2 := []SAPQ12SAccount1{
+			{SAPQ1{"color", 1, -6}, SAPQ2{"", "", ""}, SAccount1{false, "Wma", "", "", []string(nil), [][]uint(nil), []uint(nil), [][]string(nil)}},
+			{SAPQ1{"cars", 1, -4}, SAPQ2{"", "", ""}, SAccount1{false, "Wma", "", "", []string(nil), [][]uint(nil), []uint(nil), [][]string(nil)}},
+		}
+		e3 := i3
+		e4 := 10.0
+
+		a1 := FCompleteTheEntry(&i1, &i2, &i3, &i4,
+			SAPQ12SAccount1{
+				SAPQ1:     SAPQ1{"cars", 10, -4},
+				SAPQ2:     SAPQ2{},
+				SAccount1: SAccount1{CostFlowType: CWma},
+			},
+		)
+
+		FTest(true, a1, nil)
+		FTest(true, i1, e1)
+		FTest(true, i2, e2)
+		FTest(true, i3, e3)
+		FTest(true, i4, e4)
+	}
 }

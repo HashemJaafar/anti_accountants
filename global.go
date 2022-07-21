@@ -15,6 +15,7 @@ const (
 	CPathJournal               = "/journal"
 	CPathInventory             = "/inventory"
 	CPathAutoCompletionEntries = "/auto_completion_entries"
+	CPathAdjustingEntry        = "/adjusting_entry"
 	CPathEmployees             = "/employees"
 	CPathJournalDrafts         = "/journal_drafts"
 	CPathInvoiceDrafts         = "/invoice_drafts"
@@ -125,6 +126,7 @@ var (
 	VDbJournal               *badger.DB
 	VDbInventory             *badger.DB
 	VDbAutoCompletionEntries *badger.DB
+	VDbAdjustingEntry        *badger.DB
 	VDbEmployees             *badger.DB
 	VDbJournalDrafts         *badger.DB
 	VDbInvoiceDrafts         *badger.DB
@@ -339,8 +341,8 @@ type SInvoiceEntry struct {
 	Revenue          string
 	PriceRevenue     float64
 	PriceTax         float64
-	DiscountWay      string
 	Discount         float64
+	DiscountWay      string
 	Quantity         float64
 }
 
@@ -395,4 +397,15 @@ type SAVQ struct {
 	TAccountName
 	TValue float64
 	TQuantity
+}
+
+type SAdjustingEntry struct {
+	AccountName1    string
+	AccountName2    string
+	Price           float64
+	Quantity        float64
+	DateStart       time.Time
+	DateEnd         time.Time
+	AdjustingMethod string
+	EntryInfo       SEntry1
 }

@@ -19,6 +19,7 @@ func FDbOpenAll() {
 	wait.Add(9)
 	go open(&VDbJournal, CPathJournal)
 	go open(&VDbInventory, CPathInventory)
+	go open(&VDbAdjustingEntry, CPathAdjustingEntry)
 	go open(&VDbEmployees, CPathEmployees)
 	go open(&VDbJournalDrafts, CPathJournalDrafts)
 	go open(&VDbInvoiceDrafts, CPathInvoiceDrafts)
@@ -48,6 +49,7 @@ func FDbCloseAll() {
 	go close(VDbJournal)
 	go close(VDbInventory)
 	go close(VDbAutoCompletionEntries)
+	go close(VDbAdjustingEntry)
 	go close(VDbEmployees)
 	go close(VDbJournalDrafts)
 	go close(VDbInvoiceDrafts)
@@ -162,10 +164,46 @@ func FChangeAccountName(old, new string) {
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}
+
 	keys, inventory := FDbRead[SAPQ1](VDbInventory)
 	for k1, v1 := range inventory {
 		if v1.AccountName == old {
 			v1.AccountName = new
+			FDbUpdate(VDbJournal, keys[k1], v1)
+		}
+	}
+
+	keys, VAutoCompletionEntries = FDbRead[SAutoCompletion1](VDbAutoCompletionEntries)
+	for k1 := range VAutoCompletionEntries {
+		if VAutoCompletionEntries[k1].Inventory == old {
+			VAutoCompletionEntries[k1].Inventory = new
+		}
+		if VAutoCompletionEntries[k1].CostOfGoodsSold == old {
+			VAutoCompletionEntries[k1].CostOfGoodsSold = new
+		}
+		if VAutoCompletionEntries[k1].TaxExpenses == old {
+			VAutoCompletionEntries[k1].TaxExpenses = new
+		}
+		if VAutoCompletionEntries[k1].TaxLiability == old {
+			VAutoCompletionEntries[k1].TaxLiability = new
+		}
+		if VAutoCompletionEntries[k1].Revenue == old {
+			VAutoCompletionEntries[k1].Revenue = new
+		}
+		if VAutoCompletionEntries[k1].Discount == old {
+			VAutoCompletionEntries[k1].Discount = new
+		}
+		FDbUpdate(VDbJournal, keys[k1], VAutoCompletionEntries[k1])
+	}
+
+	keys, adjustingEntry := FDbRead[SAdjustingEntry](VDbAdjustingEntry)
+	for k1, v1 := range adjustingEntry {
+		if v1.AccountName1 == old {
+			v1.AccountName1 = new
+			FDbUpdate(VDbJournal, keys[k1], v1)
+		}
+		if v1.AccountName2 == old {
+			v1.AccountName2 = new
 			FDbUpdate(VDbJournal, keys[k1], v1)
 		}
 	}

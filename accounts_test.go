@@ -53,6 +53,22 @@ func TestAddAccount(t *testing.T) {
 	FTest(true, a1, e1)
 
 	a1 = FAddAccount(true, SAccount1{
+		IsCredit:     false,
+		CostFlowType: CWma,
+		Name:         "color",
+		Number:       [][]uint{{1, 1, 3, 2}},
+	})
+	FTest(true, a1, e1)
+
+	a1 = FAddAccount(true, SAccount1{
+		IsCredit:     false,
+		CostFlowType: CWma,
+		Name:         "cars",
+		Number:       [][]uint{{1, 1, 3, 2}},
+	})
+	FTest(true, a1, e1)
+
+	a1 = FAddAccount(true, SAccount1{
 		IsCredit:     true,
 		CostFlowType: CHighLevelAccount,
 		Name:         "liabilities",
@@ -147,6 +163,7 @@ func TestAddAccount(t *testing.T) {
 		Number:       [][]uint{{3, 2, 2, 2, 1}},
 	})
 	FTest(true, a1, e1)
+
 }
 
 func TestEditAccount(t *testing.T) {
@@ -201,10 +218,6 @@ func TestSetTheAccounts(t *testing.T) {
 }
 
 func TestAddAutoCompletion(t *testing.T) {
-	VDbAccounts.DropAll()
-	VDbAutoCompletionEntries.DropAll()
-
-	TestAddAccount(t)
 	var a1 error
 
 	a1 = FAddAutoCompletion(SAutoCompletion1{

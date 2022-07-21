@@ -10,19 +10,6 @@ import (
 	"time"
 )
 
-//TODO
-// func FValueAfterAdjustUsingAdjustingMethods(adjustingMethod string, minutesCurrent, minutesTotal, minutesPast, valueTotal float64) float64 {
-// 	percent := FRoot(valueTotal, minutesTotal)
-// 	switch adjustingMethod {
-// 	case CExponential:
-// 		return math.Pow(percent, minutesPast+minutesCurrent) - math.Pow(percent, minutesPast)
-// 	case CLogarithmic:
-// 		return (valueTotal / math.Pow(percent, minutesPast)) - (valueTotal / math.Pow(percent, minutesPast+minutesCurrent))
-// 	default:
-// 		return minutesCurrent * (valueTotal / minutesTotal)
-// 	}
-// }
-
 func FConvertTheSignOfDoubleEntryToSingleEntry(isCredit, isCreditInTheEntry bool, number float64) float64 {
 	number = math.Abs(number)
 	if isCredit != isCreditInTheEntry {
@@ -31,26 +18,30 @@ func FConvertTheSignOfDoubleEntryToSingleEntry(isCredit, isCreditInTheEntry bool
 	return number
 }
 
-func FSetAccount(entries []SAPQ1) []SAPQ12SAccount1 {
+func FSetAccounts(entries []SAPQ1) []SAPQ12SAccount1 {
 	var newEntries []SAPQ12SAccount1
 	for _, v1 := range entries {
-		account, _, errAccountName := FFindAccountFromName(v1.AccountName)
-
-		var err SAPQ2
-		if errAccountName != nil {
-			err.AccountName = TErr(errAccountName.Error())
-		}
-		if account.CostFlowType == CHighLevelAccount {
-			err.AccountName = TErr("is " + CHighLevelAccount)
-		}
-
-		newEntries = append(newEntries, SAPQ12SAccount1{
-			SAPQ1:     SAPQ1{v1.AccountName, math.Abs(v1.Price), v1.Quantity},
-			SAPQ2:     err,
-			SAccount1: account,
-		})
+		newEntries = append(newEntries, FSetAccount(v1))
 	}
 	return newEntries
+}
+
+func FSetAccount(v1 SAPQ1) SAPQ12SAccount1 {
+	account, _, errAccountName := FFindAccountFromName(v1.AccountName)
+
+	var err SAPQ2
+	if errAccountName != nil {
+		err.AccountName = TErr(errAccountName.Error())
+	}
+	if account.CostFlowType == CHighLevelAccount {
+		err.AccountName = TErr("is " + CHighLevelAccount)
+	}
+
+	return SAPQ12SAccount1{
+		SAPQ1:     SAPQ1{v1.AccountName, math.Abs(v1.Price), v1.Quantity},
+		SAPQ2:     err,
+		SAccount1: account,
+	}
 }
 
 func FGroupByAccount(entries []SAPQ12SAccount1) []SAPQ12SAccount1 {
@@ -91,15 +82,87 @@ func FSetErr(entries []SAPQ12SAccount1) {
 	}
 }
 
+func FCheckIfError(newEntries1 []SAPQ12SAccount1) error {
+	for _, v1 := range newEntries1 {
+		switch {
+		case v1.SAPQ2.AccountName != "":
+			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.AccountName))
+		case v1.SAPQ2.Price != "":
+			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.Price))
+		case v1.SAPQ2.Quantity != "":
+			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.Quantity))
+		}
+	}
+	return nil
+}
+
+func FCompleteTheEntry(debitEntries, creditEntries *[]SAPQ12SAccount1, debit, credit *float64, oneEntry SAPQ12SAccount1) error {
+	if *debit != *credit && !reflect.DeepEqual(oneEntry, SAPQ12SAccount1{}) {
+		value := math.Abs(*debit - *credit)
+		if oneEntry.IsCredit {
+			if *debit > *credit {
+				oneEntry.SAPQ1.Quantity = value / oneEntry.SAPQ1.Price
+				*creditEntries = append(*creditEntries, oneEntry)
+				*credit += value
+			} else {
+				oneEntry.SAPQ1.Price = 1
+				oneEntry.SAPQ1.Quantity = -value
+				oneEntry = FSetPriceAndQuantityByValue(oneEntry)
+				if oneEntry.SAPQ2.Quantity != "" {
+					return errors.New(string(oneEntry.SAPQ2.Quantity))
+				}
+				*debitEntries = append(*debitEntries, oneEntry)
+				*debit += value
+			}
+		} else {
+			if *debit > *credit {
+				oneEntry.SAPQ1.Price = 1
+				oneEntry.SAPQ1.Quantity = -value
+				oneEntry = FSetPriceAndQuantityByValue(oneEntry)
+				if oneEntry.SAPQ2.Quantity != "" {
+					return errors.New(string(oneEntry.SAPQ2.Quantity))
+				}
+				*creditEntries = append(*creditEntries, oneEntry)
+				*credit += value
+			} else {
+				oneEntry.SAPQ1.Quantity = value / oneEntry.SAPQ1.Price
+				*debitEntries = append(*debitEntries, oneEntry)
+				*debit += value
+			}
+		}
+	}
+	return nil
+}
+
+func FCompliteValue(debit, credit float64, isCredit bool) float64 {
+	if debit != credit {
+		value := math.Abs(debit - credit)
+		if isCredit {
+			if debit > credit {
+				return value
+			} else {
+				return -value
+			}
+		} else {
+			if debit > credit {
+				return -value
+			} else {
+				return value
+			}
+		}
+	}
+	return 0
+}
+
 func FSetPriceAndQuantityByQuantityForSAPQ12SAccount1(account SAPQ12SAccount1, insert bool) SAPQ12SAccount1 {
-	err := FSetPriceAndQuantityByQuantity(account.SAPQ1.AccountName, account.CostFlowType, &account.SAPQ1.Quantity, &account.SAPQ1.Price, insert)
+	err := FSetPriceAndQuantityByQuantity(account.SAPQ1.AccountName, account.CostFlowType, &account.SAPQ1.Price, &account.SAPQ1.Quantity, insert)
 	if err != nil {
 		account.SAPQ2.Quantity = TErr(err.Error())
 	}
 	return account
 }
 
-func FSetPriceAndQuantityByQuantity(accountName, costFlowType string, quantity, price *float64, insert bool) error {
+func FSetPriceAndQuantityByQuantity(accountName, costFlowType string, price, quantity *float64, insert bool) error {
 	if *quantity >= 0 {
 		return nil
 	}
@@ -359,7 +422,7 @@ func FInsertToDatabaseInventory(entries []SAPQ12SAccount1) {
 }
 
 func FEntryAutoComplete(entries []SAPQ1, entryInfo SEntry1, insert bool, accountToComplete string) ([]SAPQ12SAccount1, error) {
-	newEntries1 := FSetAccount(entries)
+	newEntries1 := FSetAccounts(entries)
 	newEntries1 = FGroupByAccount(newEntries1)
 	FSetErr(newEntries1)
 
@@ -374,34 +437,8 @@ func FEntryAutoComplete(entries []SAPQ1, entryInfo SEntry1, insert bool, account
 	}
 
 	debitEntries, creditEntries, debit, credit := FSeperateDebitFromCredit(newEntries1)
-
-	if debit != credit && !reflect.DeepEqual(oneEntry, SAPQ12SAccount1{}) {
-		value := math.Abs(debit - credit)
-		if oneEntry.IsCredit {
-			if debit > credit {
-				oneEntry.SAPQ1.Quantity = value / oneEntry.SAPQ1.Price
-				creditEntries = append(creditEntries, oneEntry)
-				credit += value
-			} else {
-				oneEntry.SAPQ1.Price = 1
-				oneEntry.SAPQ1.Quantity = -value
-				oneEntry = FSetPriceAndQuantityByValue(oneEntry)
-				debitEntries = append(debitEntries, oneEntry)
-				debit += value
-			}
-		} else {
-			if debit > credit {
-				oneEntry.SAPQ1.Price = 1
-				oneEntry.SAPQ1.Quantity = -value
-				oneEntry = FSetPriceAndQuantityByValue(oneEntry)
-				creditEntries = append(creditEntries, oneEntry)
-				credit += value
-			} else {
-				oneEntry.SAPQ1.Quantity = value / oneEntry.SAPQ1.Price
-				debitEntries = append(debitEntries, oneEntry)
-				debit += value
-			}
-		}
+	if err := FCompleteTheEntry(&debitEntries, &creditEntries, &debit, &credit, oneEntry); err != nil {
+		return newEntries1, err
 	}
 
 	newEntries1 = append(debitEntries, creditEntries...)
@@ -444,12 +481,12 @@ func FEntryClose(accountToCloseName, accountToCloseWithName string, accountToClo
 	}
 
 	accountToCloseWithPrice = math.Abs(accountToCloseWithPrice)
-	accountQuantityToCloseWith := value / accountToCloseWithPrice
+	accountToCloseWithQuantity := value / accountToCloseWithPrice
 	if accountToCloseWith.IsCredit != accountToClose.IsCredit {
-		accountQuantityToCloseWith *= -1
+		accountToCloseWithQuantity *= -1
 	}
 
-	accountToCloseWith1 := FSetPriceAndQuantityByValue(SAPQ12SAccount1{SAPQ1{accountToCloseWithName, accountToCloseWithPrice, accountQuantityToCloseWith}, SAPQ2{}, accountToCloseWith})
+	accountToCloseWith1 := FSetPriceAndQuantityByValue(SAPQ12SAccount1{SAPQ1{accountToCloseWithName, accountToCloseWithPrice, accountToCloseWithQuantity}, SAPQ2{}, accountToCloseWith})
 	if accountToCloseWith1.SAPQ2.Quantity != "" {
 		return fmt.Errorf("you don't have enough quantity for %v", accountToCloseWith1.SAPQ1.AccountName)
 	}
@@ -470,33 +507,17 @@ func FEntryClose(accountToCloseName, accountToCloseWithName string, accountToClo
 	return nil
 }
 
-func FEntryReconciliation(account1Name string, account1Quantity float64, entryInfo SEntry1, insert bool) error {
-	account2 := SAPQ1{AccountName: account1Name}
-	_, account2.Price, account2.Quantity = FTotalValuePriceQuantity(account2.AccountName)
-	account2.Quantity = -account2.Quantity
+func FEntryChangeQuantity(account1Name string, account1Quantity float64, entryInfo SEntry1, insert bool) error {
+	account1And2Value, account2Price, account2Quantity := FTotalValuePriceQuantity(account1Name)
+	account2 := SAPQ1{account1Name, account2Price, -account2Quantity}
 
-	account1And2Value := account2.Price * account2.Quantity
+	account1 := SAPQ1{account1Name, account1And2Value / math.Abs(account1Quantity), math.Abs(account1Quantity)}
 
-	account1 := SAPQ1{AccountName: account1Name}
-	account1.Quantity = math.Abs(account1Quantity)
-	account1.Price = account1And2Value / account1.Quantity
-
-	newEntries1 := FSetAccount([]SAPQ1{account1, account2})
+	newEntries1 := FSetAccounts([]SAPQ1{account1, account2})
 	FSetErr(newEntries1)
 
-	for k1, v1 := range newEntries1 {
-		newEntries1[k1] = FSetPriceAndQuantityByQuantityForSAPQ12SAccount1(v1, false)
-	}
-
-	for _, v1 := range newEntries1 {
-		switch {
-		case v1.SAPQ2.AccountName != "":
-			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.AccountName))
-		case v1.SAPQ2.Price != "":
-			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.Price))
-		case v1.SAPQ2.Quantity != "":
-			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.Quantity))
-		}
+	if err := FCheckIfError(newEntries1); err != nil {
+		return err
 	}
 
 	debitEntries, creditEntries, debit, credit := FSeperateDebitFromCredit(newEntries1)
@@ -511,66 +532,35 @@ func FEntryReconciliation(account1Name string, account1Quantity float64, entryIn
 	return nil
 }
 
-func FEntryReconciliationWithAccount(account1 SAPQ1, account2Name string, account2Price float64, entryInfo SEntry1, insert bool) error {
-	account1.Price = math.Abs(account1.Price)
-	account1.Quantity = math.Abs(account1.Quantity)
+func FEntryAddValueWithoutChangeQuantity(account1 SAPQ1, account2Name string, entryInfo SEntry1, insert bool) error {
+	newAccount1 := FSetAccount(account1)
+	newAccount1 = FSetPriceAndQuantityByQuantityForSAPQ12SAccount1(newAccount1, false)
+	account1Value := newAccount1.SAPQ1.Price * newAccount1.SAPQ1.Quantity
 
-	account3 := SAPQ1{AccountName: account1.AccountName}
-	_, account3.Price, account3.Quantity = FTotalValuePriceQuantity(account3.AccountName)
-	account3.Quantity = -account3.Quantity
+	account2Value, account2Price, account2Quantity := FTotalValuePriceQuantity(account2Name)
+	newAccount2 := FSetAccount(SAPQ1{account2Name, account2Price, -account2Quantity})
 
-	account1Value := account1.Price * account1.Quantity
-	account3Value := account3.Price * account3.Quantity
-	account2Value := account1Value + account3Value
+	account3Value := math.Abs(account2Value - account1Value)
+	account3Quantity := account2Quantity
+	account3Price := account3Value / account3Quantity
+	newAccount3 := FSetAccount(SAPQ1{account2Name, account3Price, account3Quantity})
 
-	newEntries1 := FSetAccount([]SAPQ1{account1, account3, {account2Name, account2Price, math.Abs(account2Value / account2Price)}})
+	newEntries1 := []SAPQ12SAccount1{newAccount1, newAccount2, newAccount3}
 	FSetErr(newEntries1)
-
-	max, min := func() (float64, float64) {
-		sign := func(number float64) float64 {
-			if number > 0 {
-				return 1
-			}
-			return -1
-		}
-		if math.Abs(account1Value) > math.Abs(account3Value) {
-			return sign(account1Value), sign(account3Value)
-		}
-		return sign(account3Value), sign(account1Value)
-	}()
-
-	if newEntries1[2].IsCredit == newEntries1[0].IsCredit {
-		newEntries1[2].SAPQ1.Quantity *= min
-	} else {
-		newEntries1[2].SAPQ1.Quantity *= max
-	}
-
-	for k1, v1 := range newEntries1 {
-		newEntries1[k1] = FSetPriceAndQuantityByQuantityForSAPQ12SAccount1(v1, false)
-	}
 
 	debitEntries, creditEntries, debit, credit := FSeperateDebitFromCredit(newEntries1)
 	newEntries1 = append(debitEntries, creditEntries...)
 
-	err := FCheckDebitEqualCredit(debit, credit)
-	if err != nil {
+	if err := FCheckDebitEqualCredit(debit, credit); err != nil {
 		return fmt.Errorf("you don't have enough %v to reconcile", account2Name)
 	}
 
-	err = FCheckOneDebitOrOneCredit(debitEntries, creditEntries)
-	if err != nil {
+	if err := FCheckOneDebitOrOneCredit(debitEntries, creditEntries); err != nil {
 		return fmt.Errorf("you don't have enough %v to reconcile", account2Name)
 	}
 
-	for _, v1 := range newEntries1 {
-		switch {
-		case v1.SAPQ2.AccountName != "":
-			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.AccountName))
-		case v1.SAPQ2.Price != "":
-			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.Price))
-		case v1.SAPQ2.Quantity != "":
-			return errors.New(v1.SAPQ1.AccountName + " " + string(v1.SAPQ2.Quantity))
-		}
+	if err := FCheckIfError(newEntries1); err != nil {
+		return err
 	}
 
 	if insert {
@@ -644,40 +634,50 @@ func FEntryInvoice(AccountNameReceive, AccountNameInvoiceDiscount string, PriceR
 
 		autoCompletion, _, err := FFindAutoCompletionFromName(v1.Revenue)
 		if err != nil {
-			return items, nil, nil
+			v1.RevenueNameError = err
+			continue
 		}
 
-		if v1.PriceTax > 0 {
-			autoCompletion.PriceTax = v1.PriceTax
-		}
-		if v1.PriceRevenue > 0 {
-			autoCompletion.PriceRevenue = v1.PriceRevenue
+		var priceTax, priceRevenue, priceDiscount float64
+
+		switch {
+		case v1.PriceTax > 0:
+			priceTax = v1.PriceTax
+		case v1.PriceTax == 0:
+			priceTax = autoCompletion.PriceTax
 		}
 
-		var discountPrice float64
-		if v1.Discount > 0 {
+		switch {
+		case v1.PriceRevenue > 0:
+			priceRevenue = v1.PriceRevenue
+		case v1.PriceRevenue == 0:
+			priceRevenue = autoCompletion.PriceRevenue
+		}
+
+		switch {
+		case v1.Discount > 0:
 			switch v1.DiscountWay {
 			case CDiscountPrice:
-				discountPrice = v1.Discount
+				priceDiscount = FSetXEqualToYIfBiggerThanY(v1.Discount, priceRevenue)
 			case CDiscountPercent:
-				discountPrice = v1.Discount * autoCompletion.PriceRevenue
+				priceDiscount = FSetXEqualToYIfBiggerThanY(v1.Discount, 1) * priceRevenue
 			case CDiscountTotal:
-				discountPrice = FSetXEqualToYIfBiggerThanY(v1.Discount/quantityPostive, autoCompletion.PriceRevenue)
+				priceDiscount = FSetXEqualToYIfBiggerThanY(v1.Discount/quantityPostive, priceRevenue)
 			}
-		} else {
+		case v1.Discount == 0:
 			switch autoCompletion.DiscountWay {
 			case CDiscountPrice:
-				discountPrice = autoCompletion.DiscountPrice
+				priceDiscount = autoCompletion.DiscountPrice
 			case CDiscountPercent:
-				discountPrice = autoCompletion.DiscountPercent * autoCompletion.PriceRevenue
+				priceDiscount = autoCompletion.DiscountPercent * priceRevenue
 			case CDiscountTotal:
-				discountPrice = FSetXEqualToYIfBiggerThanY(autoCompletion.DiscountTotal/quantityPostive, autoCompletion.PriceRevenue)
+				priceDiscount = FSetXEqualToYIfBiggerThanY(autoCompletion.DiscountTotal/quantityPostive, priceRevenue)
 			case CDiscountPerQuantity:
-				discountPrice = math.Floor(quantityPostive/autoCompletion.DiscountPerQuantity.TQuantity) * autoCompletion.DiscountPerQuantity.TPrice
+				priceDiscount = math.Floor(quantityPostive/autoCompletion.DiscountPerQuantity.TQuantity) * autoCompletion.DiscountPerQuantity.TPrice
 			case CDiscountDecisionTree:
 				for _, v2 := range autoCompletion.DiscountDecisionTree {
 					if v2.TQuantity > quantityPostive {
-						discountPrice = v2.TPrice
+						priceDiscount = v2.TPrice
 					}
 				}
 			}
@@ -705,7 +705,7 @@ func FEntryInvoice(AccountNameReceive, AccountNameInvoiceDiscount string, PriceR
 		if errInventory == nil && errCostOfGoodsSold == nil {
 			var price float64
 			quantity := -quantityPostive
-			err := FSetPriceAndQuantityByQuantity(accountInventory.Name, accountInventory.CostFlowType, &quantity, &price, false)
+			err := FSetPriceAndQuantityByQuantity(accountInventory.Name, accountInventory.CostFlowType, &price, &quantity, false)
 			if err != nil {
 				v1.QuantityError = err
 			}
@@ -715,17 +715,17 @@ func FEntryInvoice(AccountNameReceive, AccountNameInvoiceDiscount string, PriceR
 		}
 
 		if errTaxExpenses == nil && errTaxLiability == nil {
-			entry.TaxExpenses = addEntry(accountTaxExpenses, autoCompletion.PriceTax, quantityPostive)
-			entry.TaxLiability = addEntry(accountTaxLiability, autoCompletion.PriceTax, quantityPostive)
+			entry.TaxExpenses = addEntry(accountTaxExpenses, priceTax, quantityPostive)
+			entry.TaxLiability = addEntry(accountTaxLiability, priceTax, quantityPostive)
 		}
 
 		if errRevenue == nil {
-			entry.Revenue = addEntry(accountRevenue, autoCompletion.PriceRevenue, quantityPostive)
+			entry.Revenue = addEntry(accountRevenue, priceRevenue, quantityPostive)
 		}
 
 		if errDiscount == nil {
-			entry.Discount = addEntry(accountDiscount, discountPrice, quantityPostive)
-			valueOfInvoiceDiscountAndReceiveTotal += (autoCompletion.PriceRevenue - discountPrice) * quantityPostive
+			entry.Discount = addEntry(accountDiscount, priceDiscount, quantityPostive)
+			valueOfInvoiceDiscountAndReceiveTotal += (priceRevenue - priceDiscount) * quantityPostive
 		}
 
 		newEntries2 = append(newEntries2, entry)
@@ -791,6 +791,36 @@ func FEntryInvoice(AccountNameReceive, AccountNameInvoiceDiscount string, PriceR
 	}
 
 	return items, errAccountNameReceive, errAccountNameInvoiceDiscount
+}
+
+func FEntryAdjusting(adjustingEntry SAdjustingEntry, insert bool) error {
+	adjustingEntry.Quantity = math.Abs(adjustingEntry.Quantity)
+	adjustingEntry.Price = math.Abs(adjustingEntry.Price)
+	if adjustingEntry.Price == 0 {
+		return errors.New("the Price is zero")
+	}
+	if adjustingEntry.Quantity == 0 {
+		return errors.New("the Quantity is zero")
+	}
+
+	account1, _, err1 := FFindAccountFromName(adjustingEntry.AccountName1)
+	account2, _, err2 := FFindAccountFromName(adjustingEntry.AccountName2)
+
+	if err1 != nil {
+		return errors.New(adjustingEntry.AccountName1 + err1.Error())
+	}
+	if err2 != nil {
+		return errors.New(adjustingEntry.AccountName2 + err2.Error())
+	}
+	if account1.IsCredit == account2.IsCredit {
+		return errors.New("should be one debit or one credit in the entry")
+	}
+
+	if insert {
+		FDbUpdate(VDbAdjustingEntry, FNow(), adjustingEntry)
+	}
+
+	return nil
 }
 
 func FEntryReverse(entriesKeys [][]byte, entries []SJournal1, nameEmployee string) {
@@ -973,4 +1003,26 @@ func FFindDuplicateElement(journal []SJournal1, f SJournal3) []SJournal1 {
 		}
 	}
 	return newJournal
+}
+
+func FValueAfterAdjustUsingAdjustingMethods(adjustingMethod string, minutesCurrent, minutesTotal, minutesPast, valueTotal float64) float64 {
+	percent := FRoot(valueTotal, minutesTotal)
+	switch adjustingMethod {
+	case CExponential:
+		return math.Pow(percent, minutesPast+minutesCurrent) - math.Pow(percent, minutesPast)
+	case CLogarithmic:
+		return (valueTotal / math.Pow(percent, minutesPast)) - (valueTotal / math.Pow(percent, minutesPast+minutesCurrent))
+	default:
+		return minutesCurrent * (valueTotal / minutesTotal)
+	}
+}
+
+func FRefreshTheSAdjustingEntry() {
+	// now := time.Now()
+	// keys, adjustingEntry := FDbRead[SAdjustingEntry](VDbAdjustingEntry)
+	// for k1, v1 := range adjustingEntry {
+	// 	if v1.DateStart.Before(now) {
+
+	// 	}
+	// }
 }

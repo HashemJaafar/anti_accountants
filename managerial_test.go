@@ -11,7 +11,7 @@ func TestMixCostVolumeProfit(t *testing.T) {
 		"book2": {CUnits: 10, CSales: 500, CFixedCost: 250, CVariableCost: 3},
 		"book3": {CUnits: 10, CSales: 500, CFixedCost: 250, CVariableCost: 3},
 	}
-	FMixCostVolumeProfit(true, true, a1)
+	FMixCostVolumeProfit(true, a1)
 	FPrintMap2(a1)
 }
 

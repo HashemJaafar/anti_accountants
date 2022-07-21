@@ -43,7 +43,7 @@ func FCostVolumeProfit1(print, checkIfKeysInTheEquations bool, m map[string]floa
 	FEquationsSolver(print, checkIfKeysInTheEquations, m, equations)
 }
 
-func FMixCostVolumeProfit(print, checkIfKeysInTheEquations bool, m map[string]map[string]float64) {
+func FMixCostVolumeProfit(print bool, m map[string]map[string]float64) {
 	var units, sales, variableCost, fixedCost float64
 	for _, v1 := range m {
 		units += v1[CUnits]

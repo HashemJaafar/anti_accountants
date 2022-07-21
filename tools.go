@@ -5,12 +5,10 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"os"
 	"reflect"
 	"runtime/debug"
 	"sort"
 	"strings"
-	"text/tabwriter"
 	"time"
 )
 
@@ -148,30 +146,22 @@ func FConvertFromByteSliceToString(slice [][]byte) []string {
 }
 
 func FTest[t any](shouldEqual bool, actual, expected t) {
+	colorGreen := "\033[32m"
+	colorBlue := "\033[34m"
+	colorYellow := "\033[33m"
+	colorRed := "\033[31m"
+	reset := "\033[0m"
+	now := time.Now().Format("2006-01-02 15:04:05 -0700 MST")
+	stack := strings.Split(string(debug.Stack()), "\n")[6]
+
 	if reflect.DeepEqual(actual, expected) != shouldEqual {
+		fmt.Printf("%v%#v\n", colorBlue, actual)
+		fmt.Printf("%v%#v\n", colorYellow, expected)
+
 		VFailTestNumber++
-		p := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		fmt.Fprintln(p, "\033[32m fail_test_number\t:", VFailTestNumber) //green
-		fmt.Fprintln(p, "\033[35m should_equal\t:", shouldEqual)         //purple
-		fmt.Fprintf(p, "\033[34m actual\t:%#v\n", actual)                //blue
-		fmt.Fprintf(p, "\033[33m expected\t:%#v\n", expected)            //yellow
-		p.Flush()
-
-		// fmt.Println("\033[34m") //blue
-		// spew.Dump(actual)
-		// fmt.Println("\033[33m") //yellow
-		// spew.Dump(expected)
-
-		fmt.Println("\033[31m") //red
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Println(string(debug.Stack()), "\033[0m") //reset
-			}
-		}()
-		log.Panic()
+		fmt.Println(colorRed, stack, "\t", now, "\t", shouldEqual, "\t", VFailTestNumber, reset)
 	} else {
-		fmt.Print("\033[32m ")
-		log.Println("pass \U0001f44d \033[0m") //green
+		fmt.Println(colorGreen, stack, "\t", now, "pass \U0001f44d", reset)
 	}
 }
 
