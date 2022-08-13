@@ -356,7 +356,7 @@ func FAddAutoCompletion(a SAutoCompletion1) error {
 			a.DiscountWay = CDiscountPrice
 		}
 
-		FDbUpdate(VDbAutoCompletionEntries, []byte(a.Revenue), a)
+		FDbUpdate(VDbAutoCompletionEntries, FNow(), a)
 		_, VAutoCompletionEntries = FDbRead[SAutoCompletion1](VDbAutoCompletionEntries)
 	}
 

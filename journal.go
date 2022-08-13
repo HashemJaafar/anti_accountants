@@ -824,36 +824,18 @@ func FEntryAdjusting(adjustingEntry SAdjustingEntry, insert bool) error {
 }
 
 func FEntryReverse(entriesKeys [][]byte, entries []SJournal1, nameEmployee string) {
-	var entryToReverse []SJournal1
 	for k1, v1 := range entries {
 		if v1.IsReversed {
 			continue
 		}
-		account, _, _ := FFindAccountFromName(v1.CreditAccountName)
-		v1.CreditQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, true, v1.CreditQuantity)
-		account, _, _ = FFindAccountFromName(v1.DebitAccountName)
-		v1.DebitQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(account.IsCredit, false, v1.DebitQuantity)
 
-		entryCredit := FSetPriceAndQuantityByQuantityForSAPQ12SAccount1(SAPQ12SAccount1{
-			SAPQ1:     SAPQ1{v1.CreditAccountName, v1.CreditPrice, v1.CreditQuantity},
-			SAPQ2:     SAPQ2{},
-			SAccount1: account,
-		}, false)
-		entryDebit := FSetPriceAndQuantityByQuantityForSAPQ12SAccount1(SAPQ12SAccount1{
-			SAPQ1:     SAPQ1{v1.DebitAccountName, v1.DebitPrice, v1.DebitQuantity},
-			SAPQ2:     SAPQ2{},
-			SAccount1: account,
-		}, false)
+		_, _, quantityDebit := FTotalValuePriceQuantity(v1.DebitAccountName)
+		_, _, quantityCredit := FTotalValuePriceQuantity(v1.CreditAccountName)
 
-		if entryCredit.SAPQ1.Quantity == v1.CreditQuantity && entryDebit.SAPQ1.Quantity == v1.DebitQuantity {
-
-			entryCredit.SAccount1.CostFlowType = CWma
-			entryDebit.SAccount1.CostFlowType = CWma
-
-			FInsertToDatabaseInventory([]SAPQ12SAccount1{entryCredit, entryDebit})
+		if v1.DebitQuantity <= quantityDebit && v1.CreditQuantity <= quantityCredit {
 
 			v1.CreditPrice, v1.DebitPrice = v1.DebitPrice, v1.CreditPrice
-			v1.CreditQuantity, v1.DebitQuantity = math.Abs(v1.DebitQuantity), math.Abs(v1.CreditQuantity)
+			v1.CreditQuantity, v1.DebitQuantity = v1.DebitQuantity, v1.CreditQuantity
 			v1.CreditAccountName, v1.DebitAccountName = v1.DebitAccountName, v1.CreditAccountName
 
 			v1.IsReverse = true
@@ -862,14 +844,17 @@ func FEntryReverse(entriesKeys [][]byte, entries []SJournal1, nameEmployee strin
 			v1.Notes = "revese entry for entry was entered by " + v1.Employee
 			v1.Employee = nameEmployee
 
-			entryToReverse = append(entryToReverse, v1)
-
 			entries[k1].IsReversed = true
 			FDbUpdate(VDbJournal, entriesKeys[k1], entries[k1])
+
+			DoubleEntry := []SJournal1{v1}
+			SingleEntry := FConvertDoubleEntryToSingleEntry(DoubleEntry)
+			for k2 := range SingleEntry {
+				SingleEntry[k2].CostFlowType = CWma
+			}
+			FInsertToDatabase(DoubleEntry, SingleEntry)
 		}
 	}
-
-	FInsertToDatabaseJournal(entryToReverse)
 }
 
 func FJournalFilter(journal []SJournal1, f SJournal2, isDebitAndCredit bool) []SJournal1 {
@@ -1025,4 +1010,23 @@ func FRefreshTheSAdjustingEntry() {
 
 	// 	}
 	// }
+}
+
+func FConvertDoubleEntryToSingleEntry(entries []SJournal1) []SAPQ12SAccount1 {
+	var SingleEntry []SAPQ12SAccount1
+	for _, v1 := range entries {
+
+		CreditAccount, _, _ := FFindAccountFromName(v1.CreditAccountName)
+		v1.CreditQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(CreditAccount.IsCredit, true, v1.CreditQuantity)
+
+		DebitAccount, _, _ := FFindAccountFromName(v1.DebitAccountName)
+		v1.DebitQuantity = FConvertTheSignOfDoubleEntryToSingleEntry(DebitAccount.IsCredit, false, v1.DebitQuantity)
+
+		SingleEntry = append(SingleEntry,
+			SAPQ12SAccount1{SAPQ1{v1.CreditAccountName, v1.CreditPrice, v1.CreditQuantity}, SAPQ2{}, CreditAccount},
+			SAPQ12SAccount1{SAPQ1{v1.DebitAccountName, v1.DebitPrice, v1.DebitQuantity}, SAPQ2{}, DebitAccount},
+		)
+	}
+
+	return SingleEntry
 }
