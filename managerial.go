@@ -35,7 +35,7 @@ func FCostVolumeProfit1(print, checkIfKeysInTheEquations bool, m map[string]floa
 		{CSales, CProfit, "+", CMixedCost},
 		{CContributionMargin, CSales, "-", CVariableCost},
 		{CBreakEvenInSales, CBreakEvenInUnits, "*", CSalesPerUnits},
-		{CBreakEvenInUnits, CContributionMarginPerUnits, "/", CFixedCost},
+		{CBreakEvenInUnits, CFixedCost, "/", CContributionMarginPerUnits},
 		{CContributionMarginPerUnits, CContributionMarginRatio, "*", CSalesPerUnits},
 		{CContributionMargin, CDegreeOfOperatingLeverage, "*", CProfit},
 		{CUnitsGap, CUnits, "-", CActualUnits},

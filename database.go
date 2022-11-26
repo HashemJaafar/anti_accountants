@@ -16,7 +16,7 @@ func FDbOpenAll() {
 		wait.Done()
 	}
 
-	wait.Add(9)
+	wait.Add(8)
 	go open(&VDbJournal, CPathJournal)
 	go open(&VDbInventory, CPathInventory)
 	go open(&VDbAdjustingEntry, CPathAdjustingEntry)
@@ -26,12 +26,10 @@ func FDbOpenAll() {
 	go func() {
 		open(&VDbAccounts, CPathAccounts)
 		_, VAccounts = FDbRead[SAccount1](VDbAccounts)
-		wait.Done()
 	}()
 	go func() {
 		open(&VDbAutoCompletionEntries, CPathAutoCompletionEntries)
 		_, VAutoCompletionEntries = FDbRead[SAutoCompletion1](VDbAutoCompletionEntries)
-		wait.Done()
 	}()
 	wait.Wait()
 }
